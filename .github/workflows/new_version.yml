@@ -1,0 +1,26 @@
+name: Create wiki data
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to create'
+        required: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Create wiki data
+        run: |
+          chmod +x gradlew
+          ./gradlew :GenerateWikiData.main() --args="${{ github.event.inputs.version }}"

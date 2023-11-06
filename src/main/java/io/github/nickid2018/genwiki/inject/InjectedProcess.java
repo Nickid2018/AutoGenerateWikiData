@@ -15,6 +15,8 @@ public class InjectedProcess {
 
     private static final Map<String, Object> REGISTRY = new HashMap<>();
 
+    public static final MethodHandle ENUM_ORDINAL;
+
     @SourceClass("Set<ResourceKey<T>>")
     public static final MethodHandle REGISTRY_KEY_SET;
     @SourceClass("T")
@@ -27,6 +29,7 @@ public class InjectedProcess {
     static {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         try {
+            ENUM_ORDINAL = lookup.unreflect(Enum.class.getMethod("ordinal"));
             Class<?> registryClass = Class.forName("net.minecraft.core.Registry");
             Class<?> resourceKeyClass = Class.forName("net.minecraft.resources.ResourceKey");
             Class<?> resourceLocationClass = Class.forName("net.minecraft.resources.ResourceLocation");
