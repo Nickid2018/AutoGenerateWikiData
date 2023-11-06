@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group = 'io.github.nickid2018'
@@ -32,6 +33,41 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
 
+jar {
+    manifest {
+        attributes 'Main-Class': 'io.github.nickid2018.genwiki.GenerateWikiData'
+        attributes 'Premain-Class': 'io.github.nickid2018.genwiki.inject.InjectionAgent'
+        attributes 'Can-Redefine-Classes': 'true'
+        attributes 'Can-Retransform-Classes': 'true'
+    }
+}
+
+shadowJar {
+    archiveFileName.set("GenWiki.jar")
+    manifest {
+        inheritFrom(project.tasks.jar.manifest)
+    }
+}
+
 test {
     useJUnitPlatform()
+}
+
+tasks.register("cleanRun", Delete) {
+    delete = fileTree("run/remapped")
+}
+
+tasks.register("run", Exec) {
+    workingDir = file("run")
+    standardInput = System.in
+    commandLine("java", "-jar", "../build/libs/GenWiki.jar", "23w44a")
+}.configure {
+    dependsOn(shadowJar)
+    dependsOn("cleanRun")
+}
+
+tasks.register("testRuntime", Exec) {
+    workingDir = file("run/runtime")
+    standardInput = System.in
+    commandLine("java", "-jar", "../remapped/23w44a.jar", "-nogui")
 }

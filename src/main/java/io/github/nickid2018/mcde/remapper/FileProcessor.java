@@ -1,5 +1,6 @@
 package io.github.nickid2018.mcde.remapper;
 
+import io.github.nickid2018.genwiki.*;
 import io.github.nickid2018.mcde.format.MappingClassData;
 import io.github.nickid2018.mcde.format.MappingFormat;
 import io.github.nickid2018.mcde.util.ClassUtils;
@@ -7,9 +8,7 @@ import org.apache.commons.io.IOUtils;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -21,6 +20,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -85,13 +85,13 @@ public class FileProcessor {
         return result.toString();
     }
 
-    public static void process(ZipFile file, MappingFormat remapper, File output, boolean server) throws IOException {
+    public static void process(ZipFile file, MappingFormat remapper, File output, boolean server) throws Exception {
         addPlainClasses(file, remapper);
         generateInheritTree(file, remapper);
         runPack(output, remapAllClasses(file, remapper.getToNamedMapper(), remapper, server));
     }
 
-    public static void addPlainClasses(ZipFile file, MappingFormat format) throws IOException {
+    public static void addPlainClasses(ZipFile file, MappingFormat format) throws Exception {
         Enumeration<? extends ZipEntry> entries = file.entries();
         while (entries.hasMoreElements()) {
             ZipEntry entry = entries.nextElement();
@@ -147,8 +147,10 @@ public class FileProcessor {
             String className = ClassUtils.toBinaryName(entry.getName());
             className = className.substring(0, className.length() - 6);
             reader.accept(new ClassRemapperFix(writer, remapper), 0);
+            byte[] remapped = writer.toByteArray();
+            remapped = postTransform(className, remapped);
             remappedData.put(ClassUtils.toInternalName(format.getToNamedClass(className).mapName()) + ".class",
-                    writer.toByteArray());
+                    remapped);
         }
 
         remappedData.put("META-INF/MANIFEST.MF",
@@ -158,13 +160,50 @@ public class FileProcessor {
         return remappedData;
     }
 
-    public static void runPack(File dest, Map<String, byte[]> map) throws IOException {
+    public static byte[] postTransform(String className, byte[] classfileBuffer) {
+        if (className.equals(Constants.INJECT_POINT_CLASS)) {
+            ClassReader reader = new ClassReader(classfileBuffer);
+            ClassNode node = new ClassNode();
+            reader.accept(node, 0);
+
+            boolean injected = false;
+            for (int i = 0; i < node.methods.size(); i++) {
+                MethodNode method = node.methods.get(i);
+                if (method.name.equals(Constants.INJECT_POINT_METHOD) && method.desc.equals(Constants.INJECT_POINT_METHOD_DESC)) {
+                    InsnList list = new InsnList();
+                    list.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "io/github/nickid2018/genwiki/inject/InjectedProcess", "onInjection", "(Ljava/lang/Object;)V", false));
+                    method.instructions.insert(list);
+                    injected = true;
+                    break;
+                }
+            }
+            if (!injected)
+                throw new RuntimeException("Failed to inject!");
+            ClassWriter writer = new ClassWriter(0);
+            node.accept(writer);
+            return writer.toByteArray();
+        }
+        return classfileBuffer;
+    }
+
+    public static void runPack(File dest, Map<String, byte[]> map) throws Exception {
         ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(dest.toPath()));
         for (String entry : map.keySet()) {
             ZipEntry zipEntry = new ZipEntry(entry);
             zos.putNextEntry(zipEntry);
             zos.write(map.get(entry));
         }
+
+        JarFile thisJar = new JarFile(FileProcessor.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+        for (Enumeration<? extends ZipEntry> it = thisJar.entries(); it.hasMoreElements(); ) {
+            ZipEntry entry = it.nextElement();
+            if (entry.getName().contains("inject")) {
+                zos.putNextEntry(new ZipEntry(entry.getName()));
+                IOUtils.copy(thisJar.getInputStream(entry), zos);
+            }
+        }
+
         zos.close();
     }
 }

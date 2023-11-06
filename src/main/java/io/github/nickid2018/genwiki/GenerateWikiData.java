@@ -7,9 +7,11 @@ import io.github.nickid2018.mcde.format.MappingFormat;
 import io.github.nickid2018.mcde.format.MojangMappingFormat;
 import io.github.nickid2018.mcde.remapper.FileProcessor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 
 @Slf4j
@@ -47,6 +49,13 @@ public class GenerateWikiData {
             }
         } else
             log.info("Remapped server jar already exists, skip remapping.");
+
+        try {
+            runWikiGenerator(remappedFile.getAbsolutePath(), version);
+        } catch (Exception e) {
+            log.error("Failed to run wiki generator!", e);
+            System.exit(1);
+        }
     }
 
     private static void downloadServerJar(String version) throws Exception {
@@ -91,5 +100,34 @@ public class GenerateWikiData {
         MappingFormat format = new MojangMappingFormat(new FileInputStream(mapping));
         FileProcessor.processServer(input, format, output);
         log.info("Remapped server jar to {}", output.getAbsolutePath());
+    }
+
+    private static void runWikiGenerator(String file, String version) throws Exception {
+        if (Constants.RUNTIME_FOLDER.exists())
+            FileUtils.deleteDirectory(Constants.RUNTIME_FOLDER);
+        Constants.RUNTIME_FOLDER.mkdirs();
+
+        try (FileWriter w = new FileWriter(new File(Constants.RUNTIME_FOLDER, "eula.txt"))) {
+            w.write("eula=true");
+        }
+
+        String jarPath = GenerateWikiData.class
+            .getProtectionDomain().getCodeSource()
+            .getLocation().toURI().getPath().substring(1);
+
+        ProcessBuilder builder = new ProcessBuilder(
+                "java", "-jar", file, "-nogui"
+        );
+        builder.directory(Constants.RUNTIME_FOLDER);
+        builder.redirectErrorStream(true);
+        builder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+
+        log.info("Launch server with command: '{}'", String.join(" ", builder.command()));
+
+        Process process = builder.start();
+        process.getOutputStream().write("stop\n".getBytes());
+        process.getOutputStream().flush();
+        process.getOutputStream().close();
+        process.waitFor();
     }
 }
