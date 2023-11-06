@@ -23,4 +23,4 @@ jobs:
       - name: Create wiki data
         run: |
           chmod +x gradlew
-          ./gradlew :GenerateWikiData.main() --args="${{ github.event.inputs.version }}"
+          ./gradlew ":GenerateWikiData.main()" --args="${{ github.event.inputs.version }}"
