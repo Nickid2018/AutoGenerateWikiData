@@ -53,21 +53,13 @@ test {
     useJUnitPlatform()
 }
 
-tasks.register("cleanRun", Delete) {
-    delete = fileTree("run/remapped")
-}
-
 tasks.register("run", Exec) {
+    if (!file("run").isDirectory())
+        mkdir("run")
+    if (file("run/remapped").isDirectory())
+        delete(fileTree("run/remapped"))
     workingDir = file("run")
-    standardInput = System.in
-    commandLine("java", "-jar", "../build/libs/GenWiki.jar", "23w44a")
+    commandLine("java", "-jar", "../build/libs/GenWiki.jar", environment["MAKE_VERSION"])
 }.configure {
     dependsOn(shadowJar)
-    dependsOn("cleanRun")
-}
-
-tasks.register("testRuntime", Exec) {
-    workingDir = file("run/runtime")
-    standardInput = System.in
-    commandLine("java", "-jar", "../remapped/23w44a.jar", "-nogui")
 }

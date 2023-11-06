@@ -21,6 +21,8 @@ jobs:
           cache: gradle
 
       - name: Create wiki data
+        env:
+          MAKE_VERSION: ${{ github.event.inputs.version }}
         run: |
           chmod +x gradlew
-          ./gradlew ":GenerateWikiData.main()" --args="${{ github.event.inputs.version }}"
+          ./gradlew run
