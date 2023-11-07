@@ -4,5 +4,5 @@ import java.io.File;
 
 public class InjectionConstant {
 
-
+    public static final File OUTPUT_FOLDER = new File("../output");
 }

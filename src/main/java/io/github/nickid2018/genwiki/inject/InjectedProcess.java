@@ -2,7 +2,10 @@ package io.github.nickid2018.genwiki.inject;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
@@ -67,9 +70,18 @@ public class InjectedProcess {
             }
         }
 
+        if (InjectionConstant.OUTPUT_FOLDER.isDirectory())
+            FileUtils.deleteDirectory(InjectionConstant.OUTPUT_FOLDER);
+        InjectionConstant.OUTPUT_FOLDER.mkdirs();
+
         BlockDataExtractor.extractBlockData();
 
         throw new RuntimeException("Program exited, wiki data has been written.");
+    }
+
+    public static void write(WikiData data, String file) throws IOException {
+        File outputFile = new File(InjectionConstant.OUTPUT_FOLDER, file);
+        FileUtils.write(outputFile, data.output(1), "UTF-8");
     }
 
     public static Object getRegistry(String name) {

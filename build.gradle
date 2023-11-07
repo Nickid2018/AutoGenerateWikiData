@@ -24,6 +24,9 @@ dependencies {
     api "org.apache.logging.log4j:log4j-core:2.19.0"
     api "org.apache.logging.log4j:log4j-slf4j-impl:2.19.0"
 
+    api 'it.unimi.dsi:fastutil:8.5.12'
+    api 'com.google.guava:guava:32.1.3-jre'
+
     compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
     testCompileOnly 'org.projectlombok:lombok:1.18.22'
@@ -36,9 +39,6 @@ dependencies {
 jar {
     manifest {
         attributes 'Main-Class': 'io.github.nickid2018.genwiki.GenerateWikiData'
-        attributes 'Premain-Class': 'io.github.nickid2018.genwiki.inject.InjectionAgent'
-        attributes 'Can-Redefine-Classes': 'true'
-        attributes 'Can-Retransform-Classes': 'true'
     }
 }
 
