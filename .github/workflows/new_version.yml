@@ -26,3 +26,9 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew run
+
+      - name: Upload wiki data
+        uses: actions/upload-artifact@v2
+        with:
+          name: wiki-data
+          path: run/output

@@ -1,5 +1,6 @@
 package io.github.nickid2018.genwiki.inject;
 
+import lombok.Generated;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -57,6 +58,7 @@ public class InjectedProcess {
     }
 
     @SneakyThrows
+    @SuppressWarnings("unused")
     public static void onInjection(Object server) {
         log.info("Trapped server instance: {}", server);
         Class<?> registryClass = Class.forName("net.minecraft.core.registries.BuiltInRegistries");
@@ -82,6 +84,11 @@ public class InjectedProcess {
     public static void write(WikiData data, String file) throws IOException {
         File outputFile = new File(InjectionConstant.OUTPUT_FOLDER, file);
         FileUtils.write(outputFile, data.output(1), "UTF-8");
+    }
+
+    public static void write(WikiData data, ExceptData exceptData, String file) throws IOException {
+        File outputFile = new File(InjectionConstant.OUTPUT_FOLDER, file);
+        FileUtils.write(outputFile, data.output(1) + "\n=== Except Data ===\n" + exceptData.output(), "UTF-8");
     }
 
     public static Object getRegistry(String name) {

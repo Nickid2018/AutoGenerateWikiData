@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -75,6 +77,11 @@ public class BlockDataExtractor {
     private static final StringWikiData PUSH_REACTION = new StringWikiData();
     private static final BooleanWikiData REPLACEABLE = new BooleanWikiData();
 
+    private static final BooleanWikiData REDSTONE_CONDUCTOR = new BooleanWikiData();
+    private static final ExceptData REDSTONE_CONDUCTOR_EXCEPT = new ExceptData();
+    private static final BooleanWikiData SUFFOCATING = new BooleanWikiData();
+    private static final ExceptData SUFFOCATING_EXCEPT = new ExceptData();
+
     @SneakyThrows
     public static void extractBlockData() {
         @SourceClass("DefaultedRegistry<Block>")
@@ -106,8 +113,10 @@ public class BlockDataExtractor {
 
             @SourceClass("BlockBehaviour$StatePredicate")
             Object isRedstoneConductor = PROPERTIES_IS_REDSTONE_CONDUCTOR.get(properties);
+            makeStatePredicateData(blockID, isRedstoneConductor, states, REDSTONE_CONDUCTOR, REDSTONE_CONDUCTOR_EXCEPT);
             @SourceClass("BlockBehaviour$StatePredicate")
             Object isSuffocating = PROPERTIES_IS_SUFFOCATING.get(properties);
+            makeStatePredicateData(blockID, isSuffocating, states, SUFFOCATING, SUFFOCATING_EXCEPT);
         }
 
         InjectedProcess.write(EXPLOSION_RESISTANCE, "block_explosion_resistance.txt");
@@ -115,6 +124,8 @@ public class BlockDataExtractor {
         InjectedProcess.write(IGNITE_BY_LAVA, "block_ignite_by_lava.txt");
         InjectedProcess.write(PUSH_REACTION, "block_push_reaction.txt");
         InjectedProcess.write(REPLACEABLE, "block_replaceable.txt");
+        InjectedProcess.write(REDSTONE_CONDUCTOR, REDSTONE_CONDUCTOR_EXCEPT, "block_redstone_conductor.txt");
+        InjectedProcess.write(SUFFOCATING, SUFFOCATING_EXCEPT, "block_suffocating.txt");
     }
 
     private static final String[] PUSH_REACTION_NAMES = new String[] {
@@ -144,5 +155,37 @@ public class BlockDataExtractor {
     public static String pushReactionToString(Object pushReactionObject) {
         int ordinal = (int) InjectedProcess.ENUM_ORDINAL.invoke(pushReactionObject);
         return PUSH_REACTION_NAMES[ordinal];
+    }
+
+    @SneakyThrows
+    public static void makeStatePredicateData(String blockID, Object statePredicate, ImmutableList<?> states,
+                                              BooleanWikiData wikiData, ExceptData exceptData) {
+        Set<String> trueSet = new LinkedHashSet<>();
+        Set<String> falseSet = new LinkedHashSet<>();
+        for (Object state : states) {
+            try {
+                boolean test = (boolean) STATE_PREDICATE_TEST.invoke(statePredicate, state, null, null);
+                String stateString = state.toString();
+                if (stateString.contains("["))
+                    stateString = stateString.substring(stateString.indexOf('['));
+                if (test)
+                    trueSet.add(stateString);
+                else
+                    falseSet.add(stateString);
+            } catch (NullPointerException e) {
+                exceptData.putUnknown(blockID);
+                return;
+            }
+        }
+        if (trueSet.isEmpty())
+            wikiData.put(blockID, false);
+        else if (falseSet.isEmpty())
+            wikiData.put(blockID, true);
+        else {
+            for (String state : trueSet)
+                exceptData.put(blockID, state, "true");
+            for (String state : falseSet)
+                exceptData.put(blockID, state, "false");
+        }
     }
 }
