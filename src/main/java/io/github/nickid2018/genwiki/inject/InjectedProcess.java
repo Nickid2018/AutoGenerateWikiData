@@ -19,6 +19,8 @@ public class InjectedProcess {
 
     private static final Map<String, Object> REGISTRY = new HashMap<>();
 
+    public static final Class<?> TAG_KEY_CLASS;
+
     public static final MethodHandle ENUM_ORDINAL;
 
     @SourceClass("Set<ResourceKey<T>>")
@@ -33,6 +35,7 @@ public class InjectedProcess {
     static {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         try {
+            TAG_KEY_CLASS = Class.forName("net.minecraft.tags.TagKey");
             ENUM_ORDINAL = lookup.unreflect(Enum.class.getMethod("ordinal"));
             Class<?> registryClass = Class.forName("net.minecraft.core.Registry");
             Class<?> resourceKeyClass = Class.forName("net.minecraft.resources.ResourceKey");
@@ -77,6 +80,7 @@ public class InjectedProcess {
         InjectionConstant.OUTPUT_FOLDER.mkdirs();
 
         BlockDataExtractor.extractBlockData();
+        ItemDataExtractor.extractItemData();
 
         throw new RuntimeException("Program exited, wiki data has been written.");
     }

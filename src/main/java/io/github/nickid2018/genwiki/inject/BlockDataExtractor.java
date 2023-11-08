@@ -7,10 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.lang.reflect.Field;
+import java.util.*;
 
 @Slf4j
 public class BlockDataExtractor {
@@ -31,6 +29,7 @@ public class BlockDataExtractor {
     @SourceClass("BlockState")
     public static final MethodHandle BLOCK_DEFAULT_BLOCK_STATE;
     public static final MethodHandle STATE_DEFINITION_GET_POSSIBLE_STATES;
+    public static final MethodHandle BLOCKSTATE_IS;
 
     public static final VarHandle PROPERTIES_EXPLOSION_RESISTANCE;
     public static final VarHandle PROPERTIES_DESTROY_TIME;
@@ -39,6 +38,18 @@ public class BlockDataExtractor {
     public static final VarHandle PROPERTIES_REPLACEABLE;
     public static final VarHandle PROPERTIES_IS_REDSTONE_CONDUCTOR;
     public static final VarHandle PROPERTIES_IS_SUFFOCATING;
+    public static final VarHandle PROPERTIES_REQUIRES_CORRECT_TOOL_FOR_DROPS;
+
+    public static final Object TAG_NEEDS_DIAMOND_TOOL;
+    public static final Object TAG_NEEDS_IRON_TOOL;
+    public static final Object TAG_NEEDS_STONE_TOOL;
+    public static final Object TAG_MINEABLE_WITH_AXE;
+    public static final Object TAG_MINEABLE_WITH_HOE;
+    public static final Object TAG_MINEABLE_WITH_PICKAXE;
+    public static final Object TAG_MINEABLE_WITH_SHOVEL;
+    public static final Object TAG_SWORD_EFFICIENT;
+    public static final Object TAG_LEAVES;
+    public static final Object TAG_WOOL;
 
 
     static {
@@ -57,6 +68,7 @@ public class BlockDataExtractor {
             STATE_PREDICATE_TEST = lookup.unreflect(STATE_PREDICATE_CLASS.getDeclaredMethods()[0]);
             BLOCK_DEFAULT_BLOCK_STATE = lookup.unreflect(BLOCK_CLASS.getMethod("defaultBlockState"));
             STATE_DEFINITION_GET_POSSIBLE_STATES = lookup.unreflect(STATE_DEFINITION_CLASS.getMethod("getPossibleStates"));
+            BLOCKSTATE_IS = lookup.unreflect(BLOCK_STATE_CLASS.getMethod("is", InjectedProcess.TAG_KEY_CLASS));
 
             MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(PROPERTIES_CLASS, lookup);
             PROPERTIES_EXPLOSION_RESISTANCE = privateLookup.findVarHandle(PROPERTIES_CLASS, "explosionResistance", float.class);
@@ -66,6 +78,22 @@ public class BlockDataExtractor {
             PROPERTIES_REPLACEABLE = privateLookup.findVarHandle(PROPERTIES_CLASS, "replaceable", boolean.class);
             PROPERTIES_IS_REDSTONE_CONDUCTOR = privateLookup.findVarHandle(PROPERTIES_CLASS, "isRedstoneConductor", STATE_PREDICATE_CLASS);
             PROPERTIES_IS_SUFFOCATING = privateLookup.findVarHandle(PROPERTIES_CLASS, "isSuffocating", STATE_PREDICATE_CLASS);
+            PROPERTIES_REQUIRES_CORRECT_TOOL_FOR_DROPS = privateLookup.findVarHandle(PROPERTIES_CLASS, "requiresCorrectToolForDrops", boolean.class);
+
+            Field[] fields = Class.forName("net.minecraft.tags.BlockTags").getDeclaredFields();
+            Map<String, Field> tagFields = new HashMap<>();
+            for (Field field : fields)
+                tagFields.put(field.getName(), field);
+            TAG_NEEDS_DIAMOND_TOOL = tagFields.get("NEEDS_DIAMOND_TOOL").get(null);
+            TAG_NEEDS_IRON_TOOL = tagFields.get("NEEDS_IRON_TOOL").get(null);
+            TAG_NEEDS_STONE_TOOL = tagFields.get("NEEDS_STONE_TOOL").get(null);
+            TAG_MINEABLE_WITH_AXE = tagFields.get("MINEABLE_WITH_AXE").get(null);
+            TAG_MINEABLE_WITH_HOE = tagFields.get("MINEABLE_WITH_HOE").get(null);
+            TAG_MINEABLE_WITH_PICKAXE = tagFields.get("MINEABLE_WITH_PICKAXE").get(null);
+            TAG_MINEABLE_WITH_SHOVEL = tagFields.get("MINEABLE_WITH_SHOVEL").get(null);
+            TAG_SWORD_EFFICIENT = tagFields.get("SWORD_EFFICIENT").get(null);
+            TAG_LEAVES = tagFields.get("LEAVES").get(null);
+            TAG_WOOL = tagFields.get("WOOL").get(null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -76,6 +104,7 @@ public class BlockDataExtractor {
     private static final BooleanWikiData IGNITE_BY_LAVA = new BooleanWikiData();
     private static final StringWikiData PUSH_REACTION = new StringWikiData();
     private static final BooleanWikiData REPLACEABLE = new BooleanWikiData();
+    private static final StringListWikiData BREAKING_TOOLS = new StringListWikiData();
 
     private static final BooleanWikiData REDSTONE_CONDUCTOR = new BooleanWikiData();
     private static final ExceptData REDSTONE_CONDUCTOR_EXCEPT = new ExceptData();
@@ -117,6 +146,11 @@ public class BlockDataExtractor {
             @SourceClass("BlockBehaviour$StatePredicate")
             Object isSuffocating = PROPERTIES_IS_SUFFOCATING.get(properties);
             makeStatePredicateData(blockID, isSuffocating, states, SUFFOCATING, SUFFOCATING_EXCEPT);
+
+            @SourceClass("BlockState")
+            Object defaultBlockState = BLOCK_DEFAULT_BLOCK_STATE.invoke(block);
+            List<String> breakingTools = resolveBreakingTools(blockID, properties, defaultBlockState);
+            BREAKING_TOOLS.put(blockID, breakingTools);
         }
 
         InjectedProcess.write(EXPLOSION_RESISTANCE, "block_explosion_resistance.txt");
@@ -126,9 +160,10 @@ public class BlockDataExtractor {
         InjectedProcess.write(REPLACEABLE, "block_replaceable.txt");
         InjectedProcess.write(REDSTONE_CONDUCTOR, REDSTONE_CONDUCTOR_EXCEPT, "block_redstone_conductor.txt");
         InjectedProcess.write(SUFFOCATING, SUFFOCATING_EXCEPT, "block_suffocating.txt");
+        InjectedProcess.write(BREAKING_TOOLS, "block_breaking_tools.txt");
     }
 
-    private static final String[] PUSH_REACTION_NAMES = new String[] {
+    private static final String[] PUSH_REACTION_NAMES = new String[]{
             "NORMAL", "DESTROY", "BLOCK", "IGNORE", "PUSH_ONLY"
     };
 
@@ -187,5 +222,56 @@ public class BlockDataExtractor {
             for (String state : falseSet)
                 exceptData.put(blockID, state, "false");
         }
+    }
+
+    @SneakyThrows
+    private static boolean hasTag(Object blockState, Object tag) {
+        return (boolean) BLOCKSTATE_IS.invoke(blockState, tag);
+    }
+
+    private static final Set<String> SHEARS_MINEABLES = Set.of(
+            "cobweb",
+            "vine",
+            "glow_lichen"
+    );
+
+    @SneakyThrows
+    private static List<String> resolveBreakingTools(String blockID, Object properties, Object defaultBlockState) {
+        String tierPrefix;
+        boolean needsCorrectTool = (boolean) PROPERTIES_REQUIRES_CORRECT_TOOL_FOR_DROPS.get(properties);
+        if (needsCorrectTool) {
+            if (hasTag(defaultBlockState, TAG_NEEDS_DIAMOND_TOOL))
+                tierPrefix = "diamond";
+            else if (hasTag(defaultBlockState, TAG_NEEDS_IRON_TOOL))
+                tierPrefix = "iron";
+            else if (hasTag(defaultBlockState, TAG_NEEDS_STONE_TOOL))
+                tierPrefix = "stone";
+            else
+                tierPrefix = "wooden";
+        } else
+            tierPrefix = null;
+
+        List<String> tools = new ArrayList<>();
+
+        if (hasTag(defaultBlockState, TAG_MINEABLE_WITH_AXE))
+            tools.add("axe");
+        if (hasTag(defaultBlockState, TAG_MINEABLE_WITH_HOE))
+            tools.add("hoe");
+        if (hasTag(defaultBlockState, TAG_MINEABLE_WITH_PICKAXE))
+            tools.add("pickaxe");
+        if (hasTag(defaultBlockState, TAG_MINEABLE_WITH_SHOVEL))
+            tools.add("shovel");
+        if (hasTag(defaultBlockState, TAG_SWORD_EFFICIENT))
+            tools.add("sword");
+
+        if (tierPrefix != null)
+            tools.replaceAll(s -> tierPrefix + " " + s);
+
+        if (hasTag(defaultBlockState, TAG_LEAVES) || hasTag(defaultBlockState, TAG_WOOL) || SHEARS_MINEABLES.contains(blockID))
+            tools.add(needsCorrectTool ? "shears required" : "shears");
+
+        tools.sort(Comparator.naturalOrder());
+
+        return tools;
     }
 }
