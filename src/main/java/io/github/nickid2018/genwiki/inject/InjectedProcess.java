@@ -22,6 +22,7 @@ public class InjectedProcess {
     public static final Class<?> TAG_KEY_CLASS;
 
     public static final MethodHandle ENUM_ORDINAL;
+    public static final MethodHandle ENUM_NAME;
 
     @SourceClass("Set<ResourceKey<T>>")
     public static final MethodHandle REGISTRY_KEY_SET;
@@ -37,6 +38,7 @@ public class InjectedProcess {
         try {
             TAG_KEY_CLASS = Class.forName("net.minecraft.tags.TagKey");
             ENUM_ORDINAL = lookup.unreflect(Enum.class.getMethod("ordinal"));
+            ENUM_NAME = lookup.unreflect(Enum.class.getMethod("name"));
             Class<?> registryClass = Class.forName("net.minecraft.core.Registry");
             Class<?> resourceKeyClass = Class.forName("net.minecraft.resources.ResourceKey");
             Class<?> resourceLocationClass = Class.forName("net.minecraft.resources.ResourceLocation");
