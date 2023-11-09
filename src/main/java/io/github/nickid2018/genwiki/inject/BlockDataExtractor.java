@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.util.*;
@@ -30,6 +31,8 @@ public class BlockDataExtractor {
     public static final MethodHandle BLOCK_DEFAULT_BLOCK_STATE;
     public static final MethodHandle STATE_DEFINITION_GET_POSSIBLE_STATES;
     public static final MethodHandle BLOCKSTATE_IS;
+    public static final MethodHandle GET_BURN_ODDS;
+    public static final MethodHandle GET_IGNITE_ODDS;
 
     public static final VarHandle PROPERTIES_EXPLOSION_RESISTANCE;
     public static final VarHandle PROPERTIES_DESTROY_TIME;
@@ -50,6 +53,8 @@ public class BlockDataExtractor {
     public static final Object TAG_SWORD_EFFICIENT;
     public static final Object TAG_LEAVES;
     public static final Object TAG_WOOL;
+
+    public static final Object FIRE_BLOCK;
 
 
     static {
@@ -94,6 +99,16 @@ public class BlockDataExtractor {
             TAG_SWORD_EFFICIENT = tagFields.get("SWORD_EFFICIENT").get(null);
             TAG_LEAVES = tagFields.get("LEAVES").get(null);
             TAG_WOOL = tagFields.get("WOOL").get(null);
+
+            Field[] fields2 = Class.forName("net.minecraft.world.level.block.Blocks").getDeclaredFields();
+            Map<String, Field> blockFields = new HashMap<>();
+            for (Field field : fields2)
+                blockFields.put(field.getName(), field);
+            FIRE_BLOCK = blockFields.get("FIRE").get(null);
+            Class<?> CLASS_FIRE = Class.forName("net.minecraft.world.level.block.FireBlock");
+            MethodHandles.Lookup privateLookup2 = MethodHandles.privateLookupIn(CLASS_FIRE, lookup);
+            GET_BURN_ODDS = privateLookup2.findVirtual(CLASS_FIRE, "getBurnOdds", MethodType.methodType(int.class, BLOCK_STATE_CLASS));
+            GET_IGNITE_ODDS = privateLookup2.findVirtual(CLASS_FIRE, "getIgniteOdds", MethodType.methodType(int.class, BLOCK_STATE_CLASS));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -110,6 +125,8 @@ public class BlockDataExtractor {
     private static final ExceptData REDSTONE_CONDUCTOR_EXCEPT = new ExceptData();
     private static final BooleanWikiData SUFFOCATING = new BooleanWikiData();
     private static final ExceptData SUFFOCATING_EXCEPT = new ExceptData();
+    private static final NumberWikiData BURN_ODDS = new NumberWikiData().setFallback(0);
+    private static final NumberWikiData IGNITE_ODDS = new NumberWikiData().setFallback(0);
 
     @SneakyThrows
     public static void extractBlockData() {
@@ -151,6 +168,11 @@ public class BlockDataExtractor {
             Object defaultBlockState = BLOCK_DEFAULT_BLOCK_STATE.invoke(block);
             List<String> breakingTools = resolveBreakingTools(blockID, properties, defaultBlockState);
             BREAKING_TOOLS.put(blockID, breakingTools);
+
+            int burnOdds = (int) GET_BURN_ODDS.invoke(FIRE_BLOCK, defaultBlockState);
+            BURN_ODDS.put(blockID, burnOdds);
+            int igniteOdds = (int) GET_IGNITE_ODDS.invoke(FIRE_BLOCK, defaultBlockState);
+            IGNITE_ODDS.put(blockID, igniteOdds);
         }
 
         InjectedProcess.write(EXPLOSION_RESISTANCE, "block_explosion_resistance.txt");
@@ -161,6 +183,8 @@ public class BlockDataExtractor {
         InjectedProcess.write(REDSTONE_CONDUCTOR, REDSTONE_CONDUCTOR_EXCEPT, "block_redstone_conductor.txt");
         InjectedProcess.write(SUFFOCATING, SUFFOCATING_EXCEPT, "block_suffocating.txt");
         InjectedProcess.write(BREAKING_TOOLS, "block_breaking_tools.txt");
+        InjectedProcess.write(BURN_ODDS, "block_burn_odds.txt");
+        InjectedProcess.write(IGNITE_ODDS, "block_ignite_odds.txt");
     }
 
     private static final String[] PUSH_REACTION_NAMES = new String[]{
