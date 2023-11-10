@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 public class InjectedProcess {
 
     private static final Map<String, Object> REGISTRY = new HashMap<>();
+    public static Object featureFlagSet;
 
     public static final Class<?> TAG_KEY_CLASS;
     public static final Class<?> RESOURCE_KEY_CLASS;
@@ -74,7 +76,7 @@ public class InjectedProcess {
         InjectionConstant.OUTPUT_FOLDER.mkdirs();
 
         BlockDataExtractor.extractBlockData();
-        ItemDataExtractor.extractItemData();
+        ItemDataExtractor.extractItemData(server);
 
         throw new RuntimeException("Program exited, wiki data has been written.");
     }
@@ -100,7 +102,13 @@ public class InjectedProcess {
         names.setAccessible(true);
         Map<?, ?> namesObj = (Map<?, ?>) names.get(featureFlagRegistry);
 
-        return namesObj.keySet().stream().map(RESOURCE_LOCATION_PATH::invoke).map(Object::toString).collect(Collectors.joining(","));
+        String ret =  namesObj.keySet().stream().map(RESOURCE_LOCATION_PATH::invoke).map(Object::toString).collect(Collectors.joining(","));
+        Method methodGetFeatures = Class.forName("net.minecraft.server.dedicated.DedicatedServerProperties")
+                .getDeclaredMethod("getFeatures", String.class);
+        methodGetFeatures.setAccessible(true);
+        featureFlagSet = methodGetFeatures.invoke(null, ret);
+
+        return ret;
     }
 
     public static void write(WikiData data, String file) throws IOException {

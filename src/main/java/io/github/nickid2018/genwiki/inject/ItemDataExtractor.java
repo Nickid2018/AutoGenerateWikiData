@@ -16,6 +16,9 @@ public class ItemDataExtractor {
 
     private static final MethodHandle ITEM_GET_MAX_STACK_SIZE;
     private static final MethodHandle ITEM_STACK_GET_ITEM;
+    private static final MethodHandle SERVER_OVERWORLD;
+    private static final MethodHandle REGISTRY_ACCESS;
+    private static final MethodHandle BUILD_TAB_CONTENTS;
 
     private static final VarHandle ITEM_RARITY;
     private static final VarHandle CREATIVE_MODE_TAB_DISPLAY_ITEMS;
@@ -34,6 +37,13 @@ public class ItemDataExtractor {
             CREATIVE_MODE_TAB_DISPLAY_ITEMS = privateLookup2.findVarHandle(creativeModeTabClass, "displayItems", Collection.class);
             Class<?> itemStackClass = Class.forName("net.minecraft.world.item.ItemStack");
             ITEM_STACK_GET_ITEM = lookup.unreflect(itemStackClass.getMethod("getItem"));
+            Class<?> minecraftServerClass = Class.forName("net.minecraft.server.MinecraftServer");
+            SERVER_OVERWORLD = lookup.unreflect(minecraftServerClass.getMethod("overworld"));
+            Class<?> registryAccessClass = Class.forName("net.minecraft.world.level.Level");
+            REGISTRY_ACCESS = lookup.unreflect(registryAccessClass.getMethod("registryAccess"));
+            BUILD_TAB_CONTENTS = lookup.unreflect(CREATIVE_MODE_TABS_CLASS.getMethod("tryRebuildTabContents",
+                    Class.forName("net.minecraft.world.flag.FeatureFlagSet"), boolean.class,
+                    Class.forName("net.minecraft.core.HolderLookup$Provider")));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -41,10 +51,10 @@ public class ItemDataExtractor {
 
     private static final NumberWikiData MAX_STACK_SIZE = new NumberWikiData().setFallback(64);
     private static final StringWikiData RARITY = new StringWikiData().setFallback("COMMON");
-    private static final StringListWikiData CREATIVE_MODE_TABS = new StringListWikiData();
+    private static final StringListWikiData CREATIVE_MODE_TABS = new StringListWikiData().setFallback(List.of());
 
     @SneakyThrows
-    public static void extractItemData() {
+    public static void extractItemData(Object serverObj) {
         @SourceClass("DefaultedRegistry<Item>")
         Object itemRegistry = InjectedProcess.getRegistry("ITEM");
         @SourceClass("Set<ResourceKey<Item>>")
@@ -74,10 +84,17 @@ public class ItemDataExtractor {
             }
         }
 
+        Object serverOverworld = SERVER_OVERWORLD.invoke(serverObj);
+        @SourceClass("RegistryAccess")
+        Object registryAccess = REGISTRY_ACCESS.invoke(serverOverworld);
+        BUILD_TAB_CONTENTS.invoke(InjectedProcess.featureFlagSet, true, registryAccess);
+
         @SourceClass("Registry<CreativeModeTab>")
         Object creativeTabRegistry = InjectedProcess.getRegistry("CREATIVE_MODE_TAB");
         for (Map.Entry<String, Object> entry : creativeModeTabs.entrySet()) {
             String tabName = entry.getKey();
+            if (tabName.equals("SEARCH"))
+                continue;
             @SourceClass("CreativeModeTab")
             Object tab = InjectedProcess.REGISTRY_GET.invoke(creativeTabRegistry, entry.getValue());
             Collection<?> displayItems = (Collection<?>) CREATIVE_MODE_TAB_DISPLAY_ITEMS.get(tab);

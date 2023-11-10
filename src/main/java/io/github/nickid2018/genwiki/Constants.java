@@ -12,7 +12,7 @@ public class Constants {
     public static final File RUNTIME_FOLDER = new File("runtime");
 
     public static final String INJECT_POINT_CLASS = "net.minecraft.server.MinecraftServer";
-    public static final String INJECT_POINT_METHOD = "createLevels";
+    public static final String INJECT_POINT_METHOD = "prepareLevels";
     public static final String INJECT_POINT_METHOD_DESC = "(Lnet/minecraft/server/level/progress/ChunkProgressListener;)V";
     public static final String INJECT_SERVER_PROPERTIES = "net.minecraft.server.dedicated.DedicatedServerProperties";
     public static final String INJECT_SERVER_PROPERTIES_METHOD = "getDatapackConfig";
