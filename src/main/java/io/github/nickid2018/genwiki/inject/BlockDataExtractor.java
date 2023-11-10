@@ -21,6 +21,7 @@ public class BlockDataExtractor {
     public static final Class<?> STATE_PREDICATE_CLASS;
     public static final Class<?> ENTITY_BLOCK_CLASS;
     public static final Class<?> STATE_DEFINITION_CLASS;
+    public static final Class<?> BLOCK_STATE_BASE_CLASS;
 
     @SourceClass("StateDefinition<Block, BlockState>")
     public static final MethodHandle GET_STATE_DEFINITION;
@@ -42,6 +43,7 @@ public class BlockDataExtractor {
     public static final VarHandle PROPERTIES_IS_REDSTONE_CONDUCTOR;
     public static final VarHandle PROPERTIES_IS_SUFFOCATING;
     public static final VarHandle PROPERTIES_REQUIRES_CORRECT_TOOL_FOR_DROPS;
+    public static final VarHandle VAR_LEGACY_SOLID;
 
     public static final Object TAG_NEEDS_DIAMOND_TOOL;
     public static final Object TAG_NEEDS_IRON_TOOL;
@@ -67,6 +69,7 @@ public class BlockDataExtractor {
             STATE_PREDICATE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$StatePredicate");
             ENTITY_BLOCK_CLASS = Class.forName("net.minecraft.world.level.block.EntityBlock");
             STATE_DEFINITION_CLASS = Class.forName("net.minecraft.world.level.block.state.StateDefinition");
+            BLOCK_STATE_BASE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase");
 
             GET_STATE_DEFINITION = lookup.unreflect(BLOCK_CLASS.getMethod("getStateDefinition"));
             PROPERTIES = lookup.unreflect(BLOCK_CLASS.getMethod("properties"));
@@ -109,6 +112,9 @@ public class BlockDataExtractor {
             MethodHandles.Lookup privateLookup2 = MethodHandles.privateLookupIn(CLASS_FIRE, lookup);
             GET_BURN_ODDS = privateLookup2.findVirtual(CLASS_FIRE, "getBurnOdds", MethodType.methodType(int.class, BLOCK_STATE_CLASS));
             GET_IGNITE_ODDS = privateLookup2.findVirtual(CLASS_FIRE, "getIgniteOdds", MethodType.methodType(int.class, BLOCK_STATE_CLASS));
+
+            MethodHandles.Lookup privateLookup3 = MethodHandles.privateLookupIn(BLOCK_STATE_BASE_CLASS, lookup);
+            VAR_LEGACY_SOLID = privateLookup3.findVarHandle(BLOCK_STATE_BASE_CLASS, "legacySolid", boolean.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -128,6 +134,8 @@ public class BlockDataExtractor {
     private static final ExceptData SUFFOCATING_EXCEPT = new ExceptData();
     private static final NumberWikiData BURN_ODDS = new NumberWikiData().setFallback(0);
     private static final NumberWikiData IGNITE_ODDS = new NumberWikiData().setFallback(0);
+    private static final BooleanWikiData LEGACY_SOLID = new BooleanWikiData();
+    private static final ExceptData LEGACY_SOLID_EXCEPT = new ExceptData();
 
     @SneakyThrows
     public static void extractBlockData() {
@@ -166,6 +174,8 @@ public class BlockDataExtractor {
             Object isSuffocating = PROPERTIES_IS_SUFFOCATING.get(properties);
             makeStatePredicateData(blockID, isSuffocating, states, SUFFOCATING, SUFFOCATING_EXCEPT);
 
+            calcSolid(blockID, states);
+
             @SourceClass("BlockState")
             Object defaultBlockState = BLOCK_DEFAULT_BLOCK_STATE.invoke(block);
             List<String> breakingTools = resolveBreakingTools(blockID, properties, defaultBlockState);
@@ -190,6 +200,7 @@ public class BlockDataExtractor {
         InjectedProcess.write(BREAKING_TOOLS, "block_breaking_tools.txt");
         InjectedProcess.write(BURN_ODDS, "block_burn_odds.txt");
         InjectedProcess.write(IGNITE_ODDS, "block_ignite_odds.txt");
+        InjectedProcess.write(LEGACY_SOLID, LEGACY_SOLID_EXCEPT, "block_legacy_solid.txt");
     }
 
     private static final String[] PUSH_REACTION_NAMES = new String[]{
@@ -250,6 +261,36 @@ public class BlockDataExtractor {
                 exceptData.put(blockID, state, "true");
             for (String state : falseSet)
                 exceptData.put(blockID, state, "false");
+        }
+    }
+
+    @SneakyThrows
+    public static void calcSolid(String blockID, ImmutableList<?> states) {
+        Set<String> trueSet = new LinkedHashSet<>();
+        Set<String> falseSet = new LinkedHashSet<>();
+        for (Object state : states) {
+            try {
+                boolean test = (boolean) VAR_LEGACY_SOLID.get(state);
+                String stateString = state.toString();
+                if (stateString.contains("["))
+                    stateString = stateString.substring(stateString.indexOf('['));
+                if (test)
+                    trueSet.add(stateString);
+                else
+                    falseSet.add(stateString);
+            } catch (NullPointerException e) {
+                return;
+            }
+        }
+        if (trueSet.isEmpty())
+            LEGACY_SOLID.put(blockID, false);
+        else if (falseSet.isEmpty())
+            LEGACY_SOLID.put(blockID, true);
+        else {
+            for (String state : trueSet)
+                LEGACY_SOLID_EXCEPT.put(blockID, state, "true");
+            for (String state : falseSet)
+                LEGACY_SOLID_EXCEPT.put(blockID, state, "false");
         }
     }
 
