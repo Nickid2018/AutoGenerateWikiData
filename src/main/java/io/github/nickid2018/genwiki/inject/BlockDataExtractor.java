@@ -118,6 +118,7 @@ public class BlockDataExtractor {
     private static final NumberWikiData DESTROY_TIME = new NumberWikiData();
     private static final BooleanWikiData IGNITE_BY_LAVA = new BooleanWikiData();
     private static final StringWikiData PUSH_REACTION = new StringWikiData();
+    private static final ExceptData PUSH_REACTION_EXCEPT = new ExceptData();
     private static final BooleanWikiData REPLACEABLE = new BooleanWikiData();
     private static final StringListWikiData BREAKING_TOOLS = new StringListWikiData();
 
@@ -153,7 +154,8 @@ public class BlockDataExtractor {
             DESTROY_TIME.put(blockID, destroyTime);
             boolean igniteByLava = (boolean) PROPERTIES_IGNITE_BY_LAVA.get(properties);
             IGNITE_BY_LAVA.put(blockID, igniteByLava);
-            PUSH_REACTION.put(blockID, computePushReaction(block, properties, destroyTime, blockID));
+            if (!blockID.equals("piston") && !blockID.equals("sticky_piston"))
+                PUSH_REACTION.put(blockID, computePushReaction(block, properties, destroyTime, blockID));
             boolean replaceable = (boolean) PROPERTIES_REPLACEABLE.get(properties);
             REPLACEABLE.put(blockID, replaceable);
 
@@ -175,10 +177,13 @@ public class BlockDataExtractor {
             IGNITE_ODDS.put(blockID, igniteOdds);
         }
 
+        PUSH_REACTION_EXCEPT.putUnknown("piston");
+        PUSH_REACTION_EXCEPT.putUnknown("sticky_piston");
+
         InjectedProcess.write(EXPLOSION_RESISTANCE, "block_explosion_resistance.txt");
         InjectedProcess.write(DESTROY_TIME, "block_destroy_time.txt");
         InjectedProcess.write(IGNITE_BY_LAVA, "block_ignite_by_lava.txt");
-        InjectedProcess.write(PUSH_REACTION, "block_push_reaction.txt");
+        InjectedProcess.write(PUSH_REACTION, PUSH_REACTION_EXCEPT, "block_push_reaction.txt");
         InjectedProcess.write(REPLACEABLE, "block_replaceable.txt");
         InjectedProcess.write(REDSTONE_CONDUCTOR, REDSTONE_CONDUCTOR_EXCEPT, "block_redstone_conductor.txt");
         InjectedProcess.write(SUFFOCATING, SUFFOCATING_EXCEPT, "block_suffocating.txt");

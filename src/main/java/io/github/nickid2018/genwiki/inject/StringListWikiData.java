@@ -3,6 +3,7 @@ package io.github.nickid2018.genwiki.inject;
 import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class StringListWikiData implements WikiData {
@@ -11,6 +12,10 @@ public class StringListWikiData implements WikiData {
 
     public void put(String id, List<String> value) {
         data.put(id, value);
+    }
+
+    public void putNew(String id, String value) {
+        data.computeIfAbsent(id, k -> new ArrayList<>()).add(value);
     }
 
     public String output(int indent) {

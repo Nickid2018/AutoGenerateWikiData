@@ -148,8 +148,9 @@ public class FileProcessor {
             className = className.substring(0, className.length() - 6);
             reader.accept(new ClassRemapperFix(writer, remapper), 0);
             byte[] remapped = writer.toByteArray();
-            remapped = postTransform(className, remapped);
-            remappedData.put(ClassUtils.toInternalName(format.getToNamedClass(className).mapName()) + ".class",
+            String classNameRemapped = format.getToNamedClass(className).mapName();
+            remapped = postTransform(classNameRemapped, remapped);
+            remappedData.put(ClassUtils.toInternalName(classNameRemapped) + ".class",
                     remapped);
         }
 
@@ -184,6 +185,31 @@ public class FileProcessor {
             node.accept(writer);
             return writer.toByteArray();
         }
+
+        if (className.equals(Constants.INJECT_SERVER_PROPERTIES)) {
+            ClassReader reader = new ClassReader(classfileBuffer);
+            ClassNode node = new ClassNode();
+            reader.accept(node, 0);
+
+            boolean injected = false;
+            for (int i = 0; i < node.methods.size(); i++) {
+                MethodNode method = node.methods.get(i);
+                if (method.name.equals(Constants.INJECT_SERVER_PROPERTIES_METHOD) && method.desc.equals(Constants.INJECT_SERVER_PROPERTIES_METHOD_DESC)) {
+                    InsnList list = new InsnList();
+                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "io/github/nickid2018/genwiki/inject/InjectedProcess", "preprocessDataPacks", "()Ljava/lang/String;", false));
+                    list.add(new VarInsnNode(Opcodes.ASTORE, 0));
+                    method.instructions.insert(list);
+                    injected = true;
+                    break;
+                }
+            }
+            if (!injected)
+                throw new RuntimeException("Failed to inject!");
+            ClassWriter writer = new ClassWriter(0);
+            node.accept(writer);
+            return writer.toByteArray();
+        }
+
         return classfileBuffer;
     }
 

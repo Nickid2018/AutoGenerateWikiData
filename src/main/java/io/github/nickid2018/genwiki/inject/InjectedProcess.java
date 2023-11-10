@@ -13,6 +13,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class InjectedProcess {
@@ -20,6 +21,7 @@ public class InjectedProcess {
     private static final Map<String, Object> REGISTRY = new HashMap<>();
 
     public static final Class<?> TAG_KEY_CLASS;
+    public static final Class<?> RESOURCE_KEY_CLASS;
 
     public static final MethodHandle ENUM_ORDINAL;
     public static final MethodHandle ENUM_NAME;
@@ -40,11 +42,11 @@ public class InjectedProcess {
             ENUM_ORDINAL = lookup.unreflect(Enum.class.getMethod("ordinal"));
             ENUM_NAME = lookup.unreflect(Enum.class.getMethod("name"));
             Class<?> registryClass = Class.forName("net.minecraft.core.Registry");
-            Class<?> resourceKeyClass = Class.forName("net.minecraft.resources.ResourceKey");
+            RESOURCE_KEY_CLASS = Class.forName("net.minecraft.resources.ResourceKey");
             Class<?> resourceLocationClass = Class.forName("net.minecraft.resources.ResourceLocation");
             REGISTRY_KEY_SET = lookup.unreflect(registryClass.getMethod("registryKeySet"));
-            REGISTRY_GET = lookup.unreflect(registryClass.getMethod("get", resourceKeyClass));
-            RESOURCE_KEY_LOCATION = lookup.unreflect(resourceKeyClass.getMethod("location"));
+            REGISTRY_GET = lookup.unreflect(registryClass.getMethod("get", RESOURCE_KEY_CLASS));
+            RESOURCE_KEY_LOCATION = lookup.unreflect(RESOURCE_KEY_CLASS.getMethod("location"));
             RESOURCE_LOCATION_PATH = lookup.unreflect(resourceLocationClass.getMethod("getPath"));
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -66,6 +68,21 @@ public class InjectedProcess {
     @SuppressWarnings("unused")
     public static void onInjection(Object server) {
         log.info("Trapped server instance: {}", server);
+
+        if (InjectionConstant.OUTPUT_FOLDER.isDirectory())
+            FileUtils.deleteDirectory(InjectionConstant.OUTPUT_FOLDER);
+        InjectionConstant.OUTPUT_FOLDER.mkdirs();
+
+        BlockDataExtractor.extractBlockData();
+        ItemDataExtractor.extractItemData();
+
+        throw new RuntimeException("Program exited, wiki data has been written.");
+    }
+
+    @SuppressWarnings("unused")
+    @SneakyThrows
+    public static String preprocessDataPacks() {
+        log.info("Writing data packs...");
         Class<?> registryClass = Class.forName("net.minecraft.core.registries.BuiltInRegistries");
         Field[] fields = registryClass.getDeclaredFields();
         for (Field field : fields) {
@@ -77,14 +94,13 @@ public class InjectedProcess {
             }
         }
 
-        if (InjectionConstant.OUTPUT_FOLDER.isDirectory())
-            FileUtils.deleteDirectory(InjectionConstant.OUTPUT_FOLDER);
-        InjectionConstant.OUTPUT_FOLDER.mkdirs();
+        Object featureFlagRegistry = Class.forName("net.minecraft.world.flag.FeatureFlags").getField("REGISTRY").get(null);
+        Class<?> featureFlagRegistryClass = Class.forName("net.minecraft.world.flag.FeatureFlagRegistry");
+        Field names = featureFlagRegistryClass.getDeclaredField("names");
+        names.setAccessible(true);
+        Map<?, ?> namesObj = (Map<?, ?>) names.get(featureFlagRegistry);
 
-        BlockDataExtractor.extractBlockData();
-        ItemDataExtractor.extractItemData();
-
-        throw new RuntimeException("Program exited, wiki data has been written.");
+        return namesObj.keySet().stream().map(RESOURCE_LOCATION_PATH::invoke).map(Object::toString).collect(Collectors.joining(","));
     }
 
     public static void write(WikiData data, String file) throws IOException {

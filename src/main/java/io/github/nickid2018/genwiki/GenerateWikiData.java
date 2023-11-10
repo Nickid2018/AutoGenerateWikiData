@@ -110,6 +110,7 @@ public class GenerateWikiData {
         try (FileWriter w = new FileWriter(new File(Constants.RUNTIME_FOLDER, "eula.txt"))) {
             w.write("eula=true");
         }
+        new File(Constants.RUNTIME_FOLDER, "server.properties").createNewFile();
 
         String jarPath = GenerateWikiData.class
             .getProtectionDomain().getCodeSource()
