@@ -51,7 +51,7 @@ public class ItemDataExtractor {
 
     private static final NumberWikiData MAX_STACK_SIZE = new NumberWikiData().setFallback(64);
     private static final StringWikiData RARITY = new StringWikiData().setFallback("COMMON");
-    private static final StringListWikiData CREATIVE_MODE_TABS = new StringListWikiData().setFallback(List.of());
+    private static final StringListWikiData CREATIVE_MODE_TABS = new StringListWikiData();
 
     @SneakyThrows
     public static void extractItemData(Object serverObj) {
