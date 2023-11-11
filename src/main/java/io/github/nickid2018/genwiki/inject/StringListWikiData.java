@@ -16,6 +16,10 @@ public class StringListWikiData implements WikiData {
     @Accessors(chain = true)
     private List<String> fallback;
 
+    public boolean hasKey(String id) {
+        return data.containsKey(id);
+    }
+
     public void put(String id, List<String> value) {
         data.put(id, value);
     }

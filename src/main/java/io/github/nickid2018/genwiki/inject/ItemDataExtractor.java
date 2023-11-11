@@ -106,6 +106,14 @@ public class ItemDataExtractor {
             }
         }
 
+        for (Object itemKey : itemKeySet) {
+            @SourceClass("ResourceLocation")
+            Object itemLocation = InjectedProcess.RESOURCE_KEY_LOCATION.invoke(itemKey);
+            String itemID = InjectedProcess.getResourceLocationPath(itemLocation);
+            if (!CREATIVE_MODE_TABS.hasKey(itemID))
+                CREATIVE_MODE_TABS.put(itemID, List.of());
+        }
+
         InjectedProcess.write(MAX_STACK_SIZE, "item_max_stack_size.txt");
         InjectedProcess.write(RARITY, "item_rarity.txt");
         InjectedProcess.write(CREATIVE_MODE_TABS, "item_creative_mode_tabs.txt");
