@@ -1,6 +1,8 @@
 package io.github.nickid2018.genwiki.inject;
 
 import com.google.common.collect.ImmutableList;
+import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,6 +24,7 @@ public class BlockDataExtractor {
     public static final Class<?> ENTITY_BLOCK_CLASS;
     public static final Class<?> STATE_DEFINITION_CLASS;
     public static final Class<?> BLOCK_STATE_BASE_CLASS;
+    public static final Class<?> CLASS_MAP_COLOR;
 
     @SourceClass("StateDefinition<Block, BlockState>")
     public static final MethodHandle GET_STATE_DEFINITION;
@@ -44,6 +47,8 @@ public class BlockDataExtractor {
     public static final VarHandle PROPERTIES_IS_SUFFOCATING;
     public static final VarHandle PROPERTIES_REQUIRES_CORRECT_TOOL_FOR_DROPS;
     public static final VarHandle VAR_LEGACY_SOLID;
+    public static final VarHandle VAR_MAP_COLOR;
+    public static final VarHandle VAR_MAP_COLOR_ID;
 
     public static final Object TAG_NEEDS_DIAMOND_TOOL;
     public static final Object TAG_NEEDS_IRON_TOOL;
@@ -57,6 +62,8 @@ public class BlockDataExtractor {
     public static final Object TAG_WOOL;
 
     public static final Object FIRE_BLOCK;
+
+    public static final Int2ObjectMap<String> MAP_COLOR_MAP = new Int2ObjectAVLTreeMap<>();
 
 
     static {
@@ -114,7 +121,20 @@ public class BlockDataExtractor {
             GET_IGNITE_ODDS = privateLookup2.findVirtual(CLASS_FIRE, "getIgniteOdds", MethodType.methodType(int.class, BLOCK_STATE_CLASS));
 
             MethodHandles.Lookup privateLookup3 = MethodHandles.privateLookupIn(BLOCK_STATE_BASE_CLASS, lookup);
+            CLASS_MAP_COLOR = Class.forName("net.minecraft.world.level.material.MapColor");
             VAR_LEGACY_SOLID = privateLookup3.findVarHandle(BLOCK_STATE_BASE_CLASS, "legacySolid", boolean.class);
+            VAR_MAP_COLOR = privateLookup3.findVarHandle(BLOCK_STATE_BASE_CLASS, "mapColor", CLASS_MAP_COLOR);
+
+            VAR_MAP_COLOR_ID = lookup.findVarHandle(CLASS_MAP_COLOR, "id", int.class);
+            Field[] fields3 = CLASS_MAP_COLOR.getDeclaredFields();
+            for (Field field : fields3) {
+                if (field.getType() == CLASS_MAP_COLOR) {
+                    Object mapColor = field.get(null);
+                    int id = (int) VAR_MAP_COLOR_ID.get(mapColor);
+                    String name = field.getName();
+                    MAP_COLOR_MAP.put(id, name);
+                }
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -136,6 +156,8 @@ public class BlockDataExtractor {
     private static final NumberWikiData IGNITE_ODDS = new NumberWikiData().setFallback(0);
     private static final BooleanWikiData LEGACY_SOLID = new BooleanWikiData();
     private static final ExceptData LEGACY_SOLID_EXCEPT = new ExceptData();
+    private static final StringWikiData MAP_COLOR = new StringWikiData();
+    private static final ExceptData MAP_COLOR_EXCEPT = new ExceptData();
 
     @SneakyThrows
     public static void extractBlockData() {
@@ -175,6 +197,7 @@ public class BlockDataExtractor {
             makeStatePredicateData(blockID, isSuffocating, states, SUFFOCATING, SUFFOCATING_EXCEPT);
 
             calcSolid(blockID, states);
+            resolveMapColor(blockID, states);
 
             @SourceClass("BlockState")
             Object defaultBlockState = BLOCK_DEFAULT_BLOCK_STATE.invoke(block);
@@ -201,6 +224,7 @@ public class BlockDataExtractor {
         InjectedProcess.write(BURN_ODDS, "block_burn_odds.txt");
         InjectedProcess.write(IGNITE_ODDS, "block_ignite_odds.txt");
         InjectedProcess.write(LEGACY_SOLID, LEGACY_SOLID_EXCEPT, "block_legacy_solid.txt");
+        InjectedProcess.write(MAP_COLOR, MAP_COLOR_EXCEPT, "block_map_color.txt");
     }
 
     private static final String[] PUSH_REACTION_NAMES = new String[]{
@@ -269,18 +293,14 @@ public class BlockDataExtractor {
         Set<String> trueSet = new LinkedHashSet<>();
         Set<String> falseSet = new LinkedHashSet<>();
         for (Object state : states) {
-            try {
-                boolean test = (boolean) VAR_LEGACY_SOLID.get(state);
-                String stateString = state.toString();
-                if (stateString.contains("["))
-                    stateString = stateString.substring(stateString.indexOf('['));
-                if (test)
-                    trueSet.add(stateString);
-                else
-                    falseSet.add(stateString);
-            } catch (NullPointerException e) {
-                return;
-            }
+            boolean test = (boolean) VAR_LEGACY_SOLID.get(state);
+            String stateString = state.toString();
+            if (stateString.contains("["))
+                stateString = stateString.substring(stateString.indexOf('['));
+            if (test)
+                trueSet.add(stateString);
+            else
+                falseSet.add(stateString);
         }
         if (trueSet.isEmpty())
             LEGACY_SOLID.put(blockID, false);
@@ -291,6 +311,28 @@ public class BlockDataExtractor {
                 LEGACY_SOLID_EXCEPT.put(blockID, state, "true");
             for (String state : falseSet)
                 LEGACY_SOLID_EXCEPT.put(blockID, state, "false");
+        }
+    }
+
+    @SneakyThrows
+    private static void resolveMapColor(String blockID, ImmutableList<?> states) {
+        Map<String, List<String>> map = new HashMap<>();
+        for (Object state : states) {
+            int id = (int) VAR_MAP_COLOR_ID.get(VAR_MAP_COLOR.get(state));
+            String stateString = state.toString();
+            if (stateString.contains("["))
+                stateString = stateString.substring(stateString.indexOf('['));
+            String name = MAP_COLOR_MAP.get(id);
+            map.computeIfAbsent(name, k -> new ArrayList<>()).add(stateString);
+        }
+        if (map.size() == 1)
+            MAP_COLOR.put(blockID, map.keySet().iterator().next());
+        else {
+            for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+                String name = entry.getKey();
+                for (String state : entry.getValue())
+                    MAP_COLOR_EXCEPT.put(blockID, state, name);
+            }
         }
     }
 
