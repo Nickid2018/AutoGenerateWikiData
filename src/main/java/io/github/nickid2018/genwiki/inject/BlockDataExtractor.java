@@ -340,6 +340,9 @@ public class BlockDataExtractor {
         if (hasTag(defaultBlockState, TAG_LEAVES) || hasTag(defaultBlockState, TAG_WOOL) || SHEARS_MINEABLES.contains(blockID))
             tools.add(needsCorrectTool ? "shears required" : "shears");
 
+        if (needsCorrectTool && tools.isEmpty())
+            tools.add("null required");
+
         tools.sort(Comparator.naturalOrder());
 
         return tools;
