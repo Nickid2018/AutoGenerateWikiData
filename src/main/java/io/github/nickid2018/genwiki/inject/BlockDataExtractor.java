@@ -46,6 +46,7 @@ public class BlockDataExtractor {
     public static final VarHandle PROPERTIES_IS_REDSTONE_CONDUCTOR;
     public static final VarHandle PROPERTIES_IS_SUFFOCATING;
     public static final VarHandle PROPERTIES_REQUIRES_CORRECT_TOOL_FOR_DROPS;
+    public static final VarHandle PROPERTIES_INSTRUMENT;
     public static final VarHandle VAR_LEGACY_SOLID;
     public static final VarHandle VAR_MAP_COLOR;
     public static final VarHandle VAR_MAP_COLOR_ID;
@@ -85,6 +86,7 @@ public class BlockDataExtractor {
             STATE_DEFINITION_GET_POSSIBLE_STATES = lookup.unreflect(STATE_DEFINITION_CLASS.getMethod("getPossibleStates"));
             BLOCKSTATE_IS = lookup.unreflect(BLOCK_STATE_CLASS.getMethod("is", InjectedProcess.TAG_KEY_CLASS));
 
+            Class<?> NOTE_BLOCK_INSTRUMENT_CLASS = Class.forName("net.minecraft.world.level.block.state.properties.NoteBlockInstrument");
             MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(PROPERTIES_CLASS, lookup);
             PROPERTIES_EXPLOSION_RESISTANCE = privateLookup.findVarHandle(PROPERTIES_CLASS, "explosionResistance", float.class);
             PROPERTIES_DESTROY_TIME = privateLookup.findVarHandle(PROPERTIES_CLASS, "destroyTime", float.class);
@@ -94,6 +96,7 @@ public class BlockDataExtractor {
             PROPERTIES_IS_REDSTONE_CONDUCTOR = privateLookup.findVarHandle(PROPERTIES_CLASS, "isRedstoneConductor", STATE_PREDICATE_CLASS);
             PROPERTIES_IS_SUFFOCATING = privateLookup.findVarHandle(PROPERTIES_CLASS, "isSuffocating", STATE_PREDICATE_CLASS);
             PROPERTIES_REQUIRES_CORRECT_TOOL_FOR_DROPS = privateLookup.findVarHandle(PROPERTIES_CLASS, "requiresCorrectToolForDrops", boolean.class);
+            PROPERTIES_INSTRUMENT = privateLookup.findVarHandle(PROPERTIES_CLASS, "instrument", NOTE_BLOCK_INSTRUMENT_CLASS);
 
             Field[] fields = Class.forName("net.minecraft.tags.BlockTags").getDeclaredFields();
             Map<String, Field> tagFields = new HashMap<>();
@@ -158,6 +161,7 @@ public class BlockDataExtractor {
     private static final ExceptData LEGACY_SOLID_EXCEPT = new ExceptData();
     private static final StringWikiData MAP_COLOR = new StringWikiData();
     private static final ExceptData MAP_COLOR_EXCEPT = new ExceptData();
+    private static final StringWikiData INSTRUMENT = new StringWikiData();
 
     @SneakyThrows
     public static void extractBlockData() {
@@ -188,6 +192,11 @@ public class BlockDataExtractor {
                 PUSH_REACTION.put(blockID, computePushReaction(block, properties, destroyTime, blockID));
             boolean replaceable = (boolean) PROPERTIES_REPLACEABLE.get(properties);
             REPLACEABLE.put(blockID, replaceable);
+            Object instrument = PROPERTIES_INSTRUMENT.get(properties);
+            if (instrument != null) {
+                String instrumentName = (String) InjectedProcess.ENUM_NAME.invoke(instrument);
+                INSTRUMENT.put(blockID, instrumentName);
+            }
 
             @SourceClass("BlockBehaviour$StatePredicate")
             Object isRedstoneConductor = PROPERTIES_IS_REDSTONE_CONDUCTOR.get(properties);
@@ -225,6 +234,7 @@ public class BlockDataExtractor {
         InjectedProcess.write(IGNITE_ODDS, "block_ignite_odds.txt");
         InjectedProcess.write(LEGACY_SOLID, LEGACY_SOLID_EXCEPT, "block_legacy_solid.txt");
         InjectedProcess.write(MAP_COLOR, MAP_COLOR_EXCEPT, "block_map_color.txt");
+        InjectedProcess.write(INSTRUMENT, "block_instrument.txt");
     }
 
     private static final String[] PUSH_REACTION_NAMES = new String[]{
