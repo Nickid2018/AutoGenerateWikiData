@@ -99,14 +99,13 @@ public class InjectedProcess {
         Object featureFlagRegistry = Class.forName("net.minecraft.world.flag.FeatureFlags").getField("REGISTRY").get(null);
         Class<?> featureFlagRegistryClass = Class.forName("net.minecraft.world.flag.FeatureFlagRegistry");
         Field names = featureFlagRegistryClass.getDeclaredField("names");
+        Method fromNames = featureFlagRegistryClass.getDeclaredMethod("fromNames", Iterable.class);
         names.setAccessible(true);
         Map<?, ?> namesObj = (Map<?, ?>) names.get(featureFlagRegistry);
+        Set<?> namesIterable = namesObj.keySet();
 
         String ret =  namesObj.keySet().stream().map(RESOURCE_LOCATION_PATH::invoke).map(Object::toString).collect(Collectors.joining(","));
-        Method methodGetFeatures = Class.forName("net.minecraft.server.dedicated.DedicatedServerProperties")
-                .getDeclaredMethod("getFeatures", String.class);
-        methodGetFeatures.setAccessible(true);
-        featureFlagSet = methodGetFeatures.invoke(null, ret);
+        featureFlagSet = fromNames.invoke(featureFlagRegistry, namesIterable);
 
         return ret;
     }
