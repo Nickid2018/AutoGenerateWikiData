@@ -383,7 +383,7 @@ public class BlockDataExtractor {
             tools.add("pickaxe");
         if (hasTag(defaultBlockState, TAG_MINEABLE_WITH_SHOVEL))
             tools.add("shovel");
-        if (hasTag(defaultBlockState, TAG_SWORD_EFFICIENT) || blockID.equals("cobweb"))
+        if (hasTag(defaultBlockState, TAG_SWORD_EFFICIENT) || blockID.equals("cobweb") || blockID.equals("bamboo"))
             tools.add("sword");
 
         if (tierPrefix != null)
