@@ -1,7 +1,6 @@
 package io.github.nickid2018.genwiki.inject;
 
 import it.unimi.dsi.fastutil.floats.*;
-import lombok.Setter;
 
 import java.util.Set;
 import java.util.TreeSet;

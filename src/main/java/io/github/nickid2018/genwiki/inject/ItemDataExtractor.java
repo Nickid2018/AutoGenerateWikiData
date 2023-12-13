@@ -13,12 +13,19 @@ public class ItemDataExtractor {
     private static final Class<?> ITEM_CLASS;
     private static final Class<?> RARITY_CLASS;
     private static final Class<?> CREATIVE_MODE_TABS_CLASS;
+    private static final Class<?> FOOD_PROPERTIES_CLASS;
 
     private static final MethodHandle ITEM_GET_MAX_STACK_SIZE;
     private static final MethodHandle ITEM_STACK_GET_ITEM;
+    private static final MethodHandle ITEM_GET_MAX_DAMAGE;
+    private static final MethodHandle ITEM_GET_FOOD_PROPERTIES;
+    private static final MethodHandle FOOD_PROPERTIES_NUTRITION;
+    private static final MethodHandle FOOD_PROPERTIES_SATURATION_MODIFIER;
+
     private static final MethodHandle SERVER_OVERWORLD;
     private static final MethodHandle REGISTRY_ACCESS;
     private static final MethodHandle BUILD_TAB_CONTENTS;
+    private static final MethodHandle GET_FUEL;
 
     private static final VarHandle ITEM_RARITY;
     private static final VarHandle CREATIVE_MODE_TAB_DISPLAY_ITEMS;
@@ -29,8 +36,13 @@ public class ItemDataExtractor {
             ITEM_CLASS = Class.forName("net.minecraft.world.item.Item");
             RARITY_CLASS = Class.forName("net.minecraft.world.item.Rarity");
             CREATIVE_MODE_TABS_CLASS = Class.forName("net.minecraft.world.item.CreativeModeTabs");
+            FOOD_PROPERTIES_CLASS = Class.forName("net.minecraft.world.food.FoodProperties");
             Class<?> creativeModeTabClass = Class.forName("net.minecraft.world.item.CreativeModeTab");
             ITEM_GET_MAX_STACK_SIZE = lookup.unreflect(ITEM_CLASS.getMethod("getMaxStackSize"));
+            ITEM_GET_MAX_DAMAGE = lookup.unreflect(ITEM_CLASS.getMethod("getMaxDamage"));
+            ITEM_GET_FOOD_PROPERTIES = lookup.unreflect(ITEM_CLASS.getMethod("getFoodProperties"));
+            FOOD_PROPERTIES_NUTRITION = lookup.unreflect(FOOD_PROPERTIES_CLASS.getMethod("getNutrition"));
+            FOOD_PROPERTIES_SATURATION_MODIFIER = lookup.unreflect(FOOD_PROPERTIES_CLASS.getMethod("getSaturationModifier"));
             MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(ITEM_CLASS, lookup);
             ITEM_RARITY = privateLookup.findVarHandle(ITEM_CLASS, "rarity", RARITY_CLASS);
             MethodHandles.Lookup privateLookup2 = MethodHandles.privateLookupIn(creativeModeTabClass, lookup);
@@ -44,6 +56,8 @@ public class ItemDataExtractor {
             BUILD_TAB_CONTENTS = lookup.unreflect(CREATIVE_MODE_TABS_CLASS.getMethod("tryRebuildTabContents",
                     Class.forName("net.minecraft.world.flag.FeatureFlagSet"), boolean.class,
                     Class.forName("net.minecraft.core.HolderLookup$Provider")));
+            GET_FUEL = lookup.unreflect(
+                    Class.forName("net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity").getMethod("getFuel"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -52,9 +66,15 @@ public class ItemDataExtractor {
     private static final NumberWikiData MAX_STACK_SIZE = new NumberWikiData().setFallback(64);
     private static final StringWikiData RARITY = new StringWikiData().setFallback("COMMON");
     private static final StringListWikiData CREATIVE_MODE_TABS = new StringListWikiData();
+    private static final NumberWikiData BURN_DURATION = new NumberWikiData().setFallback(0);
+    private static final NumberWikiData MAX_DAMAGE = new NumberWikiData().setFallback(0);
+    private static final DoubleNumberWikiData FOOD_PROPERTIES = new DoubleNumberWikiData().setFallback(0, 0).setFallbackNil(true);
 
     @SneakyThrows
+    @SuppressWarnings("unchecked")
     public static void extractItemData(Object serverObj) {
+        @SourceClass("Map<Item, Integer>")
+        Map<?, Integer> fuelMap = (Map<?, Integer>) GET_FUEL.invoke();
         @SourceClass("DefaultedRegistry<Item>")
         Object itemRegistry = InjectedProcess.getRegistry("ITEM");
         @SourceClass("Set<ResourceKey<Item>>")
@@ -69,10 +89,21 @@ public class ItemDataExtractor {
             itemKeyMap.put(item, itemID);
             int maxStackSize = (int) ITEM_GET_MAX_STACK_SIZE.invoke(item);
             MAX_STACK_SIZE.put(itemID, maxStackSize);
+            int maxDamage = (int) ITEM_GET_MAX_DAMAGE.invoke(item);
+            MAX_DAMAGE.put(itemID, maxDamage);
             @SourceClass("Rarity")
             Object rarity = ITEM_RARITY.get(item);
             String rarityName = (String) InjectedProcess.ENUM_NAME.invoke(rarity);
             RARITY.put(itemID, rarityName);
+            BURN_DURATION.put(itemID, fuelMap.getOrDefault(item, 0));
+            @SourceClass("FoodProperties")
+            Object foodProperties = ITEM_GET_FOOD_PROPERTIES.invoke(item);
+            if (foodProperties != null) {
+                int nutrition = (int) FOOD_PROPERTIES_NUTRITION.invoke(foodProperties);
+                float saturationModifier = (float) FOOD_PROPERTIES_SATURATION_MODIFIER.invoke(foodProperties);
+                FOOD_PROPERTIES.put(itemID, nutrition, saturationModifier);
+            } else
+                FOOD_PROPERTIES.put(itemID, 0, 0);
         }
 
         Map<String, Object> creativeModeTabs = new TreeMap<>();
@@ -117,5 +148,8 @@ public class ItemDataExtractor {
         InjectedProcess.write(MAX_STACK_SIZE, "item_max_stack_size.txt");
         InjectedProcess.write(RARITY, "item_rarity.txt");
         InjectedProcess.write(CREATIVE_MODE_TABS, "item_creative_mode_tabs.txt");
+        InjectedProcess.write(BURN_DURATION, "item_burn_duration.txt");
+        InjectedProcess.write(MAX_DAMAGE, "item_max_damage.txt");
+        InjectedProcess.write(FOOD_PROPERTIES, "item_food_properties.txt");
     }
 }
