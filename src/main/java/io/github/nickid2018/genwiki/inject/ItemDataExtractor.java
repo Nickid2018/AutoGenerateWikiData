@@ -21,9 +21,6 @@ public class ItemDataExtractor {
     private static final MethodHandle ITEM_GET_FOOD_PROPERTIES;
     private static final MethodHandle FOOD_PROPERTIES_NUTRITION;
     private static final MethodHandle FOOD_PROPERTIES_SATURATION_MODIFIER;
-
-    private static final MethodHandle SERVER_OVERWORLD;
-    private static final MethodHandle REGISTRY_ACCESS;
     private static final MethodHandle BUILD_TAB_CONTENTS;
     private static final MethodHandle GET_FUEL;
 
@@ -49,10 +46,6 @@ public class ItemDataExtractor {
             CREATIVE_MODE_TAB_DISPLAY_ITEMS = privateLookup2.findVarHandle(creativeModeTabClass, "displayItems", Collection.class);
             Class<?> itemStackClass = Class.forName("net.minecraft.world.item.ItemStack");
             ITEM_STACK_GET_ITEM = lookup.unreflect(itemStackClass.getMethod("getItem"));
-            Class<?> minecraftServerClass = Class.forName("net.minecraft.server.MinecraftServer");
-            SERVER_OVERWORLD = lookup.unreflect(minecraftServerClass.getMethod("overworld"));
-            Class<?> registryAccessClass = Class.forName("net.minecraft.world.level.Level");
-            REGISTRY_ACCESS = lookup.unreflect(registryAccessClass.getMethod("registryAccess"));
             BUILD_TAB_CONTENTS = lookup.unreflect(CREATIVE_MODE_TABS_CLASS.getMethod("tryRebuildTabContents",
                     Class.forName("net.minecraft.world.flag.FeatureFlagSet"), boolean.class,
                     Class.forName("net.minecraft.core.HolderLookup$Provider")));
@@ -115,9 +108,9 @@ public class ItemDataExtractor {
             }
         }
 
-        Object serverOverworld = SERVER_OVERWORLD.invoke(serverObj);
+        Object serverOverworld = InjectedProcess.SERVER_OVERWORLD.invoke(serverObj);
         @SourceClass("RegistryAccess")
-        Object registryAccess = REGISTRY_ACCESS.invoke(serverOverworld);
+        Object registryAccess = InjectedProcess.REGISTRY_ACCESS.invoke(serverOverworld);
         BUILD_TAB_CONTENTS.invoke(InjectedProcess.featureFlagSet, true, registryAccess);
 
         @SourceClass("Registry<CreativeModeTab>")

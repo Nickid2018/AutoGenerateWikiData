@@ -37,6 +37,9 @@ public class InjectedProcess {
     @SourceClass("String")
     public static final MethodHandle RESOURCE_LOCATION_PATH;
 
+    public static final MethodHandle SERVER_OVERWORLD;
+    public static final MethodHandle REGISTRY_ACCESS;
+
     static {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         try {
@@ -50,6 +53,11 @@ public class InjectedProcess {
             REGISTRY_GET = lookup.unreflect(registryClass.getMethod("get", RESOURCE_KEY_CLASS));
             RESOURCE_KEY_LOCATION = lookup.unreflect(RESOURCE_KEY_CLASS.getMethod("location"));
             RESOURCE_LOCATION_PATH = lookup.unreflect(resourceLocationClass.getMethod("getPath"));
+
+            Class<?> minecraftServerClass = Class.forName("net.minecraft.server.MinecraftServer");
+            SERVER_OVERWORLD = lookup.unreflect(minecraftServerClass.getMethod("overworld"));
+            Class<?> registryAccessClass = Class.forName("net.minecraft.world.level.Level");
+            REGISTRY_ACCESS = lookup.unreflect(registryAccessClass.getMethod("registryAccess"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -77,6 +85,8 @@ public class InjectedProcess {
 
         BlockDataExtractor.extractBlockData();
         ItemDataExtractor.extractItemData(server);
+        EntityDataExtractor.extractEntityData(server);
+        EnchantmentDataExtractor.extractEnchantmentData();
 
         throw new RuntimeException("Program exited, wiki data has been written.");
     }
