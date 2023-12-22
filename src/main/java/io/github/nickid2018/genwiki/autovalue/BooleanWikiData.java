@@ -1,6 +1,5 @@
-package io.github.nickid2018.genwiki.inject;
+package io.github.nickid2018.genwiki.autovalue;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 

@@ -17,6 +17,9 @@ public class Constants {
     public static final String INJECT_SERVER_PROPERTIES = "net.minecraft.server.dedicated.DedicatedServerProperties";
     public static final String INJECT_SERVER_PROPERTIES_METHOD = "getDatapackConfig";
     public static final String INJECT_SERVER_PROPERTIES_METHOD_DESC = "(Ljava/lang/String;Ljava/lang/String;)Lnet/minecraft/world/level/DataPackConfig;";
-
-    public static final File DEBUG_CLASS_PATH = new File("injected.class");
+    public static final String INJECT_CHUNK_STATISTICS_METHOD = "tickChildren";
+    public static final String INJECT_CHUNK_STATISTICS_METHOD_DESC = "(Ljava/util/function/BooleanSupplier;)V";
+    public static final String INJECT_REGION_FILE = "net.minecraft.world.level.chunk.storage.RegionFile";
+    public static final String INJECT_REGION_FILE_METHOD = "write";
+    public static final String INJECT_REGION_FILE_METHOD_DESC = "(Lnet/minecraft/world/level/ChunkPos;Ljava/nio/ByteBuffer;)V";
 }

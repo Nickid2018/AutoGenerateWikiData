@@ -23,6 +23,7 @@ public class GenerateWikiData {
             System.exit(1);
         }
         String version = args[0];
+        boolean isChunkStatistics = args.length > 1 && args[1].equalsIgnoreCase("statistics");
         log.info("Generate Wiki Data, Minecraft Version: {}", version);
 
         File serverFile = new File(Constants.SERVER_FOLDER, version + ".jar");
@@ -42,7 +43,7 @@ public class GenerateWikiData {
         if (!remappedFile.exists()) {
             try {
                 log.info("Remapping server jar...");
-                doRemap(serverFile, serverMapping, remappedFile);
+                doRemap(serverFile, serverMapping, remappedFile, isChunkStatistics);
             } catch (Exception e) {
                 log.error("Failed to remap server jar!", e);
                 System.exit(1);
@@ -51,7 +52,7 @@ public class GenerateWikiData {
             log.info("Remapped server jar already exists, skip remapping.");
 
         try {
-            runWikiGenerator(remappedFile.getAbsolutePath(), version);
+            runWikiGenerator(remappedFile.getAbsolutePath());
         } catch (Exception e) {
             log.error("Failed to run wiki generator!", e);
             System.exit(1);
@@ -94,15 +95,15 @@ public class GenerateWikiData {
         log.info("Downloaded server jar mapping to {}", serverMapping.getAbsolutePath());
     }
 
-    private static void doRemap(File input, File mapping, File output) throws Exception {
+    private static void doRemap(File input, File mapping, File output, boolean isChunkStatistics) throws Exception {
         if (!Constants.REMAPPED_FOLDER.exists())
             Constants.REMAPPED_FOLDER.mkdirs();
         MappingFormat format = new MojangMappingFormat(new FileInputStream(mapping));
-        FileProcessor.processServer(input, format, output);
+        FileProcessor.processServer(input, format, output, isChunkStatistics);
         log.info("Remapped server jar to {}", output.getAbsolutePath());
     }
 
-    private static void runWikiGenerator(String file, String version) throws Exception {
+    private static void runWikiGenerator(String file) throws Exception {
         if (Constants.RUNTIME_FOLDER.exists())
             FileUtils.deleteDirectory(Constants.RUNTIME_FOLDER);
         Constants.RUNTIME_FOLDER.mkdirs();
@@ -110,25 +111,30 @@ public class GenerateWikiData {
         try (FileWriter w = new FileWriter(new File(Constants.RUNTIME_FOLDER, "eula.txt"))) {
             w.write("eula=true");
         }
-        new File(Constants.RUNTIME_FOLDER, "server.properties").createNewFile();
-
-        String jarPath = GenerateWikiData.class
-            .getProtectionDomain().getCodeSource()
-            .getLocation().toURI().getPath().substring(1);
+        try (FileWriter w = new FileWriter(new File(Constants.RUNTIME_FOLDER, "server.properties"))) {
+            w.write("max-tick-time=-1");
+        }
 
         ProcessBuilder builder = new ProcessBuilder(
                 "java", "-jar", file, "-nogui"
         );
         builder.directory(Constants.RUNTIME_FOLDER);
-        builder.redirectErrorStream(true);
+        builder.redirectError(ProcessBuilder.Redirect.INHERIT);
         builder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
         log.info("Launch server with command: '{}'", String.join(" ", builder.command()));
 
         Process process = builder.start();
-        process.getOutputStream().write("stop\n".getBytes());
-        process.getOutputStream().flush();
-        process.getOutputStream().close();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if (process.isAlive()) {
+                    process.getOutputStream().write("stop\n".getBytes());
+                    process.getOutputStream().flush();
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }));
         process.waitFor();
     }
 }

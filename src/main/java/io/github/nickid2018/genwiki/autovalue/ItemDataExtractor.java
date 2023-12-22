@@ -1,5 +1,7 @@
-package io.github.nickid2018.genwiki.inject;
+package io.github.nickid2018.genwiki.autovalue;
 
+import io.github.nickid2018.genwiki.inject.InjectedProcess;
+import io.github.nickid2018.genwiki.inject.SourceClass;
 import lombok.SneakyThrows;
 
 import java.lang.invoke.MethodHandle;
@@ -138,11 +140,11 @@ public class ItemDataExtractor {
                 CREATIVE_MODE_TABS.put(itemID, List.of());
         }
 
-        InjectedProcess.write(MAX_STACK_SIZE, "item_max_stack_size.txt");
-        InjectedProcess.write(RARITY, "item_rarity.txt");
-        InjectedProcess.write(CREATIVE_MODE_TABS, "item_creative_mode_tabs.txt");
-        InjectedProcess.write(BURN_DURATION, "item_burn_duration.txt");
-        InjectedProcess.write(MAX_DAMAGE, "item_max_damage.txt");
-        InjectedProcess.write(FOOD_PROPERTIES, "item_food_properties.txt");
+        WikiData.write(MAX_STACK_SIZE, "item_max_stack_size.txt");
+        WikiData.write(RARITY, "item_rarity.txt");
+        WikiData.write(CREATIVE_MODE_TABS, "item_creative_mode_tabs.txt");
+        WikiData.write(BURN_DURATION, "item_burn_duration.txt");
+        WikiData.write(MAX_DAMAGE, "item_max_damage.txt");
+        WikiData.write(FOOD_PROPERTIES, "item_food_properties.txt");
     }
 }

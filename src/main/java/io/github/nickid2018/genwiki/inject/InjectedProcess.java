@@ -1,12 +1,11 @@
 package io.github.nickid2018.genwiki.inject;
 
-import lombok.Generated;
+import io.github.nickid2018.genwiki.autovalue.*;
+import io.github.nickid2018.genwiki.statistic.ChunkStatisticsAnalyzer;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
@@ -24,6 +23,7 @@ public class InjectedProcess {
 
     public static final Class<?> TAG_KEY_CLASS;
     public static final Class<?> RESOURCE_KEY_CLASS;
+    public static final Class<?> MINECRAFT_SERVER_CLASS;
 
     public static final MethodHandle ENUM_ORDINAL;
     public static final MethodHandle ENUM_NAME;
@@ -54,8 +54,8 @@ public class InjectedProcess {
             RESOURCE_KEY_LOCATION = lookup.unreflect(RESOURCE_KEY_CLASS.getMethod("location"));
             RESOURCE_LOCATION_PATH = lookup.unreflect(resourceLocationClass.getMethod("getPath"));
 
-            Class<?> minecraftServerClass = Class.forName("net.minecraft.server.MinecraftServer");
-            SERVER_OVERWORLD = lookup.unreflect(minecraftServerClass.getMethod("overworld"));
+            MINECRAFT_SERVER_CLASS = Class.forName("net.minecraft.server.MinecraftServer");
+            SERVER_OVERWORLD = lookup.unreflect(MINECRAFT_SERVER_CLASS.getMethod("overworld"));
             Class<?> registryAccessClass = Class.forName("net.minecraft.world.level.Level");
             REGISTRY_ACCESS = lookup.unreflect(registryAccessClass.getMethod("registryAccess"));
         } catch (Exception e) {
@@ -74,21 +74,8 @@ public class InjectedProcess {
         return (String) RESOURCE_LOCATION_PATH.invoke(resourceKey);
     }
 
-    @SneakyThrows
-    @SuppressWarnings("unused")
-    public static void onInjection(Object server) {
-        log.info("Trapped server instance: {}", server);
-
-        if (InjectionConstant.OUTPUT_FOLDER.isDirectory())
-            FileUtils.deleteDirectory(InjectionConstant.OUTPUT_FOLDER);
-        InjectionConstant.OUTPUT_FOLDER.mkdirs();
-
-        BlockDataExtractor.extractBlockData();
-        ItemDataExtractor.extractItemData(server);
-        EntityDataExtractor.extractEntityData(server);
-        EnchantmentDataExtractor.extractEnchantmentData();
-
-        throw new RuntimeException("Program exited, wiki data has been written.");
+    public static Object getRegistry(String name) {
+        return REGISTRY.get(name);
     }
 
     @SuppressWarnings("unused")
@@ -120,17 +107,30 @@ public class InjectedProcess {
         return ret;
     }
 
-    public static void write(WikiData data, String file) throws IOException {
-        File outputFile = new File(InjectionConstant.OUTPUT_FOLDER, file);
-        FileUtils.write(outputFile, data.output(1), "UTF-8");
+    @SneakyThrows
+    @SuppressWarnings("unused")
+    public static void extractDataInjection(Object server) {
+        log.info("Trapped server instance: {}", server);
+
+        if (InjectionConstant.OUTPUT_FOLDER.isDirectory())
+            FileUtils.deleteDirectory(InjectionConstant.OUTPUT_FOLDER);
+        InjectionConstant.OUTPUT_FOLDER.mkdirs();
+
+        BlockDataExtractor.extractBlockData();
+        ItemDataExtractor.extractItemData(server);
+        EntityDataExtractor.extractEntityData(server);
+        EnchantmentDataExtractor.extractEnchantmentData();
+
+        throw new RuntimeException("Program exited, wiki data has been written.");
     }
 
-    public static void write(WikiData data, ExceptData exceptData, String file) throws IOException {
-        File outputFile = new File(InjectionConstant.OUTPUT_FOLDER, file);
-        FileUtils.write(outputFile, data.output(1) + "\n=== Except Data ===\n" + exceptData.output(), "UTF-8");
-    }
+    @SneakyThrows
+    @SuppressWarnings("unused")
+    public static void chunkStatisticsInjection(Object server) {
+        if (InjectionConstant.OUTPUT_FOLDER.isDirectory())
+            FileUtils.deleteDirectory(InjectionConstant.OUTPUT_FOLDER);
+        InjectionConstant.OUTPUT_FOLDER.mkdirs();
 
-    public static Object getRegistry(String name) {
-        return REGISTRY.get(name);
+        ChunkStatisticsAnalyzer.analyze(server);
     }
 }

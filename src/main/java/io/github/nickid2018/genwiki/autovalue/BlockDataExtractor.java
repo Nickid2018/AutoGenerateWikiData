@@ -1,6 +1,8 @@
-package io.github.nickid2018.genwiki.inject;
+package io.github.nickid2018.genwiki.autovalue;
 
 import com.google.common.collect.ImmutableList;
+import io.github.nickid2018.genwiki.inject.InjectedProcess;
+import io.github.nickid2018.genwiki.inject.SourceClass;
 import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import lombok.SneakyThrows;
@@ -222,19 +224,19 @@ public class BlockDataExtractor {
         PUSH_REACTION_EXCEPT.putUnknown("piston");
         PUSH_REACTION_EXCEPT.putUnknown("sticky_piston");
 
-        InjectedProcess.write(EXPLOSION_RESISTANCE, "block_explosion_resistance.txt");
-        InjectedProcess.write(DESTROY_TIME, "block_destroy_time.txt");
-        InjectedProcess.write(IGNITE_BY_LAVA, "block_ignite_by_lava.txt");
-        InjectedProcess.write(PUSH_REACTION, PUSH_REACTION_EXCEPT, "block_push_reaction.txt");
-        InjectedProcess.write(REPLACEABLE, "block_replaceable.txt");
-        InjectedProcess.write(REDSTONE_CONDUCTOR, REDSTONE_CONDUCTOR_EXCEPT, "block_redstone_conductor.txt");
-        InjectedProcess.write(SUFFOCATING, SUFFOCATING_EXCEPT, "block_suffocating.txt");
-        InjectedProcess.write(BREAKING_TOOLS, "block_breaking_tools.txt");
-        InjectedProcess.write(BURN_ODDS, "block_burn_odds.txt");
-        InjectedProcess.write(IGNITE_ODDS, "block_ignite_odds.txt");
-        InjectedProcess.write(LEGACY_SOLID, LEGACY_SOLID_EXCEPT, "block_legacy_solid.txt");
-        InjectedProcess.write(MAP_COLOR, MAP_COLOR_EXCEPT, "block_map_color.txt");
-        InjectedProcess.write(INSTRUMENT, "block_instrument.txt");
+        WikiData.write(EXPLOSION_RESISTANCE, "block_explosion_resistance.txt");
+        WikiData.write(DESTROY_TIME, "block_destroy_time.txt");
+        WikiData.write(IGNITE_BY_LAVA, "block_ignite_by_lava.txt");
+        WikiData.write(PUSH_REACTION, PUSH_REACTION_EXCEPT, "block_push_reaction.txt");
+        WikiData.write(REPLACEABLE, "block_replaceable.txt");
+        WikiData.write(REDSTONE_CONDUCTOR, REDSTONE_CONDUCTOR_EXCEPT, "block_redstone_conductor.txt");
+        WikiData.write(SUFFOCATING, SUFFOCATING_EXCEPT, "block_suffocating.txt");
+        WikiData.write(BREAKING_TOOLS, "block_breaking_tools.txt");
+        WikiData.write(BURN_ODDS, "block_burn_odds.txt");
+        WikiData.write(IGNITE_ODDS, "block_ignite_odds.txt");
+        WikiData.write(LEGACY_SOLID, LEGACY_SOLID_EXCEPT, "block_legacy_solid.txt");
+        WikiData.write(MAP_COLOR, MAP_COLOR_EXCEPT, "block_map_color.txt");
+        WikiData.write(INSTRUMENT, "block_instrument.txt");
     }
 
     private static final String[] PUSH_REACTION_NAMES = new String[]{

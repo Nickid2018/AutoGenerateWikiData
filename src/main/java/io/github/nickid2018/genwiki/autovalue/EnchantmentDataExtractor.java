@@ -1,5 +1,7 @@
-package io.github.nickid2018.genwiki.inject;
+package io.github.nickid2018.genwiki.autovalue;
 
+import io.github.nickid2018.genwiki.inject.InjectedProcess;
+import io.github.nickid2018.genwiki.inject.SourceClass;
 import lombok.SneakyThrows;
 
 import java.lang.invoke.MethodHandle;
@@ -121,11 +123,11 @@ public class EnchantmentDataExtractor {
             ENCHANTMENT_CATEGORY_DATA.put(name, (String) InjectedProcess.ENUM_NAME.invoke(ENCHANTMENT_CATEGORY.get(enchantment)));
         }
 
-        InjectedProcess.write(ENCHANTMENT_RARITY, "enchantment_rarity.txt");
-        InjectedProcess.write(ENCHANTMENT_MAX_LEVEL, "enchantment_max_level.txt");
-        InjectedProcess.write(ENCHANTMENT_FLAG, "enchantment_flag.txt");
-        InjectedProcess.write(ENCHANTMENT_INCOMPATIBLE, "enchantment_incompatible.txt");
-        InjectedProcess.write(ENCHANTMENT_CATEGORY_DATA, "enchantment_category.txt");
-        InjectedProcess.write(ENCHANTMENT_COST, "enchantment_cost.txt");
+        WikiData.write(ENCHANTMENT_RARITY, "enchantment_rarity.txt");
+        WikiData.write(ENCHANTMENT_MAX_LEVEL, "enchantment_max_level.txt");
+        WikiData.write(ENCHANTMENT_FLAG, "enchantment_flag.txt");
+        WikiData.write(ENCHANTMENT_INCOMPATIBLE, "enchantment_incompatible.txt");
+        WikiData.write(ENCHANTMENT_CATEGORY_DATA, "enchantment_category.txt");
+        WikiData.write(ENCHANTMENT_COST, "enchantment_cost.txt");
     }
 }

@@ -1,6 +1,6 @@
 package io.github.nickid2018.mcde.remapper;
 
-import io.github.nickid2018.genwiki.*;
+import io.github.nickid2018.genwiki.Constants;
 import io.github.nickid2018.mcde.format.MappingClassData;
 import io.github.nickid2018.mcde.format.MappingFormat;
 import io.github.nickid2018.mcde.util.ClassUtils;
@@ -27,7 +27,7 @@ import java.util.zip.ZipOutputStream;
 
 public class FileProcessor {
 
-    public static void processServer(File fileInput, MappingFormat remapper, File output) throws Exception {
+    public static void processServer(File fileInput, MappingFormat remapper, File output, boolean chunkStatistics) throws Exception {
         ZipFile file = new ZipFile(fileInput);
         String versionData = IOUtils.toString(
                 file.getInputStream(file.getEntry("META-INF/versions.list")), StandardCharsets.UTF_8);
@@ -39,7 +39,7 @@ public class FileProcessor {
                 new FileOutputStream(tempZip));
         checkIntegrity(tempZip.toPath(), extractData[0]);
         try (ZipFile server = new ZipFile(tempZip)) {
-            process(server, remapper, tempRemapped, true);
+            process(server, remapper, tempRemapped, chunkStatistics);
         }
         tempZip.delete();
 
@@ -85,10 +85,10 @@ public class FileProcessor {
         return result.toString();
     }
 
-    public static void process(ZipFile file, MappingFormat remapper, File output, boolean server) throws Exception {
+    public static void process(ZipFile file, MappingFormat remapper, File output, boolean chunkStatistics) throws Exception {
         addPlainClasses(file, remapper);
         generateInheritTree(file, remapper);
-        runPack(output, remapAllClasses(file, remapper.getToNamedMapper(), remapper, server));
+        runPack(output, remapAllClasses(file, remapper.getToNamedMapper(), remapper, chunkStatistics), chunkStatistics);
     }
 
     public static void addPlainClasses(ZipFile file, MappingFormat format) throws Exception {
@@ -127,7 +127,8 @@ public class FileProcessor {
         }
     }
 
-    public static Map<String, byte[]> remapAllClasses(ZipFile file, ASMRemapper remapper, MappingFormat format, boolean server)
+    public static Map<String, byte[]> remapAllClasses(ZipFile file, ASMRemapper remapper,
+                                                      MappingFormat format, boolean chunkStatistics)
             throws IOException {
         Map<String, byte[]> remappedData = new HashMap<>();
 
@@ -149,32 +150,69 @@ public class FileProcessor {
             reader.accept(new ClassRemapperFix(writer, remapper), 0);
             byte[] remapped = writer.toByteArray();
             String classNameRemapped = format.getToNamedClass(className).mapName();
-            remapped = postTransform(classNameRemapped, remapped);
+            remapped = postTransform(classNameRemapped, remapped, chunkStatistics);
             remappedData.put(ClassUtils.toInternalName(classNameRemapped) + ".class",
                     remapped);
         }
 
         remappedData.put("META-INF/MANIFEST.MF",
-                ("Manifest-Version: 1.0\r\nMain-Class: " +
-                        (server ? "net.minecraft.server.Main" : "net.minecraft.client.main.Main")).getBytes());
+                "Manifest-Version: 1.0\r\nMain-Class: net.minecraft.server.Main".getBytes());
 
         return remappedData;
     }
 
-    public static byte[] postTransform(String className, byte[] classfileBuffer) {
+    public static byte[] postTransform(String className, byte[] classFileBuffer, boolean chunkStatistics) {
         if (className.equals(Constants.INJECT_POINT_CLASS)) {
-            ClassReader reader = new ClassReader(classfileBuffer);
+            ClassReader reader = new ClassReader(classFileBuffer);
             ClassNode node = new ClassNode();
             reader.accept(node, 0);
 
             boolean injected = false;
             for (int i = 0; i < node.methods.size(); i++) {
                 MethodNode method = node.methods.get(i);
-                if (method.name.equals(Constants.INJECT_POINT_METHOD) && method.desc.equals(Constants.INJECT_POINT_METHOD_DESC)) {
+                if (!chunkStatistics && method.name.equals(Constants.INJECT_POINT_METHOD)
+                        && method.desc.equals(Constants.INJECT_POINT_METHOD_DESC)) {
                     InsnList list = new InsnList();
                     list.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "io/github/nickid2018/genwiki/inject/InjectedProcess", "onInjection", "(Ljava/lang/Object;)V", false));
+                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                            "io/github/nickid2018/genwiki/inject/InjectedProcess", "extractDataInjection",
+                            "(Ljava/lang/Object;)V", false));
                     method.instructions.insert(list);
+                    injected = true;
+                    break;
+                }
+                if (chunkStatistics && method.name.equals(Constants.INJECT_CHUNK_STATISTICS_METHOD)
+                        && method.desc.equals(Constants.INJECT_CHUNK_STATISTICS_METHOD_DESC)) {
+                    InsnList list = new InsnList();
+                    list.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                            "io/github/nickid2018/genwiki/inject/InjectedProcess", "chunkStatisticsInjection",
+                            "(Ljava/lang/Object;)V", false));
+                    list.add(method.instructions);
+                    method.instructions = list;
+                    injected = true;
+                    break;
+                }
+            }
+            if (!injected)
+                throw new RuntimeException("Failed to inject!");
+            ClassWriter writer = new ClassWriter(0);
+            node.accept(writer);
+            return writer.toByteArray();
+        }
+
+        if (className.equals(Constants.INJECT_REGION_FILE)) {
+            ClassReader reader = new ClassReader(classFileBuffer);
+            ClassNode node = new ClassNode();
+            reader.accept(node, 0);
+
+            boolean injected = false;
+            for (int i = 0; i < node.methods.size(); i++) {
+                MethodNode method = node.methods.get(i);
+                if (method.name.equals(Constants.INJECT_REGION_FILE_METHOD) && method.desc.equals(Constants.INJECT_REGION_FILE_METHOD_DESC)) {
+                    InsnList list = new InsnList();
+                    list.add(new InsnNode(Opcodes.RETURN));
+                    method.instructions = list;
                     injected = true;
                     break;
                 }
@@ -187,16 +225,19 @@ public class FileProcessor {
         }
 
         if (className.equals(Constants.INJECT_SERVER_PROPERTIES)) {
-            ClassReader reader = new ClassReader(classfileBuffer);
+            ClassReader reader = new ClassReader(classFileBuffer);
             ClassNode node = new ClassNode();
             reader.accept(node, 0);
 
             boolean injected = false;
             for (int i = 0; i < node.methods.size(); i++) {
                 MethodNode method = node.methods.get(i);
-                if (method.name.equals(Constants.INJECT_SERVER_PROPERTIES_METHOD) && method.desc.equals(Constants.INJECT_SERVER_PROPERTIES_METHOD_DESC)) {
+                if (method.name.equals(Constants.INJECT_SERVER_PROPERTIES_METHOD) &&
+                        method.desc.equals(Constants.INJECT_SERVER_PROPERTIES_METHOD_DESC)) {
                     InsnList list = new InsnList();
-                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "io/github/nickid2018/genwiki/inject/InjectedProcess", "preprocessDataPacks", "()Ljava/lang/String;", false));
+                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                            "io/github/nickid2018/genwiki/inject/InjectedProcess", "preprocessDataPacks",
+                            "()Ljava/lang/String;", false));
                     list.add(new VarInsnNode(Opcodes.ASTORE, 0));
                     method.instructions.insert(list);
                     injected = true;
@@ -210,10 +251,10 @@ public class FileProcessor {
             return writer.toByteArray();
         }
 
-        return classfileBuffer;
+        return classFileBuffer;
     }
 
-    public static void runPack(File dest, Map<String, byte[]> map) throws Exception {
+    public static void runPack(File dest, Map<String, byte[]> map, boolean chunkStatistics) throws Exception {
         ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(dest.toPath()));
         for (String entry : map.keySet()) {
             ZipEntry zipEntry = new ZipEntry(entry);
@@ -224,10 +265,10 @@ public class FileProcessor {
         JarFile thisJar = new JarFile(FileProcessor.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
         for (Enumeration<? extends ZipEntry> it = thisJar.entries(); it.hasMoreElements(); ) {
             ZipEntry entry = it.nextElement();
-            if (entry.getName().contains("inject")) {
-                zos.putNextEntry(new ZipEntry(entry.getName()));
-                IOUtils.copy(thisJar.getInputStream(entry), zos);
-            }
+            if (entry.getName().startsWith("META-INF") || entry.getName().contains("log4j2.xml"))
+                continue;
+            zos.putNextEntry(new ZipEntry(entry.getName()));
+            IOUtils.copy(thisJar.getInputStream(entry), zos);
         }
 
         zos.close();

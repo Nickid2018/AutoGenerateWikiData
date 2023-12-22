@@ -1,5 +1,7 @@
-package io.github.nickid2018.genwiki.inject;
+package io.github.nickid2018.genwiki.autovalue;
 
+import io.github.nickid2018.genwiki.inject.InjectedProcess;
+import io.github.nickid2018.genwiki.inject.SourceClass;
 import lombok.SneakyThrows;
 
 import java.lang.invoke.MethodHandle;
@@ -82,7 +84,7 @@ public class EntityDataExtractor {
                 MOB_TYPE.put(entityID, "NON_LIVING_ENTITY");
         }
 
-        InjectedProcess.write(MOB_CATEGORY, "entity_mob_category.txt");
-        InjectedProcess.write(MOB_TYPE, "entity_mob_type.txt");
+        WikiData.write(MOB_CATEGORY, "entity_mob_category.txt");
+        WikiData.write(MOB_TYPE, "entity_mob_type.txt");
     }
 }
