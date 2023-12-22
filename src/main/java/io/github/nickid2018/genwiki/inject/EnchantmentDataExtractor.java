@@ -54,7 +54,7 @@ public class EnchantmentDataExtractor {
     public static final StringWikiData ENCHANTMENT_FLAG = new StringWikiData();
     public static final StringListWikiData ENCHANTMENT_INCOMPATIBLE = new StringListWikiData();
     public static final StringWikiData ENCHANTMENT_CATEGORY_DATA = new StringWikiData();
-    public static final SubStringMapWikiData ENCHANTMENT_COST = new SubStringMapWikiData();
+    public static final NumberPairMapWikiData ENCHANTMENT_COST = new NumberPairMapWikiData();
 
     @SneakyThrows
     private static String getRegistryName(Object enchantment) {
@@ -115,7 +115,7 @@ public class EnchantmentDataExtractor {
             for (int i = 1; i <= maxLevel; i++) {
                 int minCost = (int) ENCHANTMENT_GET_MIN_COST.invoke(enchantment, i);
                 int maxCost = (int) ENCHANTMENT_GET_MAX_COST.invoke(enchantment, i);
-                ENCHANTMENT_COST.putNew(name, String.valueOf(i), minCost + "-" + maxCost);
+                ENCHANTMENT_COST.putNew(name, minCost, maxCost);
             }
 
             ENCHANTMENT_CATEGORY_DATA.put(name, (String) InjectedProcess.ENUM_NAME.invoke(ENCHANTMENT_CATEGORY.get(enchantment)));

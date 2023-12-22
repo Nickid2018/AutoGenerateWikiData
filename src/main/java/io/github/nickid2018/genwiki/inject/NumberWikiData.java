@@ -24,7 +24,7 @@ public class NumberWikiData implements WikiData {
         groups.computeIfAbsent(value, k -> new TreeSet<>()).add(id);
     }
 
-    private String formatValue(float value) {
+    public static String formatValue(float value) {
         String formatted = String.format("%.3f", value);
         if (formatted.contains("."))
             while (formatted.endsWith("0"))
