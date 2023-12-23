@@ -249,6 +249,112 @@ public class FileProcessor {
             return writer.toByteArray();
         }
 
+        if (className.equals(Constants.INJECT_CHUNK_STATUS)) {
+            ClassReader reader = new ClassReader(classFileBuffer);
+            ClassNode node = new ClassNode();
+            reader.accept(node, 0);
+
+            int injectedCount = 0;
+            for (int i = 0; i < node.methods.size(); i++) {
+                MethodNode method = node.methods.get(i);
+                if (method.name.equals(Constants.INJECT_CHUNK_STATUS_METHOD) &&
+                        method.desc.equals(Constants.INJECT_CHUNK_STATUS_METHOD_DESC)) {
+                    InsnList list = new InsnList();
+                    list.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                            "com/mojang/datafixers/util/Either", "left",
+                            "(Ljava/lang/Object;)Lcom/mojang/datafixers/util/Either;", false));
+                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                            "java/util/concurrent/CompletableFuture", "completedFuture",
+                            "(Ljava/lang/Object;)Ljava/util/concurrent/CompletableFuture;", false));
+                    list.add(new InsnNode(Opcodes.ARETURN));
+                    method.instructions = list;
+                    injectedCount++;
+                }
+                if (method.name.equals(Constants.INJECT_CHUNK_STATUS_METHOD2) &&
+                        method.desc.equals(Constants.INJECT_CHUNK_STATUS_METHOD_DESC)) {
+                    InsnList list = new InsnList();
+                    list.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                    list.add(new InsnNode(Opcodes.DUP));
+                    list.add(new InsnNode(Opcodes.ICONST_1));
+                    list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
+                            "net/minecraft/world/level/chunk/ChunkAccess", "setLightCorrect","(Z)V", false));
+                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                            "com/mojang/datafixers/util/Either", "left",
+                            "(Ljava/lang/Object;)Lcom/mojang/datafixers/util/Either;", false));
+                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
+                            "java/util/concurrent/CompletableFuture", "completedFuture",
+                            "(Ljava/lang/Object;)Ljava/util/concurrent/CompletableFuture;", false));
+                    list.add(new InsnNode(Opcodes.ARETURN));
+                    method.instructions = list;
+                    injectedCount++;
+                }
+            }
+            if (injectedCount != 2)
+                throw new RuntimeException("Failed to inject!");
+            ClassWriter writer = new ClassWriter(0);
+            node.accept(writer);
+            return writer.toByteArray();
+        }
+
+        if (className.equals(Constants.INJECT_PROTO_CHUNK)) {
+            ClassReader reader = new ClassReader(classFileBuffer);
+            ClassNode node = new ClassNode();
+            reader.accept(node, 0);
+
+            int injectedCount = 0;
+            for (int i = 0; i < node.methods.size(); i++) {
+                MethodNode method = node.methods.get(i);
+                if (method.name.equals(Constants.INJECT_PROTO_CHUNK_METHOD) &&
+                        method.desc.equals(Constants.INJECT_PROTO_CHUNK_METHOD_DESC)) {
+                    AbstractInsnNode isOrAfter = null;
+                    for (int j = 0; j < method.instructions.size(); j++) {
+                        AbstractInsnNode insn = method.instructions.get(j);
+                        if (insn.getOpcode() == Opcodes.INVOKEVIRTUAL) {
+                            MethodInsnNode min = (MethodInsnNode) insn;
+                            if (min.name.equals("isOrAfter")) {
+                                isOrAfter = insn;
+                                break;
+                            }
+                        }
+                    }
+                    InsnList list = new InsnList();
+                    list.add(new InsnNode(Opcodes.POP));
+                    list.add(new InsnNode(Opcodes.ICONST_0));
+                    method.instructions.insert(isOrAfter, list);
+                    injectedCount++;
+                }
+            }
+            if (injectedCount != 1)
+                throw new RuntimeException("Failed to inject!");
+            ClassWriter writer = new ClassWriter(0);
+            node.accept(writer);
+            return writer.toByteArray();
+        }
+
+        if (className.equals(Constants.INJECT_NOISE_BASED_CHUNK_GENERATOR)) {
+            ClassReader reader = new ClassReader(classFileBuffer);
+            ClassNode node = new ClassNode();
+            reader.accept(node, 0);
+
+            int injectedCount = 0;
+            for (int i = 0; i < node.methods.size(); i++) {
+                MethodNode method = node.methods.get(i);
+                if (method.name.equals(Constants.INJECT_NOISE_BASED_CHUNK_GENERATOR_METHOD) &&
+                        method.desc.equals(Constants.INJECT_NOISE_BASED_CHUNK_GENERATOR_METHOD_DESC)) {
+                    InsnList list = new InsnList();
+                    list.add(new InsnNode(Opcodes.RETURN));
+                    method.instructions = list;
+                    injectedCount++;
+                }
+            }
+            if (injectedCount != 1)
+                throw new RuntimeException("Failed to inject!");
+            ClassWriter writer = new ClassWriter(0);
+            node.accept(writer);
+            return writer.toByteArray();
+        }
+
         if (className.equals(Constants.INJECT_SERVER_PROPERTIES)) {
             ClassReader reader = new ClassReader(classFileBuffer);
             ClassNode node = new ClassNode();

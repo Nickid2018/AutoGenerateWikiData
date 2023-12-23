@@ -35,10 +35,11 @@ public class ChunkStatisticsAnalyzer {
     public static final Class<?> EITHER_CLASS;
     public static final Class<?> BLOCK_STATE_BASE_CLASS;
 
-    public static final Object CHUNK_STATUS_FEATURES;
+    public static final Object CHUNK_STATUS_FULL;
 
     public static final MethodHandle TICK_RATE_MANAGER;
     public static final MethodHandle SET_FROZEN;
+    public static final MethodHandle SET_TICK_RATE;
     public static final MethodHandle DIMENSION;
     public static final MethodHandle GET_ALL_LEVELS;
     public static final MethodHandle GET_CHUNK_SOURCE;
@@ -77,11 +78,12 @@ public class ChunkStatisticsAnalyzer {
             EITHER_CLASS = Class.forName("com.mojang.datafixers.util.Either");
             BLOCK_STATE_BASE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase");
 
-            CHUNK_STATUS_FEATURES = CHUNK_STATUS_CLASS.getField("FEATURES").get(null);
+            CHUNK_STATUS_FULL = CHUNK_STATUS_CLASS.getField("FULL").get(null);
 
             MethodHandles.Lookup lookup = MethodHandles.lookup();
             TICK_RATE_MANAGER = lookup.unreflect(InjectedProcess.MINECRAFT_SERVER_CLASS.getMethod("tickRateManager"));
             SET_FROZEN = lookup.unreflect(SERVER_TICK_RATE_MANAGER_CLASS.getMethod("setFrozen", boolean.class));
+            SET_TICK_RATE = lookup.unreflect(SERVER_TICK_RATE_MANAGER_CLASS.getMethod("setTickRate", float.class));
             DIMENSION = lookup.unreflect(LEVEL_CLASS.getMethod("dimension"));
             GET_ALL_LEVELS = lookup.unreflect(InjectedProcess.MINECRAFT_SERVER_CLASS.getMethod("getAllLevels"));
             GET_CHUNK_SOURCE = lookup.unreflect(SERVER_LEVEL_CLASS.getMethod("getChunkSource"));
@@ -114,6 +116,7 @@ public class ChunkStatisticsAnalyzer {
     public static void analyze(Object server) {
         if (!initialized) {
             Object tickRateManager = TICK_RATE_MANAGER.invoke(server);
+            SET_TICK_RATE.invoke(tickRateManager, 1000000f);
             SET_FROZEN.invoke(tickRateManager, true);
             levels = StreamSupport.stream(((Iterable<?>) GET_ALL_LEVELS.invoke(server)).spliterator(), false).collect(Collectors.toList());
             for (Object level : levels) {
@@ -161,7 +164,7 @@ public class ChunkStatisticsAnalyzer {
                     int x = RANDOM.nextInt(1000000) - 500000;
                     int z = RANDOM.nextInt(1000000) - 500000;
                     CompletableFuture<?> future = (CompletableFuture<?>) GET_CHUNK_FUTURE.invoke(chunkSource, x, z,
-                            CHUNK_STATUS_FEATURES, true);
+                            CHUNK_STATUS_FULL, true);
                     futures.add(future);
                     submitted++;
                 }
@@ -213,7 +216,7 @@ public class ChunkStatisticsAnalyzer {
             count++;
 
             Object status = GET_STATUS.invoke(chunk);
-            if (status != CHUNK_STATUS_FEATURES) {
+            if (status != CHUNK_STATUS_FULL) {
                 System.out.println("Chunk status is not features, is " + status + ", skipping.");
                 continue;
             }
