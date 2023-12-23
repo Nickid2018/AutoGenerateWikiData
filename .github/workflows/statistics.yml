@@ -1,0 +1,42 @@
+name: Create Block Statistics
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to create'
+        required: true
+      chunk_total:
+        description: 'Total number of chunks to create'
+        required: true
+      batch_size:
+        description: 'Number of chunks to create in one batch'
+        required: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Create data
+        env:
+          MAKE_VERSION: ${{ github.event.inputs.version }}
+          CHUNK_TOTAL: ${{ github.event.inputs.chunk_total }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size }}
+        run: |
+          chmod +x gradlew
+          ./gradlew runStatistics
+
+      - name: Upload data
+        uses: actions/upload-artifact@v2
+        with:
+          name: wiki-data
+          path: run/runtime/*_blockCount.json
