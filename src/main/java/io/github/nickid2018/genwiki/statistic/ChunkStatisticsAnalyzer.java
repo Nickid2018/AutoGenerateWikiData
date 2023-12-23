@@ -21,6 +21,9 @@ import java.util.stream.StreamSupport;
 
 public class ChunkStatisticsAnalyzer {
 
+    public static final int BATCH_SIZE;
+    public static final int CHUNK_TOTAL;
+
     public static final Class<?> SERVER_TICK_RATE_MANAGER_CLASS;
     public static final Class<?> LEVEL_CLASS;
     public static final Class<?> SERVER_LEVEL_CLASS;
@@ -50,6 +53,19 @@ public class ChunkStatisticsAnalyzer {
 
     static {
         try {
+            String batchSizeStr = System.getenv("BATCH_SIZE");
+            if (batchSizeStr != null)
+                BATCH_SIZE = Integer.parseInt(batchSizeStr);
+            else
+                BATCH_SIZE = 4;
+            System.out.println("Batch size: " + BATCH_SIZE);
+            String chunkTotalStr = System.getenv("CHUNK_TOTAL");
+            if (chunkTotalStr != null)
+                CHUNK_TOTAL = Integer.parseInt(chunkTotalStr);
+            else
+                CHUNK_TOTAL = 25000;
+            System.out.println("Chunk total: " + CHUNK_TOTAL);
+
             SERVER_TICK_RATE_MANAGER_CLASS = Class.forName("net.minecraft.server.ServerTickRateManager");
             LEVEL_CLASS = Class.forName("net.minecraft.world.level.Level");
             SERVER_LEVEL_CLASS = Class.forName("net.minecraft.server.level.ServerLevel");
@@ -93,9 +109,6 @@ public class ChunkStatisticsAnalyzer {
     private static final Map<Object, Thread> THREAD_MAP = new HashMap<>();
     private static final Map<Object, Queue<Object>> CREATED_CHUNKS = new HashMap<>();
     private static final Random RANDOM = new Random();
-
-    public static final int BATCH_SIZE = 4;
-    public static final int CHUNK_TOTAL = 10;
 
     @SneakyThrows
     public static void analyze(Object server) {
