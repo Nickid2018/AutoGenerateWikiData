@@ -10,6 +10,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,7 @@ public class InjectedProcess {
     public static final MethodHandle REGISTRY_KEY_SET;
     @SourceClass("T")
     public static final MethodHandle REGISTRY_GET;
+    public static final MethodHandle REGISTRY_GET_KEY;
     @SourceClass("ResourceLocation")
     public static final MethodHandle RESOURCE_KEY_LOCATION;
     @SourceClass("String")
@@ -39,6 +41,8 @@ public class InjectedProcess {
 
     public static final MethodHandle SERVER_OVERWORLD;
     public static final MethodHandle REGISTRY_ACCESS;
+
+    public static final Path NULL_PATH;
 
     static {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -51,6 +55,7 @@ public class InjectedProcess {
             Class<?> resourceLocationClass = Class.forName("net.minecraft.resources.ResourceLocation");
             REGISTRY_KEY_SET = lookup.unreflect(registryClass.getMethod("registryKeySet"));
             REGISTRY_GET = lookup.unreflect(registryClass.getMethod("get", RESOURCE_KEY_CLASS));
+            REGISTRY_GET_KEY = lookup.unreflect(registryClass.getMethod("getKey", Object.class));
             RESOURCE_KEY_LOCATION = lookup.unreflect(RESOURCE_KEY_CLASS.getMethod("location"));
             RESOURCE_LOCATION_PATH = lookup.unreflect(resourceLocationClass.getMethod("getPath"));
 
@@ -58,6 +63,11 @@ public class InjectedProcess {
             SERVER_OVERWORLD = lookup.unreflect(MINECRAFT_SERVER_CLASS.getMethod("overworld"));
             Class<?> registryAccessClass = Class.forName("net.minecraft.world.level.Level");
             REGISTRY_ACCESS = lookup.unreflect(registryAccessClass.getMethod("registryAccess"));
+
+            if (System.getProperty("os.name").toLowerCase().contains("win"))
+                NULL_PATH = Path.of("nul");
+            else
+                NULL_PATH = Path.of("/dev/null");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

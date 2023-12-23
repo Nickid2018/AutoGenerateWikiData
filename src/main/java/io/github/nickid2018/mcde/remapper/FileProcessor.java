@@ -206,18 +206,43 @@ public class FileProcessor {
             ClassNode node = new ClassNode();
             reader.accept(node, 0);
 
-            boolean injected = false;
+            int injectedCount = 0;
             for (int i = 0; i < node.methods.size(); i++) {
                 MethodNode method = node.methods.get(i);
-                if (method.name.equals(Constants.INJECT_REGION_FILE_METHOD) && method.desc.equals(Constants.INJECT_REGION_FILE_METHOD_DESC)) {
+                if ((method.name.equals(Constants.INJECT_REGION_FILE_METHOD) && method.desc.equals(Constants.INJECT_REGION_FILE_METHOD_DESC)) ||
+                        (method.name.equals(Constants.INJECT_REGION_FILE_METHOD4) && method.desc.equals(Constants.INJECT_REGION_FILE_METHOD4_DESC))) {
                     InsnList list = new InsnList();
                     list.add(new InsnNode(Opcodes.RETURN));
                     method.instructions = list;
-                    injected = true;
-                    break;
+                    injectedCount++;
+                }
+                if (method.name.equals(Constants.INJECT_REGION_FILE_METHOD3) &&
+                        method.desc.equals(Constants.INJECT_REGION_FILE_METHOD3_DESC)) {
+                    InsnList list = new InsnList();
+                    list.add(new FieldInsnNode(Opcodes.GETSTATIC,
+                            "io/github/nickid2018/genwiki/inject/InjectedProcess", "NULL_PATH",
+                            "Ljava/nio/file/Path;"));
+                    list.add(new VarInsnNode(Opcodes.ASTORE, 1));
+                    list.add(method.instructions);
+                    method.instructions = list;
+                    injectedCount++;
+                }
+                if (method.name.equals(Constants.INJECT_REGION_FILE_METHOD2) &&
+                        method.desc.equals(Constants.INJECT_REGION_FILE_METHOD2_DESC)) {
+                    InsnList list = new InsnList();
+                    list.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    list.add(new FieldInsnNode(Opcodes.GETFIELD,
+                            "net/minecraft/world/level/chunk/storage/RegionFile", "file",
+                            "Ljava/nio/channels/FileChannel;"));
+                    list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
+                            "java/nio/channels/FileChannel", "close", "()V", false));
+                    list.add(new InsnNode(Opcodes.RETURN));
+                    method.instructions = list;
+                    method.tryCatchBlocks.clear();
+                    injectedCount++;
                 }
             }
-            if (!injected)
+            if (injectedCount != 4)
                 throw new RuntimeException("Failed to inject!");
             ClassWriter writer = new ClassWriter(0);
             node.accept(writer);

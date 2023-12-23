@@ -112,7 +112,7 @@ public class GenerateWikiData {
             w.write("eula=true");
         }
         try (FileWriter w = new FileWriter(new File(Constants.RUNTIME_FOLDER, "server.properties"))) {
-            w.write("max-tick-time=-1");
+            w.write("max-tick-time=-1\nsync-chunk-writes=false");
         }
 
         ProcessBuilder builder = new ProcessBuilder(
