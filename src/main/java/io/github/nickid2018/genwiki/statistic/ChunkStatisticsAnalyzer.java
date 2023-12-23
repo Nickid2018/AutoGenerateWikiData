@@ -95,7 +95,7 @@ public class ChunkStatisticsAnalyzer {
     private static final Random RANDOM = new Random();
 
     public static final int BATCH_SIZE = 4;
-    public static final int CHUNK_TOTAL = 25000;
+    public static final int CHUNK_TOTAL = 10;
 
     @SneakyThrows
     public static void analyze(Object server) {
@@ -144,7 +144,7 @@ public class ChunkStatisticsAnalyzer {
 
             int submitted = SUBMITTED_CHUNKS.getInt(level);
             if (submitted < CHUNK_TOTAL) {
-                for (int i = 0; i < BATCH_SIZE; i++) {
+                for (int i = 0; i < BATCH_SIZE && submitted < CHUNK_TOTAL; i++) {
                     int x = RANDOM.nextInt(1000000) - 500000;
                     int z = RANDOM.nextInt(1000000) - 500000;
                     CompletableFuture<?> future = (CompletableFuture<?>) GET_CHUNK_FUTURE.invoke(chunkSource, x, z,
