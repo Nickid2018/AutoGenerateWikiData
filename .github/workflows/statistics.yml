@@ -39,4 +39,6 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: wiki-data
-          path: run/runtime/*_blockCount.json
+          path: |
+            run/runtime/*_blockCount.json
+            run/runtime/world/level.dat
