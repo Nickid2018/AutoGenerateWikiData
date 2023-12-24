@@ -40,7 +40,6 @@ public class ChunkStatisticsAnalyzer {
 
     public static final MethodHandle TICK_RATE_MANAGER;
     public static final MethodHandle SET_FROZEN;
-    public static final MethodHandle SET_TICK_RATE;
     public static final MethodHandle DIMENSION;
     public static final MethodHandle GET_ALL_LEVELS;
     public static final MethodHandle GET_CHUNK_SOURCE;
@@ -100,7 +99,6 @@ public class ChunkStatisticsAnalyzer {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
             TICK_RATE_MANAGER = lookup.unreflect(InjectedProcess.MINECRAFT_SERVER_CLASS.getMethod("tickRateManager"));
             SET_FROZEN = lookup.unreflect(SERVER_TICK_RATE_MANAGER_CLASS.getMethod("setFrozen", boolean.class));
-            SET_TICK_RATE = lookup.unreflect(SERVER_TICK_RATE_MANAGER_CLASS.getMethod("setTickRate", float.class));
             DIMENSION = lookup.unreflect(LEVEL_CLASS.getMethod("dimension"));
             GET_ALL_LEVELS = lookup.unreflect(InjectedProcess.MINECRAFT_SERVER_CLASS.getMethod("getAllLevels"));
             GET_CHUNK_SOURCE = lookup.unreflect(SERVER_LEVEL_CLASS.getMethod("getChunkSource"));
@@ -134,7 +132,6 @@ public class ChunkStatisticsAnalyzer {
     public static void analyze(Object server) {
         if (!initialized) {
             Object tickRateManager = TICK_RATE_MANAGER.invoke(server);
-            SET_TICK_RATE.invoke(tickRateManager, 1000000f);
             SET_FROZEN.invoke(tickRateManager, true);
             levels = StreamSupport.stream(((Iterable<?>) GET_ALL_LEVELS.invoke(server)).spliterator(), false).collect(Collectors.toList());
             for (Object level : levels) {
