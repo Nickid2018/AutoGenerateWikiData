@@ -16,6 +16,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -23,6 +24,7 @@ public class ChunkStatisticsAnalyzer {
 
     public static final int BATCH_SIZE;
     public static final int CHUNK_TOTAL;
+    public static final IntFunction<ChunkPosProvider> CHUNK_POS_PROVIDER_FACTORY;
 
     public static final Class<?> SERVER_TICK_RATE_MANAGER_CLASS;
     public static final Class<?> LEVEL_CLASS;
@@ -66,6 +68,20 @@ public class ChunkStatisticsAnalyzer {
             else
                 CHUNK_TOTAL = 25000;
             System.out.println("Chunk total: " + CHUNK_TOTAL);
+            String chunkPosProviderFactoryStr = System.getenv("CHUNK_POS_PROVIDER_FACTORY");
+            if (chunkPosProviderFactoryStr != null)
+                switch (chunkPosProviderFactoryStr) {
+                    case "continuous":
+                        CHUNK_POS_PROVIDER_FACTORY = ContinuousChunkPosProvider::new;
+                        break;
+                    case "random":
+                        CHUNK_POS_PROVIDER_FACTORY = RandomChunkPosProvider::new;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown chunk pos provider factory: " + chunkPosProviderFactoryStr);
+                }
+            else
+                CHUNK_POS_PROVIDER_FACTORY = ContinuousChunkPosProvider::new;
 
             SERVER_TICK_RATE_MANAGER_CLASS = Class.forName("net.minecraft.server.ServerTickRateManager");
             LEVEL_CLASS = Class.forName("net.minecraft.world.level.Level");
@@ -105,12 +121,11 @@ public class ChunkStatisticsAnalyzer {
     @SourceClass("Iterable<ServerLevel>")
     private static List<?> levels;
     private static final Map<Object, ProgressBar> BAR_MAP = new HashMap<>();
-    private static final Object2IntMap<Object> SUBMITTED_CHUNKS = new Object2IntArrayMap<>();
     private static final Map<Object, Set<CompletableFuture<?>>> FUTURES_MAP = new HashMap<>();
     private static final Map<Object, BlockCounter> BLOCK_COUNTER_MAP = new HashMap<>();
     private static final Map<Object, Thread> THREAD_MAP = new HashMap<>();
     private static final Map<Object, Queue<Object>> CREATED_CHUNKS = new HashMap<>();
-    private static final Random RANDOM = new Random();
+    private static final Map<Object, ChunkPosProvider> CHUNK_POS_PROVIDER = new HashMap<>();
 
     @SneakyThrows
     public static void analyze(Object server) {
@@ -126,7 +141,7 @@ public class ChunkStatisticsAnalyzer {
                 BAR_MAP.put(level, new ProgressBarBuilder().continuousUpdate().setStyle(ProgressBarStyle.ASCII)
                         .setInitialMax(CHUNK_TOTAL).setTaskName("Dimension " + dimensionID).build());
                 FUTURES_MAP.put(level, new HashSet<>());
-                SUBMITTED_CHUNKS.put(level, 0);
+                CHUNK_POS_PROVIDER.put(level, CHUNK_POS_PROVIDER_FACTORY.apply(CHUNK_TOTAL));
                 CREATED_CHUNKS.put(level, new ConcurrentLinkedQueue<>());
                 BLOCK_COUNTER_MAP.put(level, new BlockCounter());
                 Thread thread = new Thread(() -> counterThread(BLOCK_COUNTER_MAP.get(level), level, CREATED_CHUNKS.get(level)));
@@ -146,6 +161,7 @@ public class ChunkStatisticsAnalyzer {
             Set<CompletableFuture<?>> futures = FUTURES_MAP.get(level);
             Iterator<CompletableFuture<?>> iterator = futures.iterator();
             Queue<Object> createdChunk = CREATED_CHUNKS.get(level);
+            ChunkPosProvider chunkPosProvider = CHUNK_POS_PROVIDER.get(level);
 
             ProgressBar bar = BAR_MAP.get(level);
             while (iterator.hasNext()) {
@@ -158,23 +174,16 @@ public class ChunkStatisticsAnalyzer {
                 }
             }
 
-            int submitted = SUBMITTED_CHUNKS.getInt(level);
-            if (submitted < CHUNK_TOTAL) {
-                for (int i = 0; i < BATCH_SIZE && submitted < CHUNK_TOTAL; i++) {
-                    int x = RANDOM.nextInt(1000000) - 500000;
-                    int z = RANDOM.nextInt(1000000) - 500000;
-                    CompletableFuture<?> future = (CompletableFuture<?>) GET_CHUNK_FUTURE.invoke(chunkSource, x, z,
-                            CHUNK_STATUS_FULL, true);
-                    futures.add(future);
-                    submitted++;
-                }
-                SUBMITTED_CHUNKS.put(level, submitted);
-            }
+            for (int i = 0; i < BATCH_SIZE && chunkPosProvider.hasNext(); i++)
+                chunkPosProvider.next((x, z) ->
+                        futures.add((CompletableFuture<?>) GET_CHUNK_FUTURE.invoke(chunkSource, x, z,
+                                CHUNK_STATUS_FULL, true))
+                );
 
-            if (bar.getCurrent() >= CHUNK_TOTAL && submitted >= CHUNK_TOTAL) {
+            if (bar.getCurrent() >= CHUNK_TOTAL && !chunkPosProvider.hasNext()) {
                 BAR_MAP.remove(level).close();
                 FUTURES_MAP.remove(level);
-                SUBMITTED_CHUNKS.removeInt(level);
+                CHUNK_POS_PROVIDER.remove(level);
                 levelIterator.remove();
             }
         }
@@ -192,7 +201,7 @@ public class ChunkStatisticsAnalyzer {
         }
 
         if (levels.isEmpty() && THREAD_MAP.isEmpty())
-            throw new RuntimeException("Program exited, chunk data has been written.");
+            Runtime.getRuntime().halt(0); // DO NOT RUN ANY SHUTDOWN HOOKS
     }
 
     @SneakyThrows
