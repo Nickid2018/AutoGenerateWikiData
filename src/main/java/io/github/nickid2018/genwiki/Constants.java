@@ -28,13 +28,15 @@ public class Constants {
     public static final String INJECT_REGION_FILE_METHOD3_DESC = "(Ljava/nio/file/Path;Ljava/nio/file/Path;Lnet/minecraft/world/level/chunk/storage/RegionFileVersion;Z)V";
     public static final String INJECT_REGION_FILE_METHOD4 = "flush";
     public static final String INJECT_REGION_FILE_METHOD4_DESC = "()V";
+    public static final String INJECT_CHUNK_STATUS = "net.minecraft.world.level.chunk.ChunkStatus";
+    public static final String INJECT_CHUNK_STATUS_METHOD = "initializeLight";
+    public static final String INJECT_CHUNK_STATUS_METHOD2 = "lightChunk";
+    public static final String INJECT_CHUNK_STATUS_METHOD_DESC = "(Lnet/minecraft/server/level/ThreadedLevelLightEngine;Lnet/minecraft/world/level/chunk/ChunkAccess;)Ljava/util/concurrent/CompletableFuture;";
+    public static final String INJECT_PROTO_CHUNK = "net.minecraft.world.level.chunk.ProtoChunk";
+    public static final String INJECT_PROTO_CHUNK_METHOD = "setBlockState";
+    public static final String INJECT_PROTO_CHUNK_METHOD_DESC = "(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;";
     public static final String INJECT_NOISE_BASED_CHUNK_GENERATOR = "net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator";
     public static final String INJECT_NOISE_BASED_CHUNK_GENERATOR_METHOD = "spawnOriginalMobs";
     public static final String INJECT_NOISE_BASED_CHUNK_GENERATOR_METHOD_DESC = "(Lnet/minecraft/server/level/WorldGenRegion;)V";
-    public static final String INJECT_THREADED_LEVEL_LIGHT_ENGINE = "net.minecraft.world.level.lighting.ThreadedLevelLightEngine";
-    public static final String INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD = "addTask";
-    public static final String INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD_DESC = "(IILjava/util/function/IntSupplier;Lnet/minecraft/server/level/ThreadedLevelLightEngine$TaskType;Ljava/lang/Runnable;)V";
-    public static final String INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD2 = "runUpdate";
-    public static final String INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD2_DESC = "()V";
 
 }
