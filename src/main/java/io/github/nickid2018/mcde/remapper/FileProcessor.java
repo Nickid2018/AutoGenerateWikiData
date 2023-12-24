@@ -272,6 +272,29 @@ public class FileProcessor {
                 node.accept(writer);
                 return writer.toByteArray();
             }
+
+            if (className.equals(Constants.INJECT_THREADED_LEVEL_LIGHT_ENGINE)) {
+                ClassReader reader = new ClassReader(classFileBuffer);
+                ClassNode node = new ClassNode();
+                reader.accept(node, 0);
+
+                int injectedCount = 0;
+                for (int i = 0; i < node.methods.size(); i++) {
+                    MethodNode method = node.methods.get(i);
+                    if (method.name.equals(Constants.INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD) &&
+                            method.desc.equals(Constants.INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD_DESC)) {
+                        InsnList list = new InsnList();
+                        list.add(new InsnNode(Opcodes.RETURN));
+                        method.instructions = list;
+                        injectedCount++;
+                    }
+                }
+                if (injectedCount != 1)
+                    throw new RuntimeException("Failed to inject!");
+                ClassWriter writer = new ClassWriter(0);
+                node.accept(writer);
+                return writer.toByteArray();
+            }
         }
 
         if (className.equals(Constants.INJECT_SERVER_PROPERTIES)) {
