@@ -34,7 +34,4 @@ public class Constants {
     public static final String INJECT_THREADED_LEVEL_LIGHT_ENGINE = "net.minecraft.world.level.lighting.ThreadedLevelLightEngine";
     public static final String INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD = "addTask";
     public static final String INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD_DESC = "(IILjava/util/function/IntSupplier;Lnet/minecraft/server/level/ThreadedLevelLightEngine$TaskType;Ljava/lang/Runnable;)V";
-    public static final String INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD2 = "runUpdate";
-    public static final String INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD2_DESC = "()V";
-
 }

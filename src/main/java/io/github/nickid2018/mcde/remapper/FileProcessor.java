@@ -288,20 +288,8 @@ public class FileProcessor {
                         method.instructions = list;
                         injectedCount++;
                     }
-                    if (method.name.equals(Constants.INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD2) &&
-                            method.desc.equals(Constants.INJECT_THREADED_LEVEL_LIGHT_ENGINE_METHOD2_DESC)) {
-                        InsnList list = new InsnList();
-                        LabelNode jumpBack = new LabelNode();
-                        list.add(jumpBack);
-                        list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                                "java/lang/Thread", "yield", "()V", false));
-                        list.add(new JumpInsnNode(Opcodes.GOTO, jumpBack));
-                        list.add(method.instructions);
-                        method.instructions = list;
-                        injectedCount++;
-                    }
                 }
-                if (injectedCount != 2)
+                if (injectedCount != 1)
                     throw new RuntimeException("Failed to inject!");
                 ClassWriter writer = new ClassWriter(0);
                 node.accept(writer);
