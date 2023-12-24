@@ -123,7 +123,6 @@ public class ChunkStatisticsAnalyzer {
     private static List<?> levels;
     private static final Map<Object, ProgressBar> BAR_MAP = new HashMap<>();
     private static final Map<Object, Set<CompletableFuture<?>>> FUTURES_MAP = new HashMap<>();
-    private static final Map<Object, BlockCounter> BLOCK_COUNTER_MAP = new HashMap<>();
     private static final Map<Object, Thread> THREAD_MAP = new HashMap<>();
     private static final Map<Object, Queue<Object>> CREATED_CHUNKS = new HashMap<>();
     private static final Map<Object, ChunkPosProvider> CHUNK_POS_PROVIDER = new HashMap<>();
@@ -144,8 +143,7 @@ public class ChunkStatisticsAnalyzer {
                 FUTURES_MAP.put(level, new HashSet<>());
                 CHUNK_POS_PROVIDER.put(level, CHUNK_POS_PROVIDER_FACTORY.apply(CHUNK_TOTAL));
                 CREATED_CHUNKS.put(level, new ConcurrentLinkedQueue<>());
-                BLOCK_COUNTER_MAP.put(level, new BlockCounter());
-                Thread thread = new Thread(() -> counterThread(BLOCK_COUNTER_MAP.get(level), level, CREATED_CHUNKS.get(level)));
+                Thread thread = new Thread(() -> counterThread(new BlockCounter(), level, CREATED_CHUNKS.get(level)));
                 thread.setDaemon(true);
                 THREAD_MAP.put(level, thread);
                 thread.start();
@@ -208,13 +206,14 @@ public class ChunkStatisticsAnalyzer {
             Thread thread = entry.getValue();
             if (!thread.isAlive()) {
                 threadIterator.remove();
-                BLOCK_COUNTER_MAP.remove(level);
                 CREATED_CHUNKS.remove(level);
             }
         }
 
-        if (levels.isEmpty() && THREAD_MAP.isEmpty())
+        if (levels.isEmpty() && THREAD_MAP.isEmpty()) {
+            System.out.println("All done!");
             Runtime.getRuntime().halt(0); // DO NOT RUN ANY SHUTDOWN HOOKS
+        }
     }
 
     @SneakyThrows
@@ -231,17 +230,14 @@ public class ChunkStatisticsAnalyzer {
                     blockPosList.add(BLOCK_POS_CONSTRUCTOR.invoke(x, y, z));
         }
 
+        Object dimension = DIMENSION.invoke(level);
+        Object location = InjectedProcess.RESOURCE_KEY_LOCATION.invoke(dimension);
+        String dimensionID = InjectedProcess.getResourceLocationPath(location);
+
         while (count < CHUNK_TOTAL) {
             Object chunk = createdChunk.poll();
             if (chunk == null) {
                 Thread.sleep(1);
-                continue;
-            }
-            count++;
-
-            Object status = GET_STATUS.invoke(chunk);
-            if (status != CHUNK_STATUS_FEATURES) {
-                System.out.println("Chunk status is not features, is " + status + ", skipping.");
                 continue;
             }
 
@@ -254,11 +250,12 @@ public class ChunkStatisticsAnalyzer {
                     counter.increase(block, y);
                 }
             }
+
+            if (count % 10000 == 0)
+                counter.write(dimensionID, minBuildHeight, maxBuildHeight);
+            count++;
         }
 
-        Object dimension = DIMENSION.invoke(level);
-        Object location = InjectedProcess.RESOURCE_KEY_LOCATION.invoke(dimension);
-        String dimensionID = InjectedProcess.getResourceLocationPath(location);
         counter.write(dimensionID, minBuildHeight, maxBuildHeight);
     }
 }
