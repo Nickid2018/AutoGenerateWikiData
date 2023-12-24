@@ -13,6 +13,7 @@ import me.tongfei.progressbar.ProgressBarStyle;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -53,6 +54,8 @@ public class ChunkStatisticsAnalyzer {
     public static final MethodHandle EITHER_LEFT;
     public static final MethodHandle GET_BLOCK;
     public static final MethodHandle GET_STATUS;
+
+    public static final VarHandle NO_SAVE;
 
     static {
         try {
@@ -112,6 +115,8 @@ public class ChunkStatisticsAnalyzer {
             EITHER_LEFT = lookup.unreflect(EITHER_CLASS.getMethod("left"));
             GET_BLOCK = lookup.unreflect(BLOCK_STATE_BASE_CLASS.getMethod("getBlock"));
             GET_STATUS = lookup.unreflect(CHUNK_ACCESS_CLASS.getMethod("getStatus"));
+
+            NO_SAVE = lookup.findVarHandle(SERVER_LEVEL_CLASS, "noSave", boolean.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -140,6 +145,7 @@ public class ChunkStatisticsAnalyzer {
                 String dimensionID = InjectedProcess.getResourceLocationPath(location);
                 BAR_MAP.put(level, new ProgressBarBuilder().continuousUpdate().setStyle(ProgressBarStyle.ASCII)
                         .setInitialMax(CHUNK_TOTAL).setTaskName("Dimension " + dimensionID).build());
+                NO_SAVE.set(level, true);
                 FUTURES_MAP.put(level, new HashSet<>());
                 CHUNK_POS_PROVIDER.put(level, CHUNK_POS_PROVIDER_FACTORY.apply(CHUNK_TOTAL));
                 CREATED_CHUNKS.put(level, new ConcurrentLinkedQueue<>());
