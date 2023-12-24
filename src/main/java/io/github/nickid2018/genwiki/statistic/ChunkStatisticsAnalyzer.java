@@ -4,8 +4,6 @@ import io.github.nickid2018.genwiki.inject.InjectedProcess;
 import io.github.nickid2018.genwiki.inject.SourceClass;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.SneakyThrows;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarBuilder;
@@ -38,7 +36,7 @@ public class ChunkStatisticsAnalyzer {
     public static final Class<?> EITHER_CLASS;
     public static final Class<?> BLOCK_STATE_BASE_CLASS;
 
-    public static final Object CHUNK_STATUS_FULL;
+    public static final Object CHUNK_STATUS_FEATURES;
 
     public static final MethodHandle TICK_RATE_MANAGER;
     public static final MethodHandle SET_FROZEN;
@@ -97,7 +95,7 @@ public class ChunkStatisticsAnalyzer {
             EITHER_CLASS = Class.forName("com.mojang.datafixers.util.Either");
             BLOCK_STATE_BASE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase");
 
-            CHUNK_STATUS_FULL = CHUNK_STATUS_CLASS.getField("FULL").get(null);
+            CHUNK_STATUS_FEATURES = CHUNK_STATUS_CLASS.getField("FEATURES").get(null);
 
             MethodHandles.Lookup lookup = MethodHandles.lookup();
             TICK_RATE_MANAGER = lookup.unreflect(InjectedProcess.MINECRAFT_SERVER_CLASS.getMethod("tickRateManager"));
@@ -183,7 +181,7 @@ public class ChunkStatisticsAnalyzer {
             for (int i = 0; i < BATCH_SIZE && chunkPosProvider.hasNext(); i++)
                 chunkPosProvider.next((x, z) ->
                         futures.add((CompletableFuture<?>) GET_CHUNK_FUTURE.invoke(chunkSource, x, z,
-                                CHUNK_STATUS_FULL, true))
+                                CHUNK_STATUS_FEATURES, true))
                 );
 
             if (bar.getCurrent() >= CHUNK_TOTAL && !chunkPosProvider.hasNext()) {
@@ -231,7 +229,7 @@ public class ChunkStatisticsAnalyzer {
             count++;
 
             Object status = GET_STATUS.invoke(chunk);
-            if (status != CHUNK_STATUS_FULL) {
+            if (status != CHUNK_STATUS_FEATURES) {
                 System.out.println("Chunk status is not features, is " + status + ", skipping.");
                 continue;
             }
