@@ -115,8 +115,14 @@ public class GenerateWikiData {
             w.write("max-tick-time=-1\nsync-chunk-writes=false");
         }
 
+        String jvmArgs;
+        if (System.getenv("JVM_ARGS") != null)
+            jvmArgs = System.getenv("JVM_ARGS");
+        else
+            jvmArgs = "-Xmx6G -Xms2G";
+
         ProcessBuilder builder = new ProcessBuilder(
-                "java", "-jar", file, "-nogui"
+                "java", jvmArgs, "-jar", file, "-nogui"
         );
         builder.directory(Constants.RUNTIME_FOLDER);
         builder.redirectError(ProcessBuilder.Redirect.INHERIT);
