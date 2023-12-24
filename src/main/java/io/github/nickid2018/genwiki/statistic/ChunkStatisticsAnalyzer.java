@@ -151,6 +151,18 @@ public class ChunkStatisticsAnalyzer {
                 thread.start();
             }
             initialized = true;
+
+            Thread clean = new Thread(() -> {
+                while(true) {
+                    try {
+                        Thread.sleep(20000);
+                    } catch (InterruptedException ignored) {
+                    }
+                    System.gc();
+                }
+            });
+            clean.setDaemon(true);
+            clean.start();
         }
 
         Iterator<?> levelIterator = levels.iterator();
@@ -221,8 +233,10 @@ public class ChunkStatisticsAnalyzer {
 
         while (count < CHUNK_TOTAL) {
             Object chunk = createdChunk.poll();
-            if (chunk == null)
+            if (chunk == null) {
+                Thread.sleep(1);
                 continue;
+            }
             count++;
 
             Object status = GET_STATUS.invoke(chunk);
