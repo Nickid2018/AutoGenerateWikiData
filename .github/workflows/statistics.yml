@@ -40,5 +40,5 @@ jobs:
         with:
           name: wiki-data
           path: |
-            run/runtime/*_blockCount.json
+            run/runtime/*_count.json
             run/runtime/world/level.dat

@@ -1,6 +1,9 @@
 package io.github.nickid2018.genwiki.inject;
 
-import io.github.nickid2018.genwiki.autovalue.*;
+import io.github.nickid2018.genwiki.autovalue.BlockDataExtractor;
+import io.github.nickid2018.genwiki.autovalue.EnchantmentDataExtractor;
+import io.github.nickid2018.genwiki.autovalue.EntityDataExtractor;
+import io.github.nickid2018.genwiki.autovalue.ItemDataExtractor;
 import io.github.nickid2018.genwiki.statistic.ChunkStatisticsAnalyzer;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +16,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,11 +24,14 @@ import java.util.stream.Collectors;
 public class InjectedProcess {
 
     private static final Map<String, Object> REGISTRY = new HashMap<>();
+    private static final Map<String, Object> RESOURCE_KEY_REGISTRY = new HashMap<>();
     public static Object featureFlagSet;
 
     public static final Class<?> TAG_KEY_CLASS;
     public static final Class<?> RESOURCE_KEY_CLASS;
     public static final Class<?> MINECRAFT_SERVER_CLASS;
+    public static final Class<?> HOLDER_CLASS;
+    public static final Class<?> EITHER_CLASS;
 
     public static final MethodHandle ENUM_ORDINAL;
     public static final MethodHandle ENUM_NAME;
@@ -41,6 +48,9 @@ public class InjectedProcess {
 
     public static final MethodHandle SERVER_OVERWORLD;
     public static final MethodHandle REGISTRY_ACCESS;
+    public static final MethodHandle HOLDER_VALUE;
+    public static final MethodHandle HOLDER_UNWRAP_KEY;
+    public static final MethodHandle EITHER_LEFT;
 
     public static final Path NULL_PATH;
 
@@ -64,6 +74,13 @@ public class InjectedProcess {
             Class<?> registryAccessClass = Class.forName("net.minecraft.world.level.Level");
             REGISTRY_ACCESS = lookup.unreflect(registryAccessClass.getMethod("registryAccess"));
 
+            HOLDER_CLASS = Class.forName("net.minecraft.core.Holder");
+            HOLDER_VALUE = lookup.unreflect(HOLDER_CLASS.getMethod("value"));
+            HOLDER_UNWRAP_KEY = lookup.unreflect(HOLDER_CLASS.getMethod("unwrapKey"));
+
+            EITHER_CLASS = Class.forName("com.mojang.datafixers.util.Either");
+            EITHER_LEFT = lookup.unreflect(EITHER_CLASS.getMethod("left"));
+
             if (System.getProperty("os.name").toLowerCase().contains("win"))
                 NULL_PATH = Path.of("nul");
             else
@@ -84,8 +101,24 @@ public class InjectedProcess {
         return (String) RESOURCE_LOCATION_PATH.invoke(resourceKey);
     }
 
+    @SneakyThrows
+    public static String getObjectPathWithRegistry(Object registry, Object obj) {
+        System.out.println(registry);
+        return getResourceLocationPath(REGISTRY_GET_KEY.invoke(registry, obj));
+    }
+
     public static Object getRegistry(String name) {
         return REGISTRY.get(name);
+    }
+
+    @SneakyThrows
+    public static Object getHolderValue(Object holder) {
+        return HOLDER_VALUE.invoke(holder);
+    }
+
+    @SneakyThrows
+    public static String holderToString(Object holder) {
+        return getResourceLocationPath(RESOURCE_KEY_LOCATION.invoke(((Optional<?>) HOLDER_UNWRAP_KEY.invoke(holder)).get()));
     }
 
     @SuppressWarnings("unused")
@@ -103,6 +136,17 @@ public class InjectedProcess {
             }
         }
 
+        Class<?> resourceKeyRegistryClass = Class.forName("net.minecraft.core.registries.Registries");
+        fields = resourceKeyRegistryClass.getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            Object obj = field.get(null);
+            if (RESOURCE_KEY_CLASS.isInstance(obj)) {
+                log.info("Get resource key registry: {}", field.getName());
+                RESOURCE_KEY_REGISTRY.put(field.getName(), obj);
+            }
+        }
+
         Object featureFlagRegistry = Class.forName("net.minecraft.world.flag.FeatureFlags").getField("REGISTRY").get(null);
         Class<?> featureFlagRegistryClass = Class.forName("net.minecraft.world.flag.FeatureFlagRegistry");
         Field names = featureFlagRegistryClass.getDeclaredField("names");
@@ -111,7 +155,7 @@ public class InjectedProcess {
         Map<?, ?> namesObj = (Map<?, ?>) names.get(featureFlagRegistry);
         Set<?> namesIterable = namesObj.keySet();
 
-        String ret =  namesObj.keySet().stream().map(RESOURCE_LOCATION_PATH::invoke).map(Object::toString).collect(Collectors.joining(","));
+        String ret = namesObj.keySet().stream().map(RESOURCE_LOCATION_PATH::invoke).map(Object::toString).collect(Collectors.joining(","));
         featureFlagSet = fromNames.invoke(featureFlagRegistry, namesIterable);
 
         return ret;

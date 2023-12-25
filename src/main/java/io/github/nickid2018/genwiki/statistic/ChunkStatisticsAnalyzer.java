@@ -15,7 +15,6 @@ import java.lang.invoke.VarHandle;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -34,7 +33,6 @@ public class ChunkStatisticsAnalyzer {
     public static final Class<?> CHUNK_ACCESS_CLASS;
     public static final Class<?> BLOCK_POS_CLASS;
     public static final Class<?> LEVEL_READER_CLASS;
-    public static final Class<?> EITHER_CLASS;
     public static final Class<?> BLOCK_STATE_BASE_CLASS;
 
     public static final Object CHUNK_STATUS_FEATURES;
@@ -49,9 +47,9 @@ public class ChunkStatisticsAnalyzer {
     public static final MethodHandle GET_MIN_BUILD_HEIGHT;
     public static final MethodHandle GET_HEIGHT;
     public static final MethodHandle BLOCK_POS_CONSTRUCTOR;
-    public static final MethodHandle EITHER_LEFT;
     public static final MethodHandle GET_BLOCK;
     public static final MethodHandle GET_STATUS;
+    public static final MethodHandle GET_NOISE_BIOME;
 
     public static final VarHandle NO_SAVE;
 
@@ -98,7 +96,6 @@ public class ChunkStatisticsAnalyzer {
             CHUNK_ACCESS_CLASS = Class.forName("net.minecraft.world.level.chunk.ChunkAccess");
             BLOCK_POS_CLASS = Class.forName("net.minecraft.core.BlockPos");
             LEVEL_READER_CLASS = Class.forName("net.minecraft.world.level.LevelReader");
-            EITHER_CLASS = Class.forName("com.mojang.datafixers.util.Either");
             BLOCK_STATE_BASE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase");
 
             CHUNK_STATUS_FEATURES = CHUNK_STATUS_CLASS.getField("FEATURES").get(null);
@@ -115,9 +112,9 @@ public class ChunkStatisticsAnalyzer {
             GET_MIN_BUILD_HEIGHT = lookup.unreflect(LEVEL_READER_CLASS.getMethod("getMinBuildHeight"));
             GET_HEIGHT = lookup.unreflect(LEVEL_READER_CLASS.getMethod("getHeight"));
             BLOCK_POS_CONSTRUCTOR = lookup.unreflectConstructor(BLOCK_POS_CLASS.getConstructor(int.class, int.class, int.class));
-            EITHER_LEFT = lookup.unreflect(EITHER_CLASS.getMethod("left"));
             GET_BLOCK = lookup.unreflect(BLOCK_STATE_BASE_CLASS.getMethod("getBlock"));
             GET_STATUS = lookup.unreflect(CHUNK_ACCESS_CLASS.getMethod("getStatus"));
+            GET_NOISE_BIOME = lookup.unreflect(CHUNK_ACCESS_CLASS.getMethod("getNoiseBiome", int.class, int.class, int.class));
 
             NO_SAVE = lookup.findVarHandle(SERVER_LEVEL_CLASS, "noSave", boolean.class);
         } catch (Exception e) {
@@ -150,7 +147,7 @@ public class ChunkStatisticsAnalyzer {
                 FUTURES_MAP.put(level, new HashSet<>());
                 CHUNK_POS_PROVIDER.put(level, CHUNK_POS_PROVIDER_FACTORY.accept(CHUNK_TOTAL, BATCH_SIZE));
                 CREATED_CHUNKS.put(level, new ConcurrentLinkedQueue<>());
-                Thread thread = new Thread(() -> counterThread(new BlockCounter(), level, CREATED_CHUNKS.get(level)));
+                Thread thread = new Thread(() -> counterThread(level, CREATED_CHUNKS.get(level)));
                 thread.setDaemon(true);
                 THREAD_MAP.put(level, thread);
                 thread.start();
@@ -174,7 +171,7 @@ public class ChunkStatisticsAnalyzer {
             while (iterator.hasNext()) {
                 CompletableFuture<?> future = iterator.next();
                 if (future.isDone()) {
-                    Optional<?> either = (Optional<?>) EITHER_LEFT.invoke(future.get());
+                    Optional<?> either = (Optional<?>) InjectedProcess.EITHER_LEFT.invoke(future.get());
                     createdChunk.offer(either.get());
                     iterator.remove();
                     bar.step();
@@ -201,6 +198,7 @@ public class ChunkStatisticsAnalyzer {
                 BAR_MAP.remove(level).close();
                 FUTURES_MAP.remove(level);
                 CHUNK_POS_PROVIDER.remove(level);
+                NO_SAVE.set(level, false);
                 levelIterator.remove();
             }
         }
@@ -223,7 +221,11 @@ public class ChunkStatisticsAnalyzer {
     }
 
     @SneakyThrows
-    private static void counterThread(BlockCounter counter, Object level, Queue<Object> createdChunk) {
+    private static void counterThread(Object level, Queue<Object> createdChunk) {
+        Object registryBlock = InjectedProcess.getRegistry("BLOCK");
+        DataCounter blockCounter = new DataCounter("block", block -> InjectedProcess.getObjectPathWithRegistry(registryBlock, block));
+        DataCounter biomeCounter = new DataCounter("biome", InjectedProcess::holderToString);
+
         int count = 0;
         Int2ObjectMap<List<?>> blockPosMap = new Int2ObjectArrayMap<>();
         int minBuildHeight = (int) GET_MIN_BUILD_HEIGHT.invoke(level);
@@ -253,15 +255,25 @@ public class ChunkStatisticsAnalyzer {
                 for (Object blockPos : blockPosList) {
                     Object blockState = GET_BLOCK_STATE.invoke(chunk, blockPos);
                     Object block = GET_BLOCK.invoke(blockState);
-                    counter.increase(block, y);
+                    blockCounter.increase(block, y);
                 }
             }
 
-            if (count % 10000 == 0)
-                counter.write(dimensionID, minBuildHeight, maxBuildHeight);
+            for (int y = minBuildHeight / 4; y < maxBuildHeight / 4; y++)
+                for (int x = 0; x < 4; x++)
+                    for (int z = 0; z < 4; z++) {
+                        Object holder = GET_NOISE_BIOME.invoke(chunk, x, y, z);
+                        biomeCounter.increase(holder, y);
+                    }
+
+            if (count % 10000 == 0) {
+                blockCounter.write(dimensionID, minBuildHeight, maxBuildHeight);
+                biomeCounter.write(dimensionID, minBuildHeight / 4, maxBuildHeight / 4);
+            }
             count++;
         }
 
-        counter.write(dimensionID, minBuildHeight, maxBuildHeight);
+        blockCounter.write(dimensionID, minBuildHeight, maxBuildHeight);
+        biomeCounter.write(dimensionID, minBuildHeight / 4, maxBuildHeight / 4);
     }
 }
