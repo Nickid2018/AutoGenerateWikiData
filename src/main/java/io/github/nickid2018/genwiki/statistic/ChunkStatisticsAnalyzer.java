@@ -23,7 +23,8 @@ public class ChunkStatisticsAnalyzer {
 
     public static final int BATCH_SIZE;
     public static final int CHUNK_TOTAL;
-    public static final IntFunction<ChunkPosProvider> CHUNK_POS_PROVIDER_FACTORY;
+    public static final int BLOCK_SIZE;
+    public static final ChunkPosProvider.ChunkPosProviderProvider CHUNK_POS_PROVIDER_FACTORY;
 
     public static final Class<?> SERVER_TICK_RATE_MANAGER_CLASS;
     public static final Class<?> LEVEL_CLASS;
@@ -67,6 +68,12 @@ public class ChunkStatisticsAnalyzer {
                 CHUNK_TOTAL = Integer.parseInt(chunkTotalStr);
             else
                 CHUNK_TOTAL = 25000;
+            String blockSize = System.getenv("BLOCK_SIZE");
+            if (blockSize != null)
+                BLOCK_SIZE = Integer.parseInt(blockSize);
+            else
+                BLOCK_SIZE = 1089;
+
             System.out.println("Chunk total: " + CHUNK_TOTAL);
             String chunkPosProviderFactoryStr = System.getenv("CHUNK_POS_PROVIDER_FACTORY");
             if (chunkPosProviderFactoryStr != null)
@@ -126,6 +133,7 @@ public class ChunkStatisticsAnalyzer {
     private static final Map<Object, Thread> THREAD_MAP = new HashMap<>();
     private static final Map<Object, Queue<Object>> CREATED_CHUNKS = new HashMap<>();
     private static final Map<Object, ChunkPosProvider> CHUNK_POS_PROVIDER = new HashMap<>();
+    private static final Set<Object> NEXT_FLIP_NO_SAVE = new HashSet<>();
 
     @SneakyThrows
     public static void analyze(Object server) {
@@ -139,28 +147,16 @@ public class ChunkStatisticsAnalyzer {
                 String dimensionID = InjectedProcess.getResourceLocationPath(location);
                 BAR_MAP.put(level, new ProgressBarBuilder().continuousUpdate().setStyle(ProgressBarStyle.ASCII)
                         .setInitialMax(CHUNK_TOTAL).setTaskName("Dimension " + dimensionID).build());
-                NO_SAVE.set(level, true);
                 FUTURES_MAP.put(level, new HashSet<>());
-                CHUNK_POS_PROVIDER.put(level, CHUNK_POS_PROVIDER_FACTORY.apply(CHUNK_TOTAL));
+                CHUNK_POS_PROVIDER.put(level, CHUNK_POS_PROVIDER_FACTORY.accept(CHUNK_TOTAL, BATCH_SIZE));
                 CREATED_CHUNKS.put(level, new ConcurrentLinkedQueue<>());
                 Thread thread = new Thread(() -> counterThread(new BlockCounter(), level, CREATED_CHUNKS.get(level)));
                 thread.setDaemon(true);
                 THREAD_MAP.put(level, thread);
                 thread.start();
+                NO_SAVE.set(level, true);
             }
             initialized = true;
-
-            Thread clean = new Thread(() -> {
-                while(true) {
-                    try {
-                        Thread.sleep(20000);
-                    } catch (InterruptedException ignored) {
-                    }
-                    System.gc();
-                }
-            });
-            clean.setDaemon(true);
-            clean.start();
         }
 
         Iterator<?> levelIterator = levels.iterator();
@@ -185,11 +181,21 @@ public class ChunkStatisticsAnalyzer {
                 }
             }
 
-            for (int i = 0; i < BATCH_SIZE && chunkPosProvider.hasNext(); i++)
+            if (NEXT_FLIP_NO_SAVE.contains(level)) {
+                NO_SAVE.set(level, true);
+                NEXT_FLIP_NO_SAVE.remove(level);
+            }
+
+            for (int i = 0; i < BATCH_SIZE && chunkPosProvider.hasNext() && futures.size() < BATCH_SIZE * 40; i++) {
                 chunkPosProvider.next((x, z) ->
                         futures.add((CompletableFuture<?>) GET_CHUNK_FUTURE.invoke(chunkSource, x, z,
                                 CHUNK_STATUS_FEATURES, true))
                 );
+                if (chunkPosProvider.nowUnload()) {
+                    NEXT_FLIP_NO_SAVE.add(level);
+                    NO_SAVE.set(level, false);
+                }
+            }
 
             if (bar.getCurrent() >= CHUNK_TOTAL && !chunkPosProvider.hasNext()) {
                 BAR_MAP.remove(level).close();

@@ -8,8 +8,8 @@ public class RandomChunkPosProvider extends ChunkPosProvider {
 
     private final Random random = new Random();
 
-    public RandomChunkPosProvider(int total) {
-        super(total);
+    public RandomChunkPosProvider(int total, int blockSize) {
+        super(total, blockSize);
     }
 
     @Override

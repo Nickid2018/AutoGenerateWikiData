@@ -13,6 +13,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class GenerateWikiData {
@@ -115,15 +117,21 @@ public class GenerateWikiData {
             w.write("max-tick-time=-1\nsync-chunk-writes=false");
         }
 
-        String jvmArgs;
-        if (System.getenv("JVM_ARGS") != null)
-            jvmArgs = System.getenv("JVM_ARGS");
-        else
-            jvmArgs = "-Xmx6G -Xms2G";
 
-        ProcessBuilder builder = new ProcessBuilder(
-                "java", jvmArgs, "-jar", file, "-nogui"
-        );
+        ProcessBuilder builder;
+        if (System.getenv("JVM_ARGS") != null) {
+            String[] jvmArgs = System.getenv("JVM_ARGS").split(" ");
+            List<String> list = new ArrayList<>();
+            list.add("java");
+            list.addAll(List.of(jvmArgs));
+            list.add("-jar");
+            list.add(file);
+            list.add("-nogui");
+            builder = new ProcessBuilder(list);
+        } else
+            builder = new ProcessBuilder(
+                    "java", "-jar", file, "-nogui"
+            );
         builder.directory(Constants.RUNTIME_FOLDER);
         builder.redirectError(ProcessBuilder.Redirect.INHERIT);
         builder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
