@@ -86,6 +86,14 @@
     - `random`：以分块为单位随机选择区块。
     - `continuous`：连续选择区块，以世界原点为中心。
 
+在同目录下，创建`eula.txt`，并写入`eula=true`。
+
+在同目录下，创建`server.properties`，并写入以下内容：
+```properties
+max-tick-time=-1
+sync-chunk-writes=false
+```
+
 最后，执行`java -jar <JAR> -nogui`即可。
 
 **使用本地构建**：
