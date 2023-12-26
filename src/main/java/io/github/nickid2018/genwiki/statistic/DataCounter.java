@@ -8,13 +8,16 @@ import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Writer;
 import java.util.Map;
 import java.util.TreeMap;
 
+@Slf4j
 public class DataCounter {
 
     private final Object2ObjectMap<Object, Int2LongMap> counter = new Object2ObjectOpenHashMap<>();
@@ -75,6 +78,9 @@ public class DataCounter {
         try (Writer writer = new FileWriter(outputFile)) {
             writer.write(builder.toString());
             writer.flush();
+        } catch (IOException e) {
+            log.error("Failed to write data to file {}!", outputFile);
+            log.error("Exception: ", e);
         }
     }
 }
