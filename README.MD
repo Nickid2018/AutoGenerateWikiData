@@ -46,7 +46,7 @@
 
 有两种办法生成此数据：
 
-1. 使用 GitHub Action 自动构建（`new_version`），只需要输入需要生成数据的版本，然后触发工作流即可。
+1. 使用 GitHub Action 自动构建（`autovalue`），只需要输入需要生成数据的版本，然后触发工作流即可。
 2. 将项目克隆到本地，设置环境变量`MAKE_VERSION`为需要生成数据的版本，之后执行`gradlew run`。
 
 ## 方块与生物群系统计
@@ -82,9 +82,9 @@
 * `BATCH_SIZE`：（默认为 4）每个游戏刻提交给区块生成系统的区块数量。
 * `CHUNK_TOTAL`：（默认为 25000）统计的区块总数量。
 * `BLOCK_SIZE`：（默认为 1089，必须为完全平方数，否则将向上寻找完全平方数）分块大小。分块越大，一段时间内的运行速度会更快，但也会造成更高程度的内存占用。
-* `CHUNK_POS_PROVIDER_FACTORY`：（默认为 `continous`）区块位置提供器工厂。
+* `CHUNK_POS_PROVIDER_FACTORY`：（默认为 `continuous`）区块位置提供器工厂。
     - `random`：以分块为单位随机选择区块。
-    - `continous`：连续选择区块，以世界原点为中心。
+    - `continuous`：连续选择区块，以世界原点为中心。
 
 最后，执行`java -jar <JAR> -nogui`即可。
 

@@ -1,4 +1,4 @@
-name: Create Block Statistics
+name: Create Chunk Statistics
 on:
   workflow_dispatch:
     inputs:
