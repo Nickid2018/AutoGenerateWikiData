@@ -5,12 +5,6 @@ on:
       version:
         description: 'Version to create'
         required: true
-      chunk_total:
-        description: 'Total number of chunks to create'
-        required: true
-      batch_size:
-        description: 'Number of chunks to create in one batch'
-        required: true
 
 jobs:
   run:
@@ -26,19 +20,16 @@ jobs:
           java-version: 17
           cache: gradle
 
-      - name: Create data
+      - name: Create injected
         env:
           MAKE_VERSION: ${{ github.event.inputs.version }}
-          CHUNK_TOTAL: ${{ github.event.inputs.chunk_total }}
-          BATCH_SIZE: ${{ github.event.inputs.batch_size }}
         run: |
           chmod +x gradlew
-          ./gradlew runStatistics
+          ./gradlew runStatisticsNotRun
 
-      - name: Upload data
+      - name: Upload injected
         uses: actions/upload-artifact@v2
         with:
           name: wiki-data
           path: |
-            run/runtime/*_count.json
-            run/runtime/world/level.dat
+            run/remapped/*.jar

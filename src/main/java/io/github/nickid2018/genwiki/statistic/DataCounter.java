@@ -1,6 +1,5 @@
 package io.github.nickid2018.genwiki.statistic;
 
-import io.github.nickid2018.genwiki.inject.InjectedProcess;
 import it.unimi.dsi.fastutil.Function;
 import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
@@ -13,6 +12,8 @@ import lombok.SneakyThrows;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.Writer;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class DataCounter {
 
@@ -37,14 +38,18 @@ public class DataCounter {
     }
 
     @SneakyThrows
-    public void write(String levelName, int minHeight, int maxHeight) {
+    public void write(long worldSeed, String levelName, ChunkPosProvider posProvider, int minHeight, int maxHeight) {
         File outputFile = new File(levelName + "_" + name + "_count.json");
 
         StringBuilder builder = new StringBuilder();
-        builder.append("{\n").append("\t\"minHeight\": ").append(minHeight).append(",\n")
-                .append("\t\"maxHeight\": ").append(maxHeight).append(",\n");
-        builder.append("\t\"").append(name).append("\": {\n");
+        builder.append("{\n");
 
+        builder.append("\t\"worldSeed\": ").append(worldSeed).append(",\n");
+        builder.append("\t\"minHeight\": ").append(minHeight).append(",\n");
+        builder.append("\t\"maxHeight\": ").append(maxHeight).append(",\n");
+        builder.append("\t\"posProvider\": \"").append(posProvider).append("\",\n");
+
+        Map<String, String> lines = new TreeMap<>();
         for (Object2ObjectMap.Entry<Object, Int2LongMap> entry : counter.object2ObjectEntrySet()) {
             Object item = entry.getKey();
             String name = objectToString.apply(item);
@@ -54,11 +59,18 @@ public class DataCounter {
                 array.add(count);
             }
             String data = String.join(", ", array.longStream().mapToObj(String::valueOf).toList());
-            builder.append("\t\t\"").append(name).append("\": [").append(data).append("],\n");
+            lines.put(name, data);
         }
 
-        builder.deleteCharAt(builder.lastIndexOf(","));
-        builder.append("\t}\n").append("}");
+        String dataLines = String.join(
+                ",\n",
+                lines.entrySet().stream()
+                        .map(en -> "\t\t\"" + en.getKey() + "\": [" + en.getValue() + "]")
+                        .toList()
+        );
+
+        builder.append("\t\"").append(name).append("\": {\n").append(dataLines).append("\n\t}");
+        builder.append("\n}");
 
         try (Writer writer = new FileWriter(outputFile)) {
             writer.write(builder.toString());

@@ -2,8 +2,10 @@ package io.github.nickid2018.genwiki.statistic;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.ToString;
 
 @Getter
+@ToString
 public abstract class ChunkPosProvider {
 
     protected int count = 0;
@@ -22,8 +24,8 @@ public abstract class ChunkPosProvider {
     public void next(ChunkPosConsumer consumer) {
         if (count >= total)
             return;
-        count++;
         next0(consumer);
+        count++;
     }
 
     public boolean nowUnload() {

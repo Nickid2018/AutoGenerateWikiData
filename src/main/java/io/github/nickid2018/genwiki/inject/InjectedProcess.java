@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 public class InjectedProcess {
 
     private static final Map<String, Object> REGISTRY = new HashMap<>();
-    private static final Map<String, Object> RESOURCE_KEY_REGISTRY = new HashMap<>();
     public static Object featureFlagSet;
 
     public static final Class<?> TAG_KEY_CLASS;
@@ -103,7 +102,6 @@ public class InjectedProcess {
 
     @SneakyThrows
     public static String getObjectPathWithRegistry(Object registry, Object obj) {
-        System.out.println(registry);
         return getResourceLocationPath(REGISTRY_GET_KEY.invoke(registry, obj));
     }
 
@@ -136,16 +134,16 @@ public class InjectedProcess {
             }
         }
 
-        Class<?> resourceKeyRegistryClass = Class.forName("net.minecraft.core.registries.Registries");
-        fields = resourceKeyRegistryClass.getDeclaredFields();
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object obj = field.get(null);
-            if (RESOURCE_KEY_CLASS.isInstance(obj)) {
-                log.info("Get resource key registry: {}", field.getName());
-                RESOURCE_KEY_REGISTRY.put(field.getName(), obj);
-            }
-        }
+//        Class<?> resourceKeyRegistryClass = Class.forName("net.minecraft.core.registries.Registries");
+//        fields = resourceKeyRegistryClass.getDeclaredFields();
+//        for (Field field : fields) {
+//            field.setAccessible(true);
+//            Object obj = field.get(null);
+//            if (RESOURCE_KEY_CLASS.isInstance(obj)) {
+//                log.info("Get resource key registry: {}", field.getName());
+//                RESOURCE_KEY_REGISTRY.put(field.getName(), obj);
+//            }
+//        }
 
         Object featureFlagRegistry = Class.forName("net.minecraft.world.flag.FeatureFlags").getField("REGISTRY").get(null);
         Class<?> featureFlagRegistryClass = Class.forName("net.minecraft.world.flag.FeatureFlagRegistry");

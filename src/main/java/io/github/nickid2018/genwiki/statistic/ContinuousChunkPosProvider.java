@@ -1,12 +1,12 @@
 package io.github.nickid2018.genwiki.statistic;
 
-import it.unimi.dsi.fastutil.ints.IntIntPair;
 import lombok.SneakyThrows;
+import lombok.ToString;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+@ToString(exclude = "blocksList", callSuper=true)
 public class ContinuousChunkPosProvider extends ChunkPosProvider {
 
     private final List<SquareBlock> blocksList = new ArrayList<>();
@@ -35,14 +35,5 @@ public class ContinuousChunkPosProvider extends ChunkPosProvider {
     protected void next0(ChunkPosConsumer consumer) {
         int block = count / blockSize;
         blocksList.get(block).next(count % blockSize, consumer);
-    }
-
-    private record SquareBlock(int startX, int startZ, int h) {
-        @SneakyThrows
-        public void next(int position, ChunkPosConsumer consumer) {
-            int x = position % h;
-            int z = position / h;
-            consumer.accept(startX + x, startZ + z);
-        }
     }
 }

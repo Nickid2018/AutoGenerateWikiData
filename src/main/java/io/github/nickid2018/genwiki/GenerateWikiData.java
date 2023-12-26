@@ -6,6 +6,8 @@ import io.github.nickid2018.genwiki.util.WebUtils;
 import io.github.nickid2018.mcde.format.MappingFormat;
 import io.github.nickid2018.mcde.format.MojangMappingFormat;
 import io.github.nickid2018.mcde.remapper.FileProcessor;
+import joptsimple.*;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
@@ -19,14 +21,38 @@ import java.util.List;
 @Slf4j
 public class GenerateWikiData {
 
+    @SneakyThrows
     public static void main(String[] args) {
-        if (args.length == 0) {
-            log.error("Please specify the Minecraft version!");
+        OptionParser parser = new OptionParser();
+        NonOptionArgumentSpec<String> versionSpec = parser.nonOptions("Minecraft version");
+        ArgumentAcceptingOptionSpec<String> modeSpec = parser.accepts("mode", "Generate chunk statistics")
+                .withOptionalArg().defaultsTo("autovalue");
+        OptionSpecBuilder doNotRun = parser.accepts("not-run", "Do not run server");
+        AbstractOptionSpec<Void> helpSpec = parser.accepts("help", "Show help").forHelp();
+
+        OptionSet options;
+        try {
+            options = parser.parse(args);
+        } catch (Exception e) {
+            parser.printHelpOn(System.err);
             System.exit(1);
+            return;
         }
-        String version = args[0];
-        boolean isChunkStatistics = args.length > 1 && args[1].equalsIgnoreCase("statistics");
+
+        if (options.has(helpSpec)) {
+            parser.printHelpOn(System.out);
+            return;
+        }
+
+        boolean notRun = options.has(doNotRun);
+        String version = versionSpec.value(options);
+        String mode = modeSpec.value(options);
+
+        boolean isChunkStatistics = mode.equalsIgnoreCase("statistics");
         log.info("Generate Wiki Data, Minecraft Version: {}", version);
+        log.info("Running mode: {}", mode);
+        if (notRun)
+            log.info("Do not run server, file will be generated in {}/{}.jar", Constants.REMAPPED_FOLDER, version);
 
         File serverFile = new File(Constants.SERVER_FOLDER, version + ".jar");
         File serverMapping = new File(Constants.MAPPING_FOLDER, version + ".txt");
@@ -42,7 +68,7 @@ public class GenerateWikiData {
             log.info("Server jar and mapping already exists, skip downloading.");
 
         File remappedFile = new File(Constants.REMAPPED_FOLDER, version + ".jar");
-        if (!remappedFile.exists()) {
+        if (notRun || !remappedFile.exists()) {
             try {
                 log.info("Remapping server jar...");
                 doRemap(serverFile, serverMapping, remappedFile, isChunkStatistics);
@@ -53,12 +79,13 @@ public class GenerateWikiData {
         } else
             log.info("Remapped server jar already exists, skip remapping.");
 
-        try {
-            runWikiGenerator(remappedFile.getAbsolutePath());
-        } catch (Exception e) {
-            log.error("Failed to run wiki generator!", e);
-            System.exit(1);
-        }
+        if (!notRun)
+            try {
+                runWikiGenerator(remappedFile.getAbsolutePath());
+            } catch (Exception e) {
+                log.error("Failed to run wiki generator!", e);
+                System.exit(1);
+            }
     }
 
     private static void downloadServerJar(String version) throws Exception {

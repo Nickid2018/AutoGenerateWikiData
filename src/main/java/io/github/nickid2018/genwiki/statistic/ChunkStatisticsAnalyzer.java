@@ -5,10 +5,14 @@ import io.github.nickid2018.genwiki.inject.SourceClass;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarBuilder;
 import me.tongfei.progressbar.ProgressBarStyle;
 
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -18,6 +22,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+@Slf4j
 public class ChunkStatisticsAnalyzer {
 
     public static final int BATCH_SIZE;
@@ -50,6 +55,7 @@ public class ChunkStatisticsAnalyzer {
     public static final MethodHandle GET_BLOCK;
     public static final MethodHandle GET_STATUS;
     public static final MethodHandle GET_NOISE_BIOME;
+    public static final MethodHandle GET_SEED;
 
     public static final VarHandle NO_SAVE;
 
@@ -60,7 +66,6 @@ public class ChunkStatisticsAnalyzer {
                 BATCH_SIZE = Integer.parseInt(batchSizeStr);
             else
                 BATCH_SIZE = 4;
-            System.out.println("Batch size: " + BATCH_SIZE);
             String chunkTotalStr = System.getenv("CHUNK_TOTAL");
             if (chunkTotalStr != null)
                 CHUNK_TOTAL = Integer.parseInt(chunkTotalStr);
@@ -72,7 +77,6 @@ public class ChunkStatisticsAnalyzer {
             else
                 BLOCK_SIZE = 1089;
 
-            System.out.println("Chunk total: " + CHUNK_TOTAL);
             String chunkPosProviderFactoryStr = System.getenv("CHUNK_POS_PROVIDER_FACTORY");
             if (chunkPosProviderFactoryStr != null)
                 switch (chunkPosProviderFactoryStr) {
@@ -85,8 +89,15 @@ public class ChunkStatisticsAnalyzer {
                     default:
                         throw new IllegalArgumentException("Unknown chunk pos provider factory: " + chunkPosProviderFactoryStr);
                 }
-            else
+            else {
                 CHUNK_POS_PROVIDER_FACTORY = ContinuousChunkPosProvider::new;
+                chunkPosProviderFactoryStr = "continuous";
+            }
+
+            log.info("Batch size: {}", BATCH_SIZE);
+            log.info("Chunk total: {}", CHUNK_TOTAL);
+            log.info("Block size: {}", BLOCK_SIZE);
+            log.info("Chunk pos provider factory: {}", chunkPosProviderFactoryStr);
 
             SERVER_TICK_RATE_MANAGER_CLASS = Class.forName("net.minecraft.server.ServerTickRateManager");
             LEVEL_CLASS = Class.forName("net.minecraft.world.level.Level");
@@ -115,6 +126,7 @@ public class ChunkStatisticsAnalyzer {
             GET_BLOCK = lookup.unreflect(BLOCK_STATE_BASE_CLASS.getMethod("getBlock"));
             GET_STATUS = lookup.unreflect(CHUNK_ACCESS_CLASS.getMethod("getStatus"));
             GET_NOISE_BIOME = lookup.unreflect(CHUNK_ACCESS_CLASS.getMethod("getNoiseBiome", int.class, int.class, int.class));
+            GET_SEED = lookup.unreflect(SERVER_LEVEL_CLASS.getMethod("getSeed"));
 
             NO_SAVE = lookup.findVarHandle(SERVER_LEVEL_CLASS, "noSave", boolean.class);
         } catch (Exception e) {
@@ -125,6 +137,7 @@ public class ChunkStatisticsAnalyzer {
     private static boolean initialized = false;
     @SourceClass("Iterable<ServerLevel>")
     private static List<?> levels;
+    private static final Map<Object, String> LEVEL_NAME = new HashMap<>();
     private static final Map<Object, ProgressBar> BAR_MAP = new HashMap<>();
     private static final Map<Object, Set<CompletableFuture<?>>> FUTURES_MAP = new HashMap<>();
     private static final Map<Object, Thread> THREAD_MAP = new HashMap<>();
@@ -137,22 +150,31 @@ public class ChunkStatisticsAnalyzer {
         if (!initialized) {
             Object tickRateManager = TICK_RATE_MANAGER.invoke(server);
             SET_FROZEN.invoke(tickRateManager, true);
+
+            // REDIRECT STDOUT AND STDERR BACK TO DEFAULT
+            System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+            System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err)));
+
             levels = StreamSupport.stream(((Iterable<?>) GET_ALL_LEVELS.invoke(server)).spliterator(), false).collect(Collectors.toList());
             for (Object level : levels) {
                 Object dimension = DIMENSION.invoke(level);
                 Object location = InjectedProcess.RESOURCE_KEY_LOCATION.invoke(dimension);
                 String dimensionID = InjectedProcess.getResourceLocationPath(location);
+                LEVEL_NAME.put(level, dimensionID);
+                NO_SAVE.set(level, true);
+
                 BAR_MAP.put(level, new ProgressBarBuilder().continuousUpdate().setStyle(ProgressBarStyle.ASCII)
                         .setInitialMax(CHUNK_TOTAL).setTaskName("Dimension " + dimensionID).build());
                 FUTURES_MAP.put(level, new HashSet<>());
-                CHUNK_POS_PROVIDER.put(level, CHUNK_POS_PROVIDER_FACTORY.accept(CHUNK_TOTAL, BATCH_SIZE));
+                CHUNK_POS_PROVIDER.put(level, CHUNK_POS_PROVIDER_FACTORY.accept(CHUNK_TOTAL, BLOCK_SIZE));
                 CREATED_CHUNKS.put(level, new ConcurrentLinkedQueue<>());
+
                 Thread thread = new Thread(() -> counterThread(level, CREATED_CHUNKS.get(level)));
-                thread.setDaemon(true);
                 THREAD_MAP.put(level, thread);
+                thread.setDaemon(true);
                 thread.start();
-                NO_SAVE.set(level, true);
             }
+
             initialized = true;
         }
 
@@ -191,6 +213,7 @@ public class ChunkStatisticsAnalyzer {
                 if (chunkPosProvider.nowUnload()) {
                     NEXT_FLIP_NO_SAVE.add(level);
                     NO_SAVE.set(level, false);
+                    log.info("Unloading chunks in dimension {}...", LEVEL_NAME.get(level));
                 }
             }
 
@@ -215,13 +238,18 @@ public class ChunkStatisticsAnalyzer {
         }
 
         if (levels.isEmpty() && THREAD_MAP.isEmpty()) {
-            System.out.println("All done!");
+            log.info("All done!");
+            log.info("Statistic Data has been stored in 'run/runtime/*_count.json'.");
+            log.info("Program will halt with exit code 0.");
             Runtime.getRuntime().halt(0); // DO NOT RUN ANY SHUTDOWN HOOKS
         }
     }
 
     @SneakyThrows
     private static void counterThread(Object level, Queue<Object> createdChunk) {
+        String dimensionID = LEVEL_NAME.get(level);
+        long worldSeed = (long) GET_SEED.invoke(level);
+        ChunkPosProvider chunkPosProvider = CHUNK_POS_PROVIDER.get(level);
         Object registryBlock = InjectedProcess.getRegistry("BLOCK");
         DataCounter blockCounter = new DataCounter("block", block -> InjectedProcess.getObjectPathWithRegistry(registryBlock, block));
         DataCounter biomeCounter = new DataCounter("biome", InjectedProcess::holderToString);
@@ -237,10 +265,6 @@ public class ChunkStatisticsAnalyzer {
                 for (int z = 0; z < 16; z++)
                     blockPosList.add(BLOCK_POS_CONSTRUCTOR.invoke(x, y, z));
         }
-
-        Object dimension = DIMENSION.invoke(level);
-        Object location = InjectedProcess.RESOURCE_KEY_LOCATION.invoke(dimension);
-        String dimensionID = InjectedProcess.getResourceLocationPath(location);
 
         while (count < CHUNK_TOTAL) {
             Object chunk = createdChunk.poll();
@@ -267,13 +291,13 @@ public class ChunkStatisticsAnalyzer {
                     }
 
             if (count % 10000 == 0) {
-                blockCounter.write(dimensionID, minBuildHeight, maxBuildHeight);
-                biomeCounter.write(dimensionID, minBuildHeight / 4, maxBuildHeight / 4);
+                blockCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight, maxBuildHeight);
+                biomeCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight / 4, maxBuildHeight / 4);
             }
             count++;
         }
 
-        blockCounter.write(dimensionID, minBuildHeight, maxBuildHeight);
-        biomeCounter.write(dimensionID, minBuildHeight / 4, maxBuildHeight / 4);
+        blockCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight, maxBuildHeight);
+        biomeCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight / 4, maxBuildHeight / 4);
     }
 }
