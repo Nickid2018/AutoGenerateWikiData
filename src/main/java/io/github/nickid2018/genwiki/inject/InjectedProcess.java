@@ -84,6 +84,17 @@ public class InjectedProcess {
                 NULL_PATH = Path.of("nul");
             else
                 NULL_PATH = Path.of("/dev/null");
+
+            Class<?> builtinRegistry = Class.forName("net.minecraft.core.registries.BuiltInRegistries");
+            Field[] fields = builtinRegistry.getDeclaredFields();
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Object obj = field.get(null);
+                if (obj != null) {
+                    log.info("Get registry: {}", field.getName());
+                    REGISTRY.put(field.getName(), obj);
+                }
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -123,27 +134,6 @@ public class InjectedProcess {
     @SneakyThrows
     public static String preprocessDataPacks() {
         log.info("Writing data packs...");
-        Class<?> registryClass = Class.forName("net.minecraft.core.registries.BuiltInRegistries");
-        Field[] fields = registryClass.getDeclaredFields();
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object obj = field.get(null);
-            if (obj != null) {
-                log.info("Get registry: {}", field.getName());
-                REGISTRY.put(field.getName(), obj);
-            }
-        }
-
-//        Class<?> resourceKeyRegistryClass = Class.forName("net.minecraft.core.registries.Registries");
-//        fields = resourceKeyRegistryClass.getDeclaredFields();
-//        for (Field field : fields) {
-//            field.setAccessible(true);
-//            Object obj = field.get(null);
-//            if (RESOURCE_KEY_CLASS.isInstance(obj)) {
-//                log.info("Get resource key registry: {}", field.getName());
-//                RESOURCE_KEY_REGISTRY.put(field.getName(), obj);
-//            }
-//        }
 
         Object featureFlagRegistry = Class.forName("net.minecraft.world.flag.FeatureFlags").getField("REGISTRY").get(null);
         Class<?> featureFlagRegistryClass = Class.forName("net.minecraft.world.flag.FeatureFlagRegistry");
