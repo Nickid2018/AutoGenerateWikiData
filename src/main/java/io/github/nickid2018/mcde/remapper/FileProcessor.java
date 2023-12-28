@@ -249,7 +249,7 @@ public class FileProcessor {
             return writer.toByteArray();
         }
 
-        if (className.equals(Constants.INJECT_SERVER_PROPERTIES)) {
+        if (!chunkStatistics && className.equals(Constants.INJECT_SERVER_PROPERTIES)) {
             ClassReader reader = new ClassReader(classFileBuffer);
             ClassNode node = new ClassNode();
             reader.accept(node, 0);
