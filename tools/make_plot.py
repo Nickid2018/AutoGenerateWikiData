@@ -103,3 +103,81 @@ def make_plot(
     plot.set_ylabel("数量 %" if percent else "数量")
     plot.set_title(title)
     plot.legend()
+
+
+# Example --------------------------------------------------------
+# cols = {
+#     "coal_total": ["#3a3c32", ["coal_ore", "deepslate_coal_ore"]],
+#     "copper_total": ["#b35b3d", ["copper_ore", "deepslate_copper_ore"]],
+#     "iron_total": ["#d3aa90", ["iron_ore", "deepslate_iron_ore"]],
+#     "gold_total": ["#cabe3c", ["gold_ore", "deepslate_gold_ore"]],
+#     "lapis_total": ["#5376c2", ["lapis_ore", "deepslate_lapis_ore"]],
+#     "redstone_total": ["#d11a10", ["redstone_ore", "deepslate_redstone_ore"]],
+#     "diamond_total": ["#57b7a4", ["diamond_ore", "deepslate_diamond_ore"]],
+#     "emerald_total": ["#35bf6a", ["emerald_ore", "deepslate_emerald_ore"]],
+# }
+# names = {
+#     "coal_total": "煤炭",
+#     "copper_total": "铜",
+#     "iron_total": "铁",
+#     "gold_total": "金",
+#     "lapis_total": "青金石",
+#     "redstone_total": "红石",
+#     "diamond_total": "钻石",
+#     "emerald_total": "绿宝石",
+# }
+#
+# with open(
+#         "overworld_block_count.json",
+#         "r",
+# ) as json_file:
+#     json_data = json5.load(json_file)
+#
+# plane_total_count = lambda v: sum(
+#     dict(filter(lambda x: x[0] not in ["air", "water", "lava"], v.items())).values()
+# )
+#
+# plt.rcParams["font.family"] = ["Noto Sans SC"]
+# fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(8, 18))
+# plt.subplots_adjust(hspace=0.3)
+# make_plot(
+#     ax1,
+#     json_data,
+#     "主世界矿石计数",
+#     cols,
+#     names,
+#     False,
+#     False,
+# )
+# make_plot(
+#     ax2,
+#     json_data,
+#     "主世界矿石计数（占非流体方块百分比）",
+#     cols,
+#     names,
+#     False,
+#     True,
+#     plane_total_count,
+# )
+# make_plot(
+#     ax3,
+#     json_data,
+#     "主世界矿石计数（对数标度）",
+#     cols,
+#     names,
+#     True,
+#     False,
+# )
+# make_plot(
+#     ax4,
+#     json_data,
+#     "主世界矿石计数（对数标度，占非流体方块百分比）",
+#     cols,
+#     names,
+#     True,
+#     True,
+#     plane_total_count,
+# )
+#
+# fig.tight_layout()
+# plt.savefig(f"Overworld Ores Count.png", dpi=600)
