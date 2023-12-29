@@ -100,7 +100,7 @@ def make_plot(
 
     plot.grid()
     plot.set_xlabel("高度")
-    plot.set_ylabel("数量 %" if percent else "数量")
+    plot.set_ylabel("数量占比" if percent else "数量")
     plot.set_title(title)
     plot.legend()
 
