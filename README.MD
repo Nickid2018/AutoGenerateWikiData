@@ -17,6 +17,7 @@
     * `biome_foliage_color`：树叶颜色。
     * `biome_has_precipitation`：是否有降水。
     * `biome_sky_color`：天空颜色。
+    * `biome_spawn_data`：生物生成数据。
     * `biome_water_color`：水颜色。
     * `biome_water_fog_color`：水中雾颜色。
 - 方块：
