@@ -10,6 +10,15 @@
 
 所有数据将生成在`run/output`下。
 
+- 生物群系
+    * `biome_base_temperature`：基础温度。
+    * `biome_creature_probability`：生物生成概率。
+    * `biome_fog_color`：雾颜色。
+    * `biome_foliage_color`：树叶颜色。
+    * `biome_has_precipitation`：是否有降水。
+    * `biome_sky_color`：天空颜色。
+    * `biome_water_color`：水颜色。
+    * `biome_water_fog_color`：水中雾颜色。
 - 方块：
     * `block_breaking_tools`：合适挖掘工具。
     * `block_burn_odds`：烧毁几率。
@@ -27,9 +36,9 @@
 - 附魔 / 魔咒
     * `enchantment_category`：魔咒类别。
     * `enchantment_cost`：附魔等级限制。
-    * `enchantment_flag`：魔咒出现条件（宝藏等）。
+    * `enchantment_flag`：出现条件（宝藏等）。
     * `enchantment_incompatible`：不共存魔咒。
-    * `enchantment_max_level`：魔咒最大等级。
+    * `enchantment_max_level`：最大等级。
     * `enchantment_rarity`：魔咒稀有度。
 - 实体
     * `entity_mob_category`：（暂无译名，控制周期生成）。

@@ -1,9 +1,6 @@
 package io.github.nickid2018.genwiki.inject;
 
-import io.github.nickid2018.genwiki.autovalue.BlockDataExtractor;
-import io.github.nickid2018.genwiki.autovalue.EnchantmentDataExtractor;
-import io.github.nickid2018.genwiki.autovalue.EntityDataExtractor;
-import io.github.nickid2018.genwiki.autovalue.ItemDataExtractor;
+import io.github.nickid2018.genwiki.autovalue.*;
 import io.github.nickid2018.genwiki.statistic.ChunkStatisticsAnalyzer;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +21,7 @@ import java.util.stream.Collectors;
 public class InjectedProcess {
 
     private static final Map<String, Object> REGISTRY = new HashMap<>();
+    private static final Map<String, Object> REGISTRY_KEY = new HashMap<>();
     public static Object featureFlagSet;
 
     public static final Class<?> TAG_KEY_CLASS;
@@ -44,6 +42,10 @@ public class InjectedProcess {
     public static final MethodHandle RESOURCE_KEY_LOCATION;
     @SourceClass("String")
     public static final MethodHandle RESOURCE_LOCATION_PATH;
+    @SourceClass("Registry<T>")
+    public static final MethodHandle REGISTRY_OR_THROW;
+    @SourceClass("Iterable<ServerLevel>")
+    public static final MethodHandle GET_ALL_LEVELS;
 
     public static final MethodHandle SERVER_OVERWORLD;
     public static final MethodHandle REGISTRY_ACCESS;
@@ -67,11 +69,14 @@ public class InjectedProcess {
             REGISTRY_GET_KEY = lookup.unreflect(registryClass.getMethod("getKey", Object.class));
             RESOURCE_KEY_LOCATION = lookup.unreflect(RESOURCE_KEY_CLASS.getMethod("location"));
             RESOURCE_LOCATION_PATH = lookup.unreflect(resourceLocationClass.getMethod("getPath"));
+            Class<?> registryAccessClass = Class.forName("net.minecraft.core.RegistryAccess");
+            REGISTRY_OR_THROW = lookup.unreflect(registryAccessClass.getMethod("registryOrThrow", RESOURCE_KEY_CLASS));
 
             MINECRAFT_SERVER_CLASS = Class.forName("net.minecraft.server.MinecraftServer");
             SERVER_OVERWORLD = lookup.unreflect(MINECRAFT_SERVER_CLASS.getMethod("overworld"));
-            Class<?> registryAccessClass = Class.forName("net.minecraft.world.level.Level");
-            REGISTRY_ACCESS = lookup.unreflect(registryAccessClass.getMethod("registryAccess"));
+            GET_ALL_LEVELS = lookup.unreflect(MINECRAFT_SERVER_CLASS.getMethod("getAllLevels"));
+            Class<?> levelClass = Class.forName("net.minecraft.world.level.Level");
+            REGISTRY_ACCESS = lookup.unreflect(levelClass.getMethod("registryAccess"));
 
             HOLDER_CLASS = Class.forName("net.minecraft.core.Holder");
             HOLDER_VALUE = lookup.unreflect(HOLDER_CLASS.getMethod("value"));
@@ -93,6 +98,17 @@ public class InjectedProcess {
                 if (obj != null) {
                     log.info("Get registry: {}", field.getName());
                     REGISTRY.put(field.getName(), obj);
+                }
+            }
+
+            Class<?> syncRegistry = Class.forName("net.minecraft.core.registries.Registries");
+            Field[] syncFields = syncRegistry.getDeclaredFields();
+            for (Field field : syncFields) {
+                field.setAccessible(true);
+                Object obj = field.get(null);
+                if (RESOURCE_KEY_CLASS.isInstance(obj)) {
+                    log.info("Get registry key: {}", field.getName());
+                    REGISTRY_KEY.put(field.getName(), obj);
                 }
             }
         } catch (Exception e) {
@@ -121,8 +137,8 @@ public class InjectedProcess {
     }
 
     @SneakyThrows
-    public static Object getHolderValue(Object holder) {
-        return HOLDER_VALUE.invoke(holder);
+    public static Object getSyncRegistry(Object level, String name) {
+        return REGISTRY_OR_THROW.invoke(REGISTRY_ACCESS.invoke(level), REGISTRY_KEY.get(name));
     }
 
     @SneakyThrows
@@ -161,6 +177,7 @@ public class InjectedProcess {
         BlockDataExtractor.extractBlockData();
         ItemDataExtractor.extractItemData(server);
         EntityDataExtractor.extractEntityData(server);
+        BiomeDataExtractor.extractBiomeData(server);
         EnchantmentDataExtractor.extractEnchantmentData();
 
         throw new RuntimeException("Program exited, wiki data has been written.");

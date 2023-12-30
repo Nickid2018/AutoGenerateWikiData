@@ -19,6 +19,7 @@ public class EntityDataExtractor {
     public static final Class<?> SERVER_LEVEL_CLASS;
     public static final Class<?> BLOCK_POS_CLASS;
     public static final Class<?> MOB_SPAWN_TYPE_CLASS;
+    public static final Class<?> MOB_CATEGORY_CLASS;
 
     public static final Object BLOCK_POS_ZERO;
     public static final Object MOB_SPAWN_TYPE_COMMAND;
@@ -38,6 +39,7 @@ public class EntityDataExtractor {
             SERVER_LEVEL_CLASS = Class.forName("net.minecraft.server.level.ServerLevel");
             BLOCK_POS_CLASS = Class.forName("net.minecraft.core.BlockPos");
             MOB_SPAWN_TYPE_CLASS = Class.forName("net.minecraft.world.entity.MobSpawnType");
+            MOB_CATEGORY_CLASS = Class.forName("net.minecraft.world.entity.MobCategory");
 
             for (Field field : MOB_TYPE_CLASS.getDeclaredFields())
                 if (field.getType() == MOB_TYPE_CLASS)

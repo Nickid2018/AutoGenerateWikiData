@@ -46,7 +46,6 @@ public class ChunkStatisticsAnalyzer {
     public static final MethodHandle SET_FROZEN;
     public static final MethodHandle SET_TICK_RATE;
     public static final MethodHandle DIMENSION;
-    public static final MethodHandle GET_ALL_LEVELS;
     public static final MethodHandle GET_CHUNK_SOURCE;
     public static final MethodHandle GET_CHUNK_FUTURE;
     public static final MethodHandle GET_BLOCK_STATE;
@@ -117,7 +116,6 @@ public class ChunkStatisticsAnalyzer {
             SET_FROZEN = lookup.unreflect(SERVER_TICK_RATE_MANAGER_CLASS.getMethod("setFrozen", boolean.class));
             SET_TICK_RATE = lookup.unreflect(SERVER_TICK_RATE_MANAGER_CLASS.getMethod("setTickRate", float.class));
             DIMENSION = lookup.unreflect(LEVEL_CLASS.getMethod("dimension"));
-            GET_ALL_LEVELS = lookup.unreflect(InjectedProcess.MINECRAFT_SERVER_CLASS.getMethod("getAllLevels"));
             GET_CHUNK_SOURCE = lookup.unreflect(SERVER_LEVEL_CLASS.getMethod("getChunkSource"));
             GET_CHUNK_FUTURE = lookup.unreflect(SERVER_CHUNK_CACHE_CLASS.getMethod("getChunkFuture",
                     int.class, int.class, CHUNK_STATUS_CLASS, boolean.class));
@@ -158,7 +156,7 @@ public class ChunkStatisticsAnalyzer {
             System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
             System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err)));
 
-            levels = StreamSupport.stream(((Iterable<?>) GET_ALL_LEVELS.invoke(server)).spliterator(), false).collect(Collectors.toList());
+            levels = StreamSupport.stream(((Iterable<?>) InjectedProcess.GET_ALL_LEVELS.invoke(server)).spliterator(), false).collect(Collectors.toList());
             for (Object level : levels) {
                 Object dimension = DIMENSION.invoke(level);
                 Object location = InjectedProcess.RESOURCE_KEY_LOCATION.invoke(dimension);
