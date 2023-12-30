@@ -1,4 +1,4 @@
-package io.github.nickid2018.genwiki.autovalue;
+package io.github.nickid2018.genwiki.autovalue.wikidata;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;

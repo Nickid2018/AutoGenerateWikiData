@@ -36,7 +36,6 @@ public class ChunkStatisticsAnalyzer {
     public static final Class<?> SERVER_CHUNK_CACHE_CLASS;
     public static final Class<?> CHUNK_STATUS_CLASS;
     public static final Class<?> CHUNK_ACCESS_CLASS;
-    public static final Class<?> BLOCK_POS_CLASS;
     public static final Class<?> LEVEL_READER_CLASS;
     public static final Class<?> BLOCK_STATE_BASE_CLASS;
 
@@ -105,7 +104,6 @@ public class ChunkStatisticsAnalyzer {
             SERVER_CHUNK_CACHE_CLASS = Class.forName("net.minecraft.server.level.ServerChunkCache");
             CHUNK_STATUS_CLASS = Class.forName("net.minecraft.world.level.chunk.ChunkStatus");
             CHUNK_ACCESS_CLASS = Class.forName("net.minecraft.world.level.chunk.ChunkAccess");
-            BLOCK_POS_CLASS = Class.forName("net.minecraft.core.BlockPos");
             LEVEL_READER_CLASS = Class.forName("net.minecraft.world.level.LevelReader");
             BLOCK_STATE_BASE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase");
 
@@ -119,10 +117,10 @@ public class ChunkStatisticsAnalyzer {
             GET_CHUNK_SOURCE = lookup.unreflect(SERVER_LEVEL_CLASS.getMethod("getChunkSource"));
             GET_CHUNK_FUTURE = lookup.unreflect(SERVER_CHUNK_CACHE_CLASS.getMethod("getChunkFuture",
                     int.class, int.class, CHUNK_STATUS_CLASS, boolean.class));
-            GET_BLOCK_STATE = lookup.unreflect(CHUNK_ACCESS_CLASS.getMethod("getBlockState", BLOCK_POS_CLASS));
+            GET_BLOCK_STATE = lookup.unreflect(CHUNK_ACCESS_CLASS.getMethod("getBlockState", InjectedProcess.BLOCK_POS_CLASS));
             GET_MIN_BUILD_HEIGHT = lookup.unreflect(LEVEL_READER_CLASS.getMethod("getMinBuildHeight"));
             GET_HEIGHT = lookup.unreflect(LEVEL_READER_CLASS.getMethod("getHeight"));
-            BLOCK_POS_CONSTRUCTOR = lookup.unreflectConstructor(BLOCK_POS_CLASS.getConstructor(int.class, int.class, int.class));
+            BLOCK_POS_CONSTRUCTOR = lookup.unreflectConstructor(InjectedProcess.BLOCK_POS_CLASS.getConstructor(int.class, int.class, int.class));
             GET_BLOCK = lookup.unreflect(BLOCK_STATE_BASE_CLASS.getMethod("getBlock"));
             GET_STATUS = lookup.unreflect(CHUNK_ACCESS_CLASS.getMethod("getStatus"));
             GET_NOISE_BIOME = lookup.unreflect(CHUNK_ACCESS_CLASS.getMethod("getNoiseBiome", int.class, int.class, int.class));

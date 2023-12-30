@@ -1,5 +1,6 @@
 package io.github.nickid2018.genwiki.autovalue;
 
+import io.github.nickid2018.genwiki.autovalue.wikidata.*;
 import io.github.nickid2018.genwiki.inject.InjectedProcess;
 import io.github.nickid2018.genwiki.inject.SourceClass;
 import lombok.SneakyThrows;

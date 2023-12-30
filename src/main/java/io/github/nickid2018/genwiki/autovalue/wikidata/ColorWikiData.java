@@ -1,4 +1,4 @@
-package io.github.nickid2018.genwiki.autovalue;
+package io.github.nickid2018.genwiki.autovalue.wikidata;
 
 
 import java.util.Map;

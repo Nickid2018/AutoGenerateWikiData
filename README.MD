@@ -34,6 +34,7 @@
     * `block_redstone_conductor`：红石导体。
     * `block_replaceable`：可替代方块。
     * `block_suffocating`：窒息方块。
+    * `block_support_type`：方块支撑属性。
 - 附魔 / 魔咒
     * `enchantment_category`：魔咒类别。
     * `enchantment_cost`：附魔等级限制。

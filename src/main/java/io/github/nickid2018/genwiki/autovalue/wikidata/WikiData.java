@@ -1,4 +1,4 @@
-package io.github.nickid2018.genwiki.autovalue;
+package io.github.nickid2018.genwiki.autovalue.wikidata;
 
 import io.github.nickid2018.genwiki.inject.InjectionConstant;
 import org.apache.commons.io.FileUtils;

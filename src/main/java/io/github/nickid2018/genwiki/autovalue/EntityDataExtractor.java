@@ -1,5 +1,7 @@
 package io.github.nickid2018.genwiki.autovalue;
 
+import io.github.nickid2018.genwiki.autovalue.wikidata.StringWikiData;
+import io.github.nickid2018.genwiki.autovalue.wikidata.WikiData;
 import io.github.nickid2018.genwiki.inject.InjectedProcess;
 import io.github.nickid2018.genwiki.inject.SourceClass;
 import lombok.SneakyThrows;
@@ -17,11 +19,9 @@ public class EntityDataExtractor {
     public static final Class<?> MOB_TYPE_CLASS;
     public static final Class<?> LIVING_ENTITY_CLASS;
     public static final Class<?> SERVER_LEVEL_CLASS;
-    public static final Class<?> BLOCK_POS_CLASS;
     public static final Class<?> MOB_SPAWN_TYPE_CLASS;
     public static final Class<?> MOB_CATEGORY_CLASS;
 
-    public static final Object BLOCK_POS_ZERO;
     public static final Object MOB_SPAWN_TYPE_COMMAND;
 
     public static final MethodHandle ENTITY_TYPE_GET_CATEGORY;
@@ -37,7 +37,6 @@ public class EntityDataExtractor {
             MOB_TYPE_CLASS = Class.forName("net.minecraft.world.entity.MobType");
             LIVING_ENTITY_CLASS = Class.forName("net.minecraft.world.entity.LivingEntity");
             SERVER_LEVEL_CLASS = Class.forName("net.minecraft.server.level.ServerLevel");
-            BLOCK_POS_CLASS = Class.forName("net.minecraft.core.BlockPos");
             MOB_SPAWN_TYPE_CLASS = Class.forName("net.minecraft.world.entity.MobSpawnType");
             MOB_CATEGORY_CLASS = Class.forName("net.minecraft.world.entity.MobCategory");
 
@@ -45,13 +44,13 @@ public class EntityDataExtractor {
                 if (field.getType() == MOB_TYPE_CLASS)
                     MOB_TYPE_TO_STRING.put(field.get(null), field.getName());
 
-            BLOCK_POS_ZERO = BLOCK_POS_CLASS.getField("ZERO").get(null);
             MOB_SPAWN_TYPE_COMMAND = MOB_SPAWN_TYPE_CLASS.getField("COMMAND").get(null);
 
             MethodHandles.Lookup lookup = MethodHandles.lookup();
             ENTITY_TYPE_GET_CATEGORY = lookup.unreflect(ENTITY_TYPE_CLASS.getMethod("getCategory"));
             LIVING_ENTITY_GET_MOB_TYPE = lookup.unreflect(LIVING_ENTITY_CLASS.getMethod("getMobType"));
-            ENTITY_TYPE_SPAWN = lookup.unreflect(ENTITY_TYPE_CLASS.getMethod("spawn", SERVER_LEVEL_CLASS, BLOCK_POS_CLASS, MOB_SPAWN_TYPE_CLASS));
+            ENTITY_TYPE_SPAWN = lookup.unreflect(ENTITY_TYPE_CLASS.getMethod(
+                    "spawn", SERVER_LEVEL_CLASS, InjectedProcess.BLOCK_POS_CLASS, MOB_SPAWN_TYPE_CLASS));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -79,7 +78,8 @@ public class EntityDataExtractor {
             MOB_CATEGORY.put(entityID, (String) InjectedProcess.ENUM_NAME.invoke(category));
 
             @SourceClass("Entity")
-            Object entityInstance = ENTITY_TYPE_SPAWN.invoke(entity, serverOverworld, BLOCK_POS_ZERO, MOB_SPAWN_TYPE_COMMAND);
+            Object entityInstance = ENTITY_TYPE_SPAWN.invoke(
+                    entity, serverOverworld, InjectedProcess.BLOCK_POS_ZERO, MOB_SPAWN_TYPE_COMMAND);
             if (LIVING_ENTITY_CLASS.isInstance(entityInstance))
                 MOB_TYPE.put(entityID, MOB_TYPE_TO_STRING.get(LIVING_ENTITY_GET_MOB_TYPE.invoke(entityInstance)));
             else

@@ -29,6 +29,8 @@ public class InjectedProcess {
     public static final Class<?> MINECRAFT_SERVER_CLASS;
     public static final Class<?> HOLDER_CLASS;
     public static final Class<?> EITHER_CLASS;
+    public static final Class<?> BLOCK_POS_CLASS;
+    public static final Class<?> DIRECTION_CLASS;
 
     public static final MethodHandle ENUM_ORDINAL;
     public static final MethodHandle ENUM_NAME;
@@ -54,6 +56,8 @@ public class InjectedProcess {
     public static final MethodHandle EITHER_LEFT;
 
     public static final Path NULL_PATH;
+    public static final Object BLOCK_POS_ZERO;
+    public static final Map<String, Object> DIRECTION_MAP = new HashMap<>();
 
     static {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -85,6 +89,15 @@ public class InjectedProcess {
             EITHER_CLASS = Class.forName("com.mojang.datafixers.util.Either");
             EITHER_LEFT = lookup.unreflect(EITHER_CLASS.getMethod("left"));
 
+            BLOCK_POS_CLASS = Class.forName("net.minecraft.core.BlockPos");
+            BLOCK_POS_ZERO = BLOCK_POS_CLASS.getField("ZERO").get(null);
+
+            DIRECTION_CLASS = Class.forName("net.minecraft.core.Direction");
+            for (Object obj : DIRECTION_CLASS.getEnumConstants()) {
+                String name = (String) ENUM_NAME.invoke(obj);
+                DIRECTION_MAP.put(name.toLowerCase(), obj);
+            }
+
             if (System.getProperty("os.name").toLowerCase().contains("win"))
                 NULL_PATH = Path.of("nul");
             else
@@ -111,7 +124,7 @@ public class InjectedProcess {
                     REGISTRY_KEY.put(field.getName(), obj);
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             throw new RuntimeException(e);
         }
     }
@@ -174,7 +187,7 @@ public class InjectedProcess {
             FileUtils.deleteDirectory(InjectionConstant.OUTPUT_FOLDER);
         InjectionConstant.OUTPUT_FOLDER.mkdirs();
 
-        BlockDataExtractor.extractBlockData();
+        BlockDataExtractor.extractBlockData(server);
         ItemDataExtractor.extractItemData(server);
         EntityDataExtractor.extractEntityData(server);
         BiomeDataExtractor.extractBiomeData(server);

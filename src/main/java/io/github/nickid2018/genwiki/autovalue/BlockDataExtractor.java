@@ -1,6 +1,7 @@
 package io.github.nickid2018.genwiki.autovalue;
 
 import com.google.common.collect.ImmutableList;
+import io.github.nickid2018.genwiki.autovalue.wikidata.*;
 import io.github.nickid2018.genwiki.inject.InjectedProcess;
 import io.github.nickid2018.genwiki.inject.SourceClass;
 import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
@@ -26,7 +27,9 @@ public class BlockDataExtractor {
     public static final Class<?> ENTITY_BLOCK_CLASS;
     public static final Class<?> STATE_DEFINITION_CLASS;
     public static final Class<?> BLOCK_STATE_BASE_CLASS;
-    public static final Class<?> CLASS_MAP_COLOR;
+    public static final Class<?> MAP_COLOR_CLASS;
+    public static final Class<?> SUPPORT_TYPE_CLASS;
+    public static final Class<?> BLOCK_GETTER_CLASS;
 
     @SourceClass("StateDefinition<Block, BlockState>")
     public static final MethodHandle GET_STATE_DEFINITION;
@@ -39,6 +42,7 @@ public class BlockDataExtractor {
     public static final MethodHandle BLOCKSTATE_IS;
     public static final MethodHandle GET_BURN_ODDS;
     public static final MethodHandle GET_IGNITE_ODDS;
+    public static final MethodHandle IS_FACE_STURDY;
 
     public static final VarHandle PROPERTIES_EXPLOSION_RESISTANCE;
     public static final VarHandle PROPERTIES_DESTROY_TIME;
@@ -67,6 +71,7 @@ public class BlockDataExtractor {
     public static final Object FIRE_BLOCK;
 
     public static final Int2ObjectMap<String> MAP_COLOR_MAP = new Int2ObjectAVLTreeMap<>();
+    public static final Map<String, Object> SUPPORT_TYPE_MAP = new HashMap<>();
 
 
     static {
@@ -80,6 +85,8 @@ public class BlockDataExtractor {
             ENTITY_BLOCK_CLASS = Class.forName("net.minecraft.world.level.block.EntityBlock");
             STATE_DEFINITION_CLASS = Class.forName("net.minecraft.world.level.block.state.StateDefinition");
             BLOCK_STATE_BASE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase");
+            SUPPORT_TYPE_CLASS = Class.forName("net.minecraft.world.level.block.SupportType");
+            BLOCK_GETTER_CLASS = Class.forName("net.minecraft.world.level.BlockGetter");
 
             GET_STATE_DEFINITION = lookup.unreflect(BLOCK_CLASS.getMethod("getStateDefinition"));
             PROPERTIES = lookup.unreflect(BLOCK_CLASS.getMethod("properties"));
@@ -87,6 +94,8 @@ public class BlockDataExtractor {
             BLOCK_DEFAULT_BLOCK_STATE = lookup.unreflect(BLOCK_CLASS.getMethod("defaultBlockState"));
             STATE_DEFINITION_GET_POSSIBLE_STATES = lookup.unreflect(STATE_DEFINITION_CLASS.getMethod("getPossibleStates"));
             BLOCKSTATE_IS = lookup.unreflect(BLOCK_STATE_CLASS.getMethod("is", InjectedProcess.TAG_KEY_CLASS));
+            IS_FACE_STURDY = lookup.unreflect(BLOCK_STATE_BASE_CLASS.getMethod(
+                    "isFaceSturdy", BLOCK_GETTER_CLASS, InjectedProcess.BLOCK_POS_CLASS, InjectedProcess.DIRECTION_CLASS, SUPPORT_TYPE_CLASS));
 
             Class<?> NOTE_BLOCK_INSTRUMENT_CLASS = Class.forName("net.minecraft.world.level.block.state.properties.NoteBlockInstrument");
             MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(PROPERTIES_CLASS, lookup);
@@ -126,21 +135,26 @@ public class BlockDataExtractor {
             GET_IGNITE_ODDS = privateLookup2.findVirtual(CLASS_FIRE, "getIgniteOdds", MethodType.methodType(int.class, BLOCK_STATE_CLASS));
 
             MethodHandles.Lookup privateLookup3 = MethodHandles.privateLookupIn(BLOCK_STATE_BASE_CLASS, lookup);
-            CLASS_MAP_COLOR = Class.forName("net.minecraft.world.level.material.MapColor");
+            MAP_COLOR_CLASS = Class.forName("net.minecraft.world.level.material.MapColor");
             VAR_LEGACY_SOLID = privateLookup3.findVarHandle(BLOCK_STATE_BASE_CLASS, "legacySolid", boolean.class);
-            VAR_MAP_COLOR = privateLookup3.findVarHandle(BLOCK_STATE_BASE_CLASS, "mapColor", CLASS_MAP_COLOR);
+            VAR_MAP_COLOR = privateLookup3.findVarHandle(BLOCK_STATE_BASE_CLASS, "mapColor", MAP_COLOR_CLASS);
 
-            VAR_MAP_COLOR_ID = lookup.findVarHandle(CLASS_MAP_COLOR, "id", int.class);
-            Field[] fields3 = CLASS_MAP_COLOR.getDeclaredFields();
+            VAR_MAP_COLOR_ID = lookup.findVarHandle(MAP_COLOR_CLASS, "id", int.class);
+            Field[] fields3 = MAP_COLOR_CLASS.getDeclaredFields();
             for (Field field : fields3) {
-                if (field.getType() == CLASS_MAP_COLOR) {
+                if (field.getType() == MAP_COLOR_CLASS) {
                     Object mapColor = field.get(null);
                     int id = (int) VAR_MAP_COLOR_ID.get(mapColor);
                     String name = field.getName();
                     MAP_COLOR_MAP.put(id, name);
                 }
             }
-        } catch (Exception e) {
+
+            for (Object obj : SUPPORT_TYPE_CLASS.getEnumConstants()) {
+                String name = (String) InjectedProcess.ENUM_NAME.invoke(obj);
+                SUPPORT_TYPE_MAP.put(name, obj);
+            }
+        } catch (Throwable e) {
             throw new RuntimeException(e);
         }
     }
@@ -164,13 +178,16 @@ public class BlockDataExtractor {
     private static final StringWikiData MAP_COLOR = new StringWikiData();
     private static final ExceptData MAP_COLOR_EXCEPT = new ExceptData();
     private static final StringWikiData INSTRUMENT = new StringWikiData();
+    private static final SubStringMapWikiData SUPPORT_TYPE = new SubStringMapWikiData();
+    private static final ExceptData SUPPORT_TYPE_EXCEPT = new ExceptData();
 
     @SneakyThrows
-    public static void extractBlockData() {
+    public static void extractBlockData(Object serverObj) {
         @SourceClass("DefaultedRegistry<Block>")
         Object blockRegistry = InjectedProcess.getRegistry("BLOCK");
         @SourceClass("Set<ResourceKey<Block>>")
         Set<?> blockKeySet = InjectedProcess.getRegistryKeySet(blockRegistry);
+        Object serverOverworld = InjectedProcess.SERVER_OVERWORLD.invoke(serverObj);
         for (@SourceClass("ResourceKey<Block>") Object key : blockKeySet) {
             @SourceClass("ResourceLocation")
             Object location = InjectedProcess.RESOURCE_KEY_LOCATION.invoke(key);
@@ -209,6 +226,7 @@ public class BlockDataExtractor {
 
             calcSolid(blockID, states);
             resolveMapColor(blockID, states);
+            resolveSupportType(serverOverworld, blockID, states);
 
             @SourceClass("BlockState")
             Object defaultBlockState = BLOCK_DEFAULT_BLOCK_STATE.invoke(block);
@@ -237,6 +255,7 @@ public class BlockDataExtractor {
         WikiData.write(LEGACY_SOLID, LEGACY_SOLID_EXCEPT, "block_legacy_solid.txt");
         WikiData.write(MAP_COLOR, MAP_COLOR_EXCEPT, "block_map_color.txt");
         WikiData.write(INSTRUMENT, "block_instrument.txt");
+        WikiData.write(SUPPORT_TYPE, SUPPORT_TYPE_EXCEPT, "block_support_type.txt");
     }
 
     private static final String[] PUSH_REACTION_NAMES = new String[]{
@@ -400,5 +419,66 @@ public class BlockDataExtractor {
         tools.sort(Comparator.naturalOrder());
 
         return tools;
+    }
+
+    @SneakyThrows
+    public static void resolveSupportType(Object level, String blockID, ImmutableList<?> states) {
+        Map<String, Map<String, List<String>>> map = new HashMap<>();
+        boolean needExcept = false;
+        for (Map.Entry<String, Object> entry : InjectedProcess.DIRECTION_MAP.entrySet()) {
+            Map<String, List<String>> subMap = new HashMap<>();
+            map.put(entry.getKey(), subMap);
+            Object direction = entry.getValue();
+            for (Object state : states) {
+                String stateString = state.toString();
+                if (stateString.contains("["))
+                    stateString = stateString.substring(stateString.indexOf('['));
+                boolean testFULL = (boolean) IS_FACE_STURDY.invoke(
+                        state, level, InjectedProcess.BLOCK_POS_ZERO, direction, SUPPORT_TYPE_MAP.get("FULL"));
+                if (testFULL)
+                    subMap.computeIfAbsent("FULL", k -> new ArrayList<>()).add(stateString);
+                else {
+                    boolean testCENTER = (boolean) IS_FACE_STURDY.invoke(
+                            state, level, InjectedProcess.BLOCK_POS_ZERO, direction, SUPPORT_TYPE_MAP.get("CENTER"));
+                    boolean testRIGID = (boolean) IS_FACE_STURDY.invoke(
+                            state, level, InjectedProcess.BLOCK_POS_ZERO, direction, SUPPORT_TYPE_MAP.get("RIGID"));
+                    if (testCENTER && testRIGID)
+                        subMap.computeIfAbsent("CENTER_AND_RIGID", k -> new ArrayList<>()).add(stateString);
+                    else if (testCENTER)
+                        subMap.computeIfAbsent("CENTER", k -> new ArrayList<>()).add(stateString);
+                    else if (testRIGID)
+                        subMap.computeIfAbsent("RIGID", k -> new ArrayList<>()).add(stateString);
+                    else
+                        subMap.computeIfAbsent("NONE", k -> new ArrayList<>()).add(stateString);
+                }
+            }
+            if (subMap.size() > 1)
+                needExcept = true;
+        }
+        if (needExcept) {
+            Map<String, List<String>> exceptMap = new HashMap<>();
+            for (Map.Entry<String, Map<String, List<String>>> entry : map.entrySet()) {
+                String direction = entry.getKey();
+                Map<String, List<String>> subMap = entry.getValue();
+                for (Map.Entry<String, List<String>> subEntry : subMap.entrySet()) {
+                    String type = subEntry.getKey();
+                    List<String> statesList = subEntry.getValue();
+                    for (String state : statesList)
+                        exceptMap.computeIfAbsent(state, k -> new ArrayList<>()).add(direction + "=" + type);
+                }
+            }
+            for (Map.Entry<String, List<String>> entry : exceptMap.entrySet()) {
+                String state = entry.getKey();
+                List<String> directionData = entry.getValue();
+                SUPPORT_TYPE_EXCEPT.put(blockID, state, String.join(", ", directionData));
+            }
+        } else {
+            for (Map.Entry<String, Map<String, List<String>>> entry : map.entrySet()) {
+                String direction = entry.getKey();
+                Map<String, List<String>> subMap = entry.getValue();
+                String type = subMap.keySet().iterator().next();
+                SUPPORT_TYPE.putNew(blockID, direction, type);
+            }
+        }
     }
 }
