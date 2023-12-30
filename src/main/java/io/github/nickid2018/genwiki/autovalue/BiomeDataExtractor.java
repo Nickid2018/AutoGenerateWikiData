@@ -3,7 +3,6 @@ package io.github.nickid2018.genwiki.autovalue;
 import io.github.nickid2018.genwiki.inject.InjectedProcess;
 import io.github.nickid2018.genwiki.inject.SourceClass;
 import lombok.SneakyThrows;
-import org.checkerframework.checker.units.qual.C;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -11,6 +10,7 @@ import java.lang.invoke.VarHandle;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class BiomeDataExtractor {
 
@@ -40,6 +40,8 @@ public class BiomeDataExtractor {
     public static final VarHandle SPAWNER_DATA_TYPE;
     public static final VarHandle SPAWNER_DATA_MIN_COUNT;
     public static final VarHandle SPAWNER_DATA_MAX_COUNT;
+
+    public static final Map<String, Object> MOB_CATEGORIES_SPAWN = new TreeMap<>();
 
     static {
         try {
@@ -74,7 +76,14 @@ public class BiomeDataExtractor {
             SPAWNER_DATA_TYPE = lookup.findVarHandle(SPAWNER_DATA_CLASS, "type", EntityDataExtractor.ENTITY_TYPE_CLASS);
             SPAWNER_DATA_MIN_COUNT = lookup.findVarHandle(SPAWNER_DATA_CLASS, "minCount", int.class);
             SPAWNER_DATA_MAX_COUNT = lookup.findVarHandle(SPAWNER_DATA_CLASS, "maxCount", int.class);
-        } catch (Exception e) {
+
+            for (Object obj : EntityDataExtractor.MOB_CATEGORY_CLASS.getEnumConstants()) {
+                String name = (String) InjectedProcess.ENUM_NAME.invoke(obj);
+                if (name.equals("MISC"))
+                    continue;
+                MOB_CATEGORIES_SPAWN.put(name, obj);
+            }
+        } catch (Throwable e) {
             throw new RuntimeException(e);
         }
     }
@@ -87,6 +96,7 @@ public class BiomeDataExtractor {
     private static final ColorWikiData WATER_COLOR = new ColorWikiData();
     private static final ColorWikiData WATER_FOG_COLOR = new ColorWikiData();
     private static final NumberWikiData CREATURE_PROBABILITY = new NumberWikiData().setFallback(0.1f);
+    private static final SpawnWikiData SPAWN_DATA = new SpawnWikiData();
 
     @SneakyThrows
     public static void extractBiomeData(Object serverObj) {
@@ -113,9 +123,36 @@ public class BiomeDataExtractor {
 
                 Object mobSettings = BIOME_GET_MOB_SETTINGS.invoke(biome);
                 CREATURE_PROBABILITY.put(biomeID, (float) MOB_SPAWN_SETTINGS_GET_CREATURE_PROBABILITY.invoke(mobSettings));
+
+                for (Map.Entry<String, Object> category : MOB_CATEGORIES_SPAWN.entrySet()) {
+                    String categoryName = category.getKey();
+                    Object categoryObj = category.getValue();
+                    @SourceClass("WeightedRandomList<SpawnerData>")
+                    Object spawnerList = MOB_SPAWN_SETTINGS_GET_MOBS.invoke(mobSettings, categoryObj);
+                    @SourceClass("List<SpawnerData>")
+                    List<?> spawnerDataList = (List<?>) WEIGHTED_RANDOM_LIST_UNWRAP.invoke(spawnerList);
+                    if (spawnerDataList.isEmpty())
+                        continue;
+                    for (Object spawnerData : spawnerDataList) {
+                        Object type = SPAWNER_DATA_TYPE.get(spawnerData);
+                        String entityID = InjectedProcess.getObjectPathWithRegistry(entityRegistry, type);
+                        int weight = (int) WEIGHT_AS_INT.invoke(WEIGHTED_ENTRY_GET_WEIGHT.invoke(spawnerData));
+                        int min = (int) SPAWNER_DATA_MIN_COUNT.get(spawnerData);
+                        int max = (int) SPAWNER_DATA_MAX_COUNT.get(spawnerData);
+                        SPAWN_DATA.add(biomeID, categoryName, entityID, weight, min, max);
+                    }
+                }
                 @SourceClass("Map<EntityType<?>, MobSpawnCost>")
                 Map<?, ?> mobSpawnCosts = (Map<?, ?>) MOB_SPAWN_SETTINGS_MOB_SPAWN_COSTS.get(mobSettings);
-
+                for (Map.Entry<?, ?> entry : mobSpawnCosts.entrySet()) {
+                    Object type = entry.getKey();
+                    String entityID = InjectedProcess.getObjectPathWithRegistry(entityRegistry, type);
+                    @SourceClass("MobSpawnCost")
+                    Object cost = entry.getValue();
+                    double budget = (double) MOB_SPAWN_COST_ENERGY_BUDGET.get(cost);
+                    double charge = (double) MOB_SPAWN_COST_CHARGE.get(cost);
+                    SPAWN_DATA.addSpawnCost(biomeID, entityID, budget, charge);
+                }
             }
         }
 
@@ -127,5 +164,6 @@ public class BiomeDataExtractor {
         WikiData.write(WATER_COLOR, "biome_water_color.txt");
         WikiData.write(WATER_FOG_COLOR, "biome_water_fog_color.txt");
         WikiData.write(CREATURE_PROBABILITY, "biome_creature_probability.txt");
+        WikiData.write(SPAWN_DATA, "biome_spawn_data.txt");
     }
 }
