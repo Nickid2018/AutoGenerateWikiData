@@ -7,17 +7,16 @@ import lombok.SneakyThrows;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class EnchantmentDataExtractor {
 
     public static final Class<?> ENCHANTMENT_CLASS;
-    public static final Class<?> ENCHANTMENT_CATEGORY_CLASS;
+    public static final Class<?> ITEM_STACK_CLASS;
+    public static final Class<?> ITEM_CLASS;
+    public static final Class<?> TAG_KEY_CLASS;
 
     public static final MethodHandle ENCHANTMENT_GET_RARITY;
     public static final MethodHandle ENCHANTMENT_GET_MAX_LEVEL;
@@ -27,13 +26,16 @@ public class EnchantmentDataExtractor {
     public static final MethodHandle ENCHANTMENT_IS_COMPATIBLE_WITH;
     public static final MethodHandle ENCHANTMENT_GET_MIN_COST;
     public static final MethodHandle ENCHANTMENT_GET_MAX_COST;
-
-    public static final VarHandle ENCHANTMENT_CATEGORY;
+    public static final MethodHandle ENCHANTMENT_GET_MATCH;
+    public static final MethodHandle ITEM_GET_DEFAULT_INSTANCE;
+    public static final MethodHandle ITEM_STACK_IS;
 
     static {
         try {
             ENCHANTMENT_CLASS = Class.forName("net.minecraft.world.item.enchantment.Enchantment");
-            ENCHANTMENT_CATEGORY_CLASS = Class.forName("net.minecraft.world.item.enchantment.EnchantmentCategory");
+            ITEM_STACK_CLASS = Class.forName("net.minecraft.world.item.ItemStack");
+            ITEM_CLASS = Class.forName("net.minecraft.world.item.Item");
+            TAG_KEY_CLASS = Class.forName("net.minecraft.tags.TagKey");
             MethodHandles.Lookup lookup = MethodHandles.lookup();
 
             ENCHANTMENT_GET_RARITY = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("getRarity"));
@@ -45,8 +47,10 @@ public class EnchantmentDataExtractor {
 
             ENCHANTMENT_GET_MIN_COST = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("getMinCost", int.class));
             ENCHANTMENT_GET_MAX_COST = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("getMaxCost", int.class));
+            ENCHANTMENT_GET_MATCH = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("getMatch"));
 
-            ENCHANTMENT_CATEGORY = lookup.findVarHandle(ENCHANTMENT_CLASS, "category", ENCHANTMENT_CATEGORY_CLASS);
+            ITEM_GET_DEFAULT_INSTANCE = lookup.unreflect(ITEM_CLASS.getMethod("getDefaultInstance"));
+            ITEM_STACK_IS = lookup.unreflect(ITEM_STACK_CLASS.getMethod("is", TAG_KEY_CLASS));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -56,8 +60,8 @@ public class EnchantmentDataExtractor {
     public static final NumberWikiData ENCHANTMENT_MAX_LEVEL = new NumberWikiData();
     public static final StringWikiData ENCHANTMENT_FLAG = new StringWikiData();
     public static final StringListWikiData ENCHANTMENT_INCOMPATIBLE = new StringListWikiData();
-    public static final StringWikiData ENCHANTMENT_CATEGORY_DATA = new StringWikiData();
     public static final NumberPairMapWikiData ENCHANTMENT_COST = new NumberPairMapWikiData();
+    public static final StringListWikiData ENCHANTMENT_MATCH = new StringListWikiData();
 
     @SneakyThrows
     private static String getRegistryName(Object enchantment) {
@@ -120,15 +124,49 @@ public class EnchantmentDataExtractor {
                 int maxCost = (int) ENCHANTMENT_GET_MAX_COST.invoke(enchantment, i);
                 ENCHANTMENT_COST.putNew(name, minCost, maxCost);
             }
+        }
 
-            ENCHANTMENT_CATEGORY_DATA.put(name, (String) InjectedProcess.ENUM_NAME.invoke(ENCHANTMENT_CATEGORY.get(enchantment)));
+        Map<String, ?> tagKeys = enchantmentMap.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                ((Function<? super Map.Entry<String, ?>, ?>) Map.Entry::getValue).andThen(ENCHANTMENT_GET_MATCH::invoke)
+        ));
+        Map<String, List<String>> enchantItems = new HashMap<>();
+
+        @SourceClass("DefaultedRegistry<Item>")
+        Object itemRegistry = InjectedProcess.getRegistry("ITEM");
+        @SourceClass("Set<ResourceKey<Item>>")
+        Set<?> itemKeySet = InjectedProcess.getRegistryKeySet(itemRegistry);
+        for (Object itemKey : itemKeySet) {
+            @SourceClass("ResourceLocation")
+            Object itemLocation = InjectedProcess.RESOURCE_KEY_LOCATION.invoke(itemKey);
+            String itemID = InjectedProcess.getResourceLocationPath(itemLocation);
+            @SourceClass("Item")
+            Object item = InjectedProcess.REGISTRY_GET.invoke(itemRegistry, itemKey);
+            @SourceClass("ItemStack")
+            Object itemStack = ITEM_GET_DEFAULT_INSTANCE.invoke(item);
+            for (Map.Entry<String, ?> entry : tagKeys.entrySet()) {
+                String enchantmentName = entry.getKey();
+                Object tagKey = entry.getValue();
+                boolean isEnchanted = (boolean) ITEM_STACK_IS.invoke(itemStack, tagKey);
+                if (isEnchanted) {
+                    List<String> items = enchantItems.computeIfAbsent(enchantmentName, k -> new ArrayList<>());
+                    items.add(itemID);
+                }
+            }
+        }
+
+        for (Map.Entry<String, List<String>> entry : enchantItems.entrySet()) {
+            String enchantmentName = entry.getKey();
+            List<String> items = entry.getValue();
+            items.sort(Comparator.naturalOrder());
+            ENCHANTMENT_MATCH.put(enchantmentName, items);
         }
 
         WikiData.write(ENCHANTMENT_RARITY, "enchantment_rarity.txt");
         WikiData.write(ENCHANTMENT_MAX_LEVEL, "enchantment_max_level.txt");
         WikiData.write(ENCHANTMENT_FLAG, "enchantment_flag.txt");
         WikiData.write(ENCHANTMENT_INCOMPATIBLE, "enchantment_incompatible.txt");
-        WikiData.write(ENCHANTMENT_CATEGORY_DATA, "enchantment_category.txt");
         WikiData.write(ENCHANTMENT_COST, "enchantment_cost.txt");
+        WikiData.write(ENCHANTMENT_MATCH, "enchantment_match.txt");
     }
 }
