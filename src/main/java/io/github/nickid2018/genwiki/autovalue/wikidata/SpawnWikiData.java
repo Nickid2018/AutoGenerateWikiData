@@ -1,9 +1,8 @@
 package io.github.nickid2018.genwiki.autovalue.wikidata;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import lombok.Getter;
+
+import java.util.*;
 
 public class SpawnWikiData implements WikiData {
 
@@ -45,7 +44,8 @@ public class SpawnWikiData implements WikiData {
                 String category = categoryEntry.getKey();
                 builder.append(tab).append("\t['").append(category).append("'] = {\n");
                 for (Entry entry : categoryEntry.getValue()) {
-                    builder.append(tab).append("\t\t['").append(entry.name).append("'] = {\n");
+                    builder.append(tab).append("\t\t{\n");
+                    builder.append(tab).append("\t\t\t['entity_id'] = '").append(entry.name).append("',\n");
                     builder.append(tab).append("\t\t\t['weight'] = ").append(entry.weight).append(",\n");
                     builder.append(tab).append("\t\t\t['min_size'] = ").append(entry.min).append(",\n");
                     builder.append(tab).append("\t\t\t['max_size'] = ").append(entry.max).append(",\n");
@@ -62,6 +62,7 @@ public class SpawnWikiData implements WikiData {
         return builder.toString();
     }
 
+    @Getter
     private static class Entry implements Comparable<Entry> {
         public final String name;
         public final int weight;
@@ -77,9 +78,11 @@ public class SpawnWikiData implements WikiData {
             this.max = max;
         }
 
+        private static final Comparator<Entry> COMPARATOR = Comparator.comparing(Entry::getWeight).reversed().thenComparing(Entry::getName);
+
         @Override
         public int compareTo(Entry o) {
-            return name.compareTo(o.name);
+            return COMPARATOR.compare(this, o);
         }
     }
 }
