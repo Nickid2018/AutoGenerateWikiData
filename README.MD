@@ -46,6 +46,7 @@
     * `entity_mob_category`：（暂无译名，控制周期生成）。
     * `entity_mob_type`：生物类型。
 - 物品
+    * `item_attribute_modifiers`：物品属性修饰符。
     * `item_burn_duration`：烧炼时间（游戏刻计）。
     * `item_creative_mode_tabs`：创造模式标签页。
     * `item_food_properties`：食物属性。
