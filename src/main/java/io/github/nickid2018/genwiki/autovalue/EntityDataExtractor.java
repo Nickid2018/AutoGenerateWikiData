@@ -26,8 +26,6 @@ public class EntityDataExtractor {
     public static final MethodHandle ENTITY_TYPE_GET_CATEGORY;
     public static final MethodHandle ENTITY_TYPE_SPAWN;
 
-    public static final Map<Object, String> MOB_TYPE_TO_STRING = new HashMap<>();
-
 
     static {
         try {
@@ -51,7 +49,7 @@ public class EntityDataExtractor {
     private static final StringWikiData MOB_CATEGORY = new StringWikiData();
 
     @SneakyThrows
-    public static void extractEntityData(Object serverObj) {
+    public static void extractEntityData() {
         @SourceClass("DefaultedRegistry<EntityType<?>>")
         Object entityRegistry = InjectedProcess.getRegistry("ENTITY_TYPE");
         @SourceClass("Set<ResourceKey<EntityType<?>>>")

@@ -189,7 +189,7 @@ public class InjectedProcess {
 
         BlockDataExtractor.extractBlockData(server);
         ItemDataExtractor.extractItemData(server);
-        EntityDataExtractor.extractEntityData(server);
+        EntityDataExtractor.extractEntityData();
         BiomeDataExtractor.extractBiomeData(server);
         EnchantmentDataExtractor.extractEnchantmentData();
 

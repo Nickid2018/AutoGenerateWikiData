@@ -1,6 +1,9 @@
 package io.github.nickid2018.genwiki.autovalue.wikidata;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class AttributeModifiersData implements WikiData {
 
@@ -34,7 +37,7 @@ public class AttributeModifiersData implements WikiData {
                 builder.append(tab).append("\t['").append(category).append("'] = {\n");
                 for (AttributeModifier entry : slotTypeEntry.getValue()) {
                     builder.append(tab).append("\t\t{\n");
-                    builder.append(tab).append("\t\t\t['attribute'] ='").append(entry.attribute).append("',\n");
+                    builder.append(tab).append("\t\t\t['attribute'] = '").append(entry.attribute).append("',\n");
                     builder.append(tab).append("\t\t\t['amount'] = ").append(formatValue(entry.amount)).append(",\n");
                     builder.append(tab).append("\t\t\t['operation'] = '").append(entry.operation).append("',\n");
                     builder.append(tab).append("\t\t},\n");
