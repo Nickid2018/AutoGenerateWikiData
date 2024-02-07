@@ -195,7 +195,7 @@ public class FileProcessor {
                 }
             }
             if (!injected)
-                throw new RuntimeException("Failed to inject!");
+                throw new RuntimeException("Failed to inject " + Constants.INJECT_POINT_CLASS + "!");
             ClassWriter writer = new ClassWriter(0);
             node.accept(writer);
             return writer.toByteArray();
@@ -222,7 +222,7 @@ public class FileProcessor {
                     list.add(new FieldInsnNode(Opcodes.GETSTATIC,
                             "io/github/nickid2018/genwiki/inject/InjectedProcess", "NULL_PATH",
                             "Ljava/nio/file/Path;"));
-                    list.add(new VarInsnNode(Opcodes.ASTORE, 1));
+                    list.add(new VarInsnNode(Opcodes.ASTORE, 2));
                     list.add(method.instructions);
                     method.instructions = list;
                     injectedCount++;
@@ -243,7 +243,7 @@ public class FileProcessor {
                 }
             }
             if (injectedCount != 4)
-                throw new RuntimeException("Failed to inject!");
+                throw new RuntimeException("Failed to inject " + Constants.INJECT_REGION_FILE + "!");
             ClassWriter writer = new ClassWriter(0);
             node.accept(writer);
             return writer.toByteArray();
@@ -270,7 +270,7 @@ public class FileProcessor {
                 }
             }
             if (!injected)
-                throw new RuntimeException("Failed to inject!");
+                throw new RuntimeException("Failed to inject " + Constants.INJECT_SERVER_PROPERTIES + "!");
             ClassWriter writer = new ClassWriter(0);
             node.accept(writer);
             return writer.toByteArray();

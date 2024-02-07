@@ -25,7 +25,7 @@ public class Constants {
     public static final String INJECT_REGION_FILE_METHOD2 = "close";
     public static final String INJECT_REGION_FILE_METHOD2_DESC = "()V";
     public static final String INJECT_REGION_FILE_METHOD3 = "<init>";
-    public static final String INJECT_REGION_FILE_METHOD3_DESC = "(Ljava/nio/file/Path;Ljava/nio/file/Path;Lnet/minecraft/world/level/chunk/storage/RegionFileVersion;Z)V";
+    public static final String INJECT_REGION_FILE_METHOD3_DESC = "(Lnet/minecraft/world/level/chunk/storage/RegionStorageInfo;Ljava/nio/file/Path;Ljava/nio/file/Path;Lnet/minecraft/world/level/chunk/storage/RegionFileVersion;Z)V";
     public static final String INJECT_REGION_FILE_METHOD4 = "flush";
     public static final String INJECT_REGION_FILE_METHOD4_DESC = "()V";
 }
