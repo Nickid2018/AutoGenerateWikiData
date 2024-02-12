@@ -60,7 +60,7 @@ public class EnchantmentDataExtractor {
     public static final NumberWikiData ENCHANTMENT_MAX_LEVEL = new NumberWikiData();
     public static final StringWikiData ENCHANTMENT_FLAG = new StringWikiData();
     public static final StringListWikiData ENCHANTMENT_INCOMPATIBLE = new StringListWikiData();
-    public static final NumberPairMapWikiData ENCHANTMENT_COST = new NumberPairMapWikiData();
+    public static final PairMapWikiData<Integer, Integer> ENCHANTMENT_COST = new PairMapWikiData<>();
     public static final StringListWikiData ENCHANTMENT_MATCH = new StringListWikiData();
 
     @SneakyThrows

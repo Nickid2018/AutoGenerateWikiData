@@ -78,7 +78,7 @@ public class ItemDataExtractor {
     private static final NumberWikiData BURN_DURATION = new NumberWikiData().setFallback(0);
     private static final NumberWikiData MAX_DAMAGE = new NumberWikiData().setFallback(0);
     private static final DoubleNumberWikiData FOOD_PROPERTIES = new DoubleNumberWikiData().setFallback(0, 0).setFallbackNil(true);
-    private static final AttributeModifiersData ATTRIBUTE_MODIFIERS = new AttributeModifiersData();
+    private static final AttributeModifiersWikiData ATTRIBUTE_MODIFIERS = new AttributeModifiersWikiData();
 
     @SneakyThrows
     @SuppressWarnings("unchecked")

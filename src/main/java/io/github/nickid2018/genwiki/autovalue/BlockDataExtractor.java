@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import io.github.nickid2018.genwiki.autovalue.wikidata.*;
 import io.github.nickid2018.genwiki.inject.InjectedProcess;
 import io.github.nickid2018.genwiki.inject.SourceClass;
+import io.github.nickid2018.genwiki.util.LanguageUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import lombok.SneakyThrows;
@@ -30,6 +31,9 @@ public class BlockDataExtractor {
     public static final Class<?> MAP_COLOR_CLASS;
     public static final Class<?> SUPPORT_TYPE_CLASS;
     public static final Class<?> BLOCK_GETTER_CLASS;
+    public static final Class<?> BLOCKSTATE_PROPERTIES_CLASS;
+    public static final Class<?> PROPERTY_CLASS;
+    public static final Class<?> STATE_HOLDER_CLASS;
 
     @SourceClass("StateDefinition<Block, BlockState>")
     public static final MethodHandle GET_STATE_DEFINITION;
@@ -43,6 +47,10 @@ public class BlockDataExtractor {
     public static final MethodHandle GET_BURN_ODDS;
     public static final MethodHandle GET_IGNITE_ODDS;
     public static final MethodHandle IS_FACE_STURDY;
+    public static final MethodHandle GET_POSSIBLE_VALUES;
+    public static final MethodHandle GET_PROPERTY_NAME;
+    public static final MethodHandle GET_NAME;
+    public static final MethodHandle STATE_HOLDER_GET_VALUES;
 
     public static final VarHandle PROPERTIES_EXPLOSION_RESISTANCE;
     public static final VarHandle PROPERTIES_DESTROY_TIME;
@@ -87,6 +95,9 @@ public class BlockDataExtractor {
             BLOCK_STATE_BASE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase");
             SUPPORT_TYPE_CLASS = Class.forName("net.minecraft.world.level.block.SupportType");
             BLOCK_GETTER_CLASS = Class.forName("net.minecraft.world.level.BlockGetter");
+            BLOCKSTATE_PROPERTIES_CLASS = Class.forName("net.minecraft.world.level.block.state.properties.BlockStateProperties");
+            PROPERTY_CLASS = Class.forName("net.minecraft.world.level.block.state.properties.Property");
+            STATE_HOLDER_CLASS = Class.forName("net.minecraft.world.level.block.state.StateHolder");
 
             GET_STATE_DEFINITION = lookup.unreflect(BLOCK_CLASS.getMethod("getStateDefinition"));
             PROPERTIES = lookup.unreflect(BLOCK_CLASS.getMethod("properties"));
@@ -96,6 +107,10 @@ public class BlockDataExtractor {
             BLOCKSTATE_IS = lookup.unreflect(BLOCK_STATE_CLASS.getMethod("is", InjectedProcess.TAG_KEY_CLASS));
             IS_FACE_STURDY = lookup.unreflect(BLOCK_STATE_BASE_CLASS.getMethod(
                     "isFaceSturdy", BLOCK_GETTER_CLASS, InjectedProcess.BLOCK_POS_CLASS, InjectedProcess.DIRECTION_CLASS, SUPPORT_TYPE_CLASS));
+            GET_POSSIBLE_VALUES = lookup.unreflect(PROPERTY_CLASS.getMethod("getPossibleValues"));
+            GET_PROPERTY_NAME = lookup.unreflect(PROPERTY_CLASS.getMethod("getName"));
+            GET_NAME = lookup.unreflect(PROPERTY_CLASS.getMethod("getName", Comparable.class));
+            STATE_HOLDER_GET_VALUES = lookup.unreflect(STATE_HOLDER_CLASS.getMethod("getValues"));
 
             Class<?> NOTE_BLOCK_INSTRUMENT_CLASS = Class.forName("net.minecraft.world.level.block.state.properties.NoteBlockInstrument");
             MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(PROPERTIES_CLASS, lookup);
@@ -180,6 +195,8 @@ public class BlockDataExtractor {
     private static final StringWikiData INSTRUMENT = new StringWikiData();
     private static final SubStringMapWikiData SUPPORT_TYPE = new SubStringMapWikiData();
     private static final ExceptData SUPPORT_TYPE_EXCEPT = new ExceptData();
+    private static final PropertyWikiData BLOCK_PROPERTY_VALUES = new PropertyWikiData();
+    private static final PairMapWikiData<String, String> BLOCK_PROPERTIES = new PairMapWikiData<>();
 
     @SneakyThrows
     public static void extractBlockData(Object serverObj) {
@@ -188,6 +205,24 @@ public class BlockDataExtractor {
         @SourceClass("Set<ResourceKey<Block>>")
         Set<?> blockKeySet = InjectedProcess.getRegistryKeySet(blockRegistry);
         Object serverOverworld = InjectedProcess.SERVER_OVERWORLD.invoke(serverObj);
+
+        Field[] blockStateProperties = BLOCKSTATE_PROPERTIES_CLASS.getDeclaredFields();
+        Map<Object, String> revPropertyMap = new HashMap<>();
+        for (Field propertyField : blockStateProperties) {
+            Object property = propertyField.get(null);
+            String propertyID = propertyField.getName();
+            if (PROPERTY_CLASS.isInstance(property)) {
+                Collection<?> possibleValues = (Collection<?>) GET_POSSIBLE_VALUES.invoke(property);
+                String propertyName = (String) GET_PROPERTY_NAME.invoke(property);
+                BLOCK_PROPERTY_VALUES.put(propertyID, propertyName);
+                possibleValues.stream()
+                        .map(LanguageUtils.sneakyExceptionFunction(v -> GET_NAME.invoke(property, v)))
+                        .map(LanguageUtils.<Object, String>castFunction())
+                        .forEach(value -> BLOCK_PROPERTY_VALUES.putNew(propertyID, value));
+                revPropertyMap.put(property, propertyID);
+            }
+        }
+
         for (@SourceClass("ResourceKey<Block>") Object key : blockKeySet) {
             @SourceClass("ResourceLocation")
             Object location = InjectedProcess.RESOURCE_KEY_LOCATION.invoke(key);
@@ -237,6 +272,15 @@ public class BlockDataExtractor {
             BURN_ODDS.put(blockID, burnOdds);
             int igniteOdds = (int) GET_IGNITE_ODDS.invoke(FIRE_BLOCK, defaultBlockState);
             IGNITE_ODDS.put(blockID, igniteOdds);
+
+            Map<?, ?> defaultStateMap = (Map<?, ?>) STATE_HOLDER_GET_VALUES.invoke(defaultBlockState);
+            for (Map.Entry<?, ?> entry : defaultStateMap.entrySet()) {
+                Object property = entry.getKey();
+                String propertyID = revPropertyMap.get(property);
+                Object value = entry.getValue();
+                String valueID = (String) GET_NAME.invoke(property, value);
+                BLOCK_PROPERTIES.putNew(blockID, propertyID, valueID);
+            }
         }
 
         PUSH_REACTION_EXCEPT.putUnknown("piston");
@@ -256,6 +300,8 @@ public class BlockDataExtractor {
         WikiData.write(MAP_COLOR, MAP_COLOR_EXCEPT, "block_map_color.txt");
         WikiData.write(INSTRUMENT, "block_instrument.txt");
         WikiData.write(SUPPORT_TYPE, SUPPORT_TYPE_EXCEPT, "block_support_type.txt");
+        WikiData.write(BLOCK_PROPERTY_VALUES, "block_property_values.txt");
+        WikiData.write(BLOCK_PROPERTIES, "block_properties.txt");
     }
 
     private static final String[] PUSH_REACTION_NAMES = new String[]{

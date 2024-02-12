@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class AttributeModifiersData implements WikiData {
+public class AttributeModifiersWikiData implements WikiData {
 
     private final Map<String, Map<String, List<AttributeModifier>>> data = new TreeMap<>();
 
