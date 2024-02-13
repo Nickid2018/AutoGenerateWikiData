@@ -20,6 +20,10 @@ public class StringListWikiData implements WikiData {
         return data.containsKey(id);
     }
 
+    public void put(String id) {
+        data.put(id, new ArrayList<>());
+    }
+
     public void put(String id, List<String> value) {
         data.put(id, value);
     }

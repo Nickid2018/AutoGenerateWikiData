@@ -44,7 +44,6 @@
     * `enchantment_rarity`：魔咒稀有度。
 - 实体
     * `entity_mob_category`：（暂无译名，控制周期生成）。
-    * `entity_mob_type`：生物类型。
 - 物品
     * `item_attribute_modifiers`：物品属性修饰符。
     * `item_burn_duration`：烧炼时间（游戏刻计）。
@@ -53,6 +52,11 @@
     * `item_max_damage`：最大耐久度。
     * `item_max_stack_size`：最大堆叠数量。
     * `item_rarity`：物品基础稀有度。
+- 状态效果
+    * `mob_effect_cannot_affect`：免疫此状态效果的生物。
+    * `mob_effect_category`：状态效果类别。
+    * `mob_effect_color`：状态效果颜色。
+    * `mob_effect_instantenous`：瞬时状态效果。
 
 ### 生成数据
 
@@ -67,7 +71,8 @@
 
 ### 数据结构
 
-所有数据将生成在`run/runtime`下，每个文件的名字以`<dimension>_<item>_count.json`命名，其中`<dimension>`为维度，`<item>`为统计类型（`block`方块或`biome`生物群系）。
+所有数据将生成在`run/runtime`下，每个文件的名字以`<dimension>_<item>_count.json`命名，其中`<dimension>`为维度，`<item>`
+为统计类型（`block`方块或`biome`生物群系）。
 
 每个文件包含下列几项数据：
 
@@ -113,4 +118,5 @@ sync-chunk-writes=false
 
 **使用本地构建**：
 
-将项目克隆到本地，设置环境变量`MAKE_VERSION`为需要生成数据的版本，并将上述 4 个环境变量设置好后，执行`gradlew runStatistics`。
+将项目克隆到本地，设置环境变量`MAKE_VERSION`为需要生成数据的版本，并将上述 4
+个环境变量设置好后，执行`gradlew runStatistics`。

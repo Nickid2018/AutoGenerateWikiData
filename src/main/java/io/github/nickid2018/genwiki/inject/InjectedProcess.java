@@ -54,6 +54,7 @@ public class InjectedProcess {
     public static final MethodHandle HOLDER_VALUE;
     public static final MethodHandle HOLDER_UNWRAP_KEY;
     public static final MethodHandle EITHER_LEFT;
+    public static final MethodHandle GET_HOLDER;
 
     public static final Path NULL_PATH;
     public static final Object BLOCK_POS_ZERO;
@@ -85,6 +86,7 @@ public class InjectedProcess {
             HOLDER_CLASS = Class.forName("net.minecraft.core.Holder");
             HOLDER_VALUE = lookup.unreflect(HOLDER_CLASS.getMethod("value"));
             HOLDER_UNWRAP_KEY = lookup.unreflect(HOLDER_CLASS.getMethod("unwrapKey"));
+            GET_HOLDER = lookup.unreflect(registryClass.getMethod("getHolder", RESOURCE_KEY_CLASS));
 
             EITHER_CLASS = Class.forName("com.mojang.datafixers.util.Either");
             EITHER_LEFT = lookup.unreflect(EITHER_CLASS.getMethod("left"));
@@ -189,7 +191,7 @@ public class InjectedProcess {
 
         BlockDataExtractor.extractBlockData(server);
         ItemDataExtractor.extractItemData(server);
-        EntityDataExtractor.extractEntityData();
+        EntityDataExtractor.extractEntityData(server);
         BiomeDataExtractor.extractBiomeData(server);
         EnchantmentDataExtractor.extractEnchantmentData();
 
