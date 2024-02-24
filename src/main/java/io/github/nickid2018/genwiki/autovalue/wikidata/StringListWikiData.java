@@ -34,6 +34,10 @@ public class StringListWikiData implements WikiData {
             val.add(value);
     }
 
+    public List<String> get(String id) {
+        return data.get(id);
+    }
+
     public String output(int indent) {
         StringBuilder builder = new StringBuilder();
         String tab = "\t".repeat(indent);

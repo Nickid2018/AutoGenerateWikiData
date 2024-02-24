@@ -25,10 +25,7 @@ import java.util.stream.StreamSupport;
 @Slf4j
 public class ChunkStatisticsAnalyzer {
 
-    public static final int BATCH_SIZE;
-    public static final int CHUNK_TOTAL;
-    public static final int BLOCK_SIZE;
-    public static final ChunkPosProvider.ChunkPosProviderProvider CHUNK_POS_PROVIDER_FACTORY;
+    public static final StatisticsSettings SETTINGS = StatisticsSettings.getInstance();
 
     public static final Class<?> SERVER_TICK_RATE_MANAGER_CLASS;
     public static final Class<?> LEVEL_CLASS;
@@ -60,44 +57,6 @@ public class ChunkStatisticsAnalyzer {
 
     static {
         try {
-            String batchSizeStr = System.getenv("BATCH_SIZE");
-            if (batchSizeStr != null)
-                BATCH_SIZE = Integer.parseInt(batchSizeStr);
-            else
-                BATCH_SIZE = 4;
-            String chunkTotalStr = System.getenv("CHUNK_TOTAL");
-            if (chunkTotalStr != null)
-                CHUNK_TOTAL = Integer.parseInt(chunkTotalStr);
-            else
-                CHUNK_TOTAL = 25000;
-            String blockSize = System.getenv("BLOCK_SIZE");
-            if (blockSize != null)
-                BLOCK_SIZE = Integer.parseInt(blockSize);
-            else
-                BLOCK_SIZE = 1089;
-
-            String chunkPosProviderFactoryStr = System.getenv("CHUNK_POS_PROVIDER_FACTORY");
-            if (chunkPosProviderFactoryStr != null)
-                switch (chunkPosProviderFactoryStr) {
-                    case "continuous":
-                        CHUNK_POS_PROVIDER_FACTORY = ContinuousChunkPosProvider::new;
-                        break;
-                    case "random":
-                        CHUNK_POS_PROVIDER_FACTORY = RandomChunkPosProvider::new;
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unknown chunk pos provider factory: " + chunkPosProviderFactoryStr);
-                }
-            else {
-                CHUNK_POS_PROVIDER_FACTORY = ContinuousChunkPosProvider::new;
-                chunkPosProviderFactoryStr = "continuous";
-            }
-
-            log.info("Batch size: {}", BATCH_SIZE);
-            log.info("Chunk total: {}", CHUNK_TOTAL);
-            log.info("Block size: {}", BLOCK_SIZE);
-            log.info("Chunk pos provider factory: {}", chunkPosProviderFactoryStr);
-
             SERVER_TICK_RATE_MANAGER_CLASS = Class.forName("net.minecraft.server.ServerTickRateManager");
             LEVEL_CLASS = Class.forName("net.minecraft.world.level.Level");
             SERVER_LEVEL_CLASS = Class.forName("net.minecraft.server.level.ServerLevel");
@@ -163,9 +122,9 @@ public class ChunkStatisticsAnalyzer {
                 NO_SAVE.set(level, true);
 
                 BAR_MAP.put(level, new ProgressBarBuilder().continuousUpdate().setStyle(ProgressBarStyle.ASCII)
-                        .setInitialMax(CHUNK_TOTAL).setTaskName("Dimension " + dimensionID).build());
+                        .setInitialMax(SETTINGS.getChunkTotal()).setTaskName("Dimension " + dimensionID).build());
                 FUTURES_MAP.put(level, new HashSet<>());
-                CHUNK_POS_PROVIDER.put(level, CHUNK_POS_PROVIDER_FACTORY.accept(CHUNK_TOTAL, BLOCK_SIZE));
+                CHUNK_POS_PROVIDER.put(level, SETTINGS.getChunkPosProvider(dimensionID));
                 CREATED_CHUNKS.put(level, new ConcurrentLinkedQueue<>());
 
                 Thread thread = new Thread(() -> counterThread(level, CREATED_CHUNKS.get(level)));
@@ -204,7 +163,7 @@ public class ChunkStatisticsAnalyzer {
                 NEXT_FLIP_NO_SAVE.remove(level);
             }
 
-            for (int i = 0; i < BATCH_SIZE && chunkPosProvider.hasNext() && futures.size() < BATCH_SIZE * 40; i++) {
+            for (int i = 0; i < SETTINGS.getBatchSize() && chunkPosProvider.hasNext() && futures.size() < SETTINGS.getBatchSize() * 40; i++) {
                 chunkPosProvider.next((x, z) ->
                         futures.add((CompletableFuture<?>) GET_CHUNK_FUTURE.invoke(chunkSource, x, z,
                                 CHUNK_STATUS_FEATURES, true))
@@ -212,11 +171,11 @@ public class ChunkStatisticsAnalyzer {
                 if (chunkPosProvider.nowUnload()) {
                     NEXT_FLIP_NO_SAVE.add(level);
                     NO_SAVE.set(level, false);
-                    log.info("Unloading chunks in dimension {}...", LEVEL_NAME.get(level));
+                    log.trace("Unloading chunks in dimension {}...", LEVEL_NAME.get(level));
                 }
             }
 
-            if (bar.getCurrent() >= CHUNK_TOTAL && !chunkPosProvider.hasNext()) {
+            if (bar.getCurrent() >= SETTINGS.getChunkTotal() && !chunkPosProvider.hasNext()) {
                 BAR_MAP.remove(level).close();
                 FUTURES_MAP.remove(level);
                 CHUNK_POS_PROVIDER.remove(level);
@@ -265,7 +224,7 @@ public class ChunkStatisticsAnalyzer {
                     blockPosList.add(BLOCK_POS_CONSTRUCTOR.invoke(x, y, z));
         }
 
-        while (count < CHUNK_TOTAL) {
+        while (count < SETTINGS.getChunkTotal()) {
             Object chunk = createdChunk.poll();
             if (chunk == null) {
                 Thread.sleep(1);
@@ -289,14 +248,14 @@ public class ChunkStatisticsAnalyzer {
                         biomeCounter.increase(holder, y);
                     }
 
-            if (count % 10000 == 0) {
-                blockCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight, maxBuildHeight);
-                biomeCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight / 4, maxBuildHeight / 4);
-            }
             count++;
+            if (count % SETTINGS.getSaveInterval() == 0) {
+                blockCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight, maxBuildHeight, count);
+                biomeCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight / 4, maxBuildHeight / 4, count);
+            }
         }
 
-        blockCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight, maxBuildHeight);
-        biomeCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight / 4, maxBuildHeight / 4);
+        blockCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight, maxBuildHeight, count);
+        biomeCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight / 4, maxBuildHeight / 4, count);
     }
 }

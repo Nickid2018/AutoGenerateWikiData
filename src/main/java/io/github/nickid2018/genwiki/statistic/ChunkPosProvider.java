@@ -5,7 +5,7 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 
 @Getter
-@ToString
+@ToString(exclude = "count")
 public abstract class ChunkPosProvider {
 
     protected int count = 0;

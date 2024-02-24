@@ -41,7 +41,7 @@ public class DataCounter {
     }
 
     @SneakyThrows
-    public void write(long worldSeed, String levelName, ChunkPosProvider posProvider, int minHeight, int maxHeight) {
+    public void write(long worldSeed, String levelName, ChunkPosProvider posProvider, int minHeight, int maxHeight, int chunkCount) {
         File outputFile = new File(levelName + "_" + name + "_count.json");
 
         StringBuilder builder = new StringBuilder();
@@ -50,6 +50,7 @@ public class DataCounter {
         builder.append("\t\"worldSeed\": ").append(worldSeed).append(",\n");
         builder.append("\t\"minHeight\": ").append(minHeight).append(",\n");
         builder.append("\t\"maxHeight\": ").append(maxHeight).append(",\n");
+        builder.append("\t\"chunkCount\": ").append(chunkCount).append(",\n");
         builder.append("\t\"posProvider\": \"").append(posProvider).append("\",\n");
 
         Map<String, String> lines = new TreeMap<>();

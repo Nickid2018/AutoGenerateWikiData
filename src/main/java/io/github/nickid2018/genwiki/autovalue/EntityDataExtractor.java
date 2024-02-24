@@ -8,10 +8,7 @@ import lombok.SneakyThrows;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class EntityDataExtractor {
 
@@ -130,6 +127,7 @@ public class EntityDataExtractor {
                 if (!canBeAffected)
                     EFFECT_CANNOT_AFFECT.putNew(effectID, entityID);
             }
+            EFFECT_CANNOT_AFFECT.get(effectID).sort(Comparator.naturalOrder());
         }
 
         WikiData.write(MOB_CATEGORY, "entity_mob_category.txt");

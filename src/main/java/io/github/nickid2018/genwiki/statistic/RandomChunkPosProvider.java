@@ -33,6 +33,24 @@ public class RandomChunkPosProvider extends ChunkPosProvider {
             ));
     }
 
+    public RandomChunkPosProvider(int total, int blockSize, long seed) {
+        super(total, blockSize);
+        this.seed = seed;
+        Random random = new Random(seed);
+
+        blockSize = this.blockSize;
+        int blocks = (int) Math.ceil((double) total / blockSize);
+        int blockSizeSqrt = (int) Math.sqrt(blockSize);
+        int blocksSqrt = (int) Math.sqrt(blocks);
+
+        for (int blockID = 0; blockID < blocks; blockID++)
+            blocksList.add(new SquareBlock(
+                    random.nextInt(1000000) - 500000 + (blockID % blocksSqrt) * blockSizeSqrt,
+                    random.nextInt(1000000) - 500000 + (blockID / blocksSqrt) * blockSizeSqrt,
+                    blockSizeSqrt
+            ));
+    }
+
     @Override
     @SneakyThrows
     protected void next0(ChunkPosConsumer consumer) {
