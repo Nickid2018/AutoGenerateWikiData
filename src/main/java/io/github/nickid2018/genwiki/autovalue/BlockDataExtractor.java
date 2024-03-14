@@ -274,6 +274,7 @@ public class BlockDataExtractor {
             IGNITE_ODDS.put(blockID, igniteOdds);
 
             Map<?, ?> defaultStateMap = (Map<?, ?>) STATE_HOLDER_GET_VALUES.invoke(defaultBlockState);
+            BLOCK_PROPERTIES.put(blockID);
             for (Map.Entry<?, ?> entry : defaultStateMap.entrySet()) {
                 Object property = entry.getKey();
                 String propertyID = revPropertyMap.get(property);

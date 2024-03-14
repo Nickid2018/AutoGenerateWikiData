@@ -4,9 +4,6 @@ import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectObjectImmutablePair;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +14,10 @@ public class PairMapWikiData<T1, T2> implements WikiData {
 
     public boolean hasKey(String id) {
         return data.containsKey(id);
+    }
+
+    public void put(String id) {
+        data.put(id, new ArrayList<>());
     }
 
     public void put(String id, List<Pair<T1, T2>> value) {
@@ -35,11 +36,15 @@ public class PairMapWikiData<T1, T2> implements WikiData {
         String tab = "\t".repeat(indent);
         for (Object2ObjectMap.Entry<String, List<Pair<T1, T2>>> entry : data.object2ObjectEntrySet()) {
             String key = entry.getKey();
-            builder.append(tab).append("['").append(key).append("'] = {\n");
-            for (Pair<T1, T2> pair : entry.getValue())
-                builder.append(tab).append("\t{'").append(pair.first())
-                        .append("', '").append(pair.second()).append("'},\n");
-            builder.append(tab).append("},\n");
+            builder.append(tab).append("['").append(key).append("'] = {");
+            if (!entry.getValue().isEmpty()) {
+                builder.append("\n");
+                for (Pair<T1, T2> pair : entry.getValue())
+                    builder.append(tab).append("\t{'").append(pair.first())
+                            .append("', '").append(pair.second()).append("'},\n");
+                builder.append(tab);
+            }
+            builder.append("},\n");
         }
         return builder.toString();
     }

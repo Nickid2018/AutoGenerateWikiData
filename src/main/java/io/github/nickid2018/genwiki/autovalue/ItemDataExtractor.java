@@ -52,8 +52,8 @@ public class ItemDataExtractor {
             FOOD_PROPERTIES_NUTRITION = lookup.unreflect(FOOD_PROPERTIES_CLASS.getMethod("getNutrition"));
             FOOD_PROPERTIES_SATURATION_MODIFIER = lookup.unreflect(FOOD_PROPERTIES_CLASS.getMethod("getSaturationModifier"));
             Class<?> attributeModifier = Class.forName("net.minecraft.world.entity.ai.attributes.AttributeModifier");
-            ATTRIBUTE_MODIFIER_GET_AMOUNT = lookup.unreflect(attributeModifier.getMethod("getAmount"));
-            ATTRIBUTE_MODIFIER_GET_OPERATION = lookup.unreflect(attributeModifier.getMethod("getOperation"));
+            ATTRIBUTE_MODIFIER_GET_AMOUNT = lookup.unreflect(attributeModifier.getMethod("amount"));
+            ATTRIBUTE_MODIFIER_GET_OPERATION = lookup.unreflect(attributeModifier.getMethod("operation"));
             MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(ITEM_CLASS, lookup);
             ITEM_RARITY = privateLookup.findVarHandle(ITEM_CLASS, "rarity", RARITY_CLASS);
             MethodHandles.Lookup privateLookup2 = MethodHandles.privateLookupIn(creativeModeTabClass, lookup);
