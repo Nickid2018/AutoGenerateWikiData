@@ -3,14 +3,15 @@ package io.github.nickid2018.genwiki.autovalue;
 import io.github.nickid2018.genwiki.autovalue.wikidata.*;
 import io.github.nickid2018.genwiki.inject.InjectedProcess;
 import io.github.nickid2018.genwiki.inject.SourceClass;
+import io.github.nickid2018.genwiki.util.LanguageUtils;
 import lombok.SneakyThrows;
-import com.google.common.collect.Multimap;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 public class ItemDataExtractor {
 
@@ -24,10 +25,11 @@ public class ItemDataExtractor {
     private static final MethodHandle ITEM_STACK_GET_ITEM;
     private static final MethodHandle ITEM_GET_MAX_DAMAGE;
     private static final MethodHandle ITEM_GET_FOOD_PROPERTIES;
-    private static final MethodHandle ITEM_GET_ATTRIBUTE_MODIFIERS;
     private static final MethodHandle FOOD_PROPERTIES_NUTRITION;
     private static final MethodHandle FOOD_PROPERTIES_SATURATION_MODIFIER;
     private static final MethodHandle BUILD_TAB_CONTENTS;
+    private static final MethodHandle ITEM_STACK_CTOR;
+    private static final MethodHandle ITEM_STACK_FOR_EACH_MODIFIERS;
     private static final MethodHandle ATTRIBUTE_MODIFIER_GET_AMOUNT;
     private static final MethodHandle ATTRIBUTE_MODIFIER_GET_OPERATION;
     private static final MethodHandle GET_FUEL;
@@ -48,7 +50,6 @@ public class ItemDataExtractor {
             ITEM_GET_MAX_STACK_SIZE = lookup.unreflect(ITEM_CLASS.getMethod("getMaxStackSize"));
             ITEM_GET_MAX_DAMAGE = lookup.unreflect(ITEM_CLASS.getMethod("getMaxDamage"));
             ITEM_GET_FOOD_PROPERTIES = lookup.unreflect(ITEM_CLASS.getMethod("getFoodProperties"));
-            ITEM_GET_ATTRIBUTE_MODIFIERS = lookup.unreflect(ITEM_CLASS.getMethod("getDefaultAttributeModifiers", EQUIPMENT_SLOT_CLASS));
             FOOD_PROPERTIES_NUTRITION = lookup.unreflect(FOOD_PROPERTIES_CLASS.getMethod("getNutrition"));
             FOOD_PROPERTIES_SATURATION_MODIFIER = lookup.unreflect(FOOD_PROPERTIES_CLASS.getMethod("getSaturationModifier"));
             Class<?> attributeModifier = Class.forName("net.minecraft.world.entity.ai.attributes.AttributeModifier");
@@ -59,6 +60,9 @@ public class ItemDataExtractor {
             MethodHandles.Lookup privateLookup2 = MethodHandles.privateLookupIn(creativeModeTabClass, lookup);
             CREATIVE_MODE_TAB_DISPLAY_ITEMS = privateLookup2.findVarHandle(creativeModeTabClass, "displayItems", Collection.class);
             Class<?> itemStackClass = Class.forName("net.minecraft.world.item.ItemStack");
+            Class<?> itemLikeClass = Class.forName("net.minecraft.world.level.ItemLike");
+            ITEM_STACK_CTOR = lookup.unreflectConstructor(itemStackClass.getConstructor(itemLikeClass));
+            ITEM_STACK_FOR_EACH_MODIFIERS = lookup.unreflect(itemStackClass.getMethod("forEachModifier", EQUIPMENT_SLOT_CLASS, BiConsumer.class));
             ITEM_STACK_GET_ITEM = lookup.unreflect(itemStackClass.getMethod("getItem"));
             BUILD_TAB_CONTENTS = lookup.unreflect(CREATIVE_MODE_TABS_CLASS.getMethod("tryRebuildTabContents",
                     Class.forName("net.minecraft.world.flag.FeatureFlagSet"), boolean.class,
@@ -101,19 +105,17 @@ public class ItemDataExtractor {
             MAX_STACK_SIZE.put(itemID, maxStackSize);
             int maxDamage = (int) ITEM_GET_MAX_DAMAGE.invoke(item);
             MAX_DAMAGE.put(itemID, maxDamage);
+
+            Object itemStack = ITEM_STACK_CTOR.invoke(item);
             for (@SourceClass("EquipmentSlot") Object slot : EQUIPMENT_SLOT_CLASS.getEnumConstants()) {
-                @SourceClass("Multimap<Holder<Attribute>, AttributeModifier>")
-                Multimap<Object, Object> attributeModifiers = (Multimap<Object, Object>) ITEM_GET_ATTRIBUTE_MODIFIERS.invoke(item, slot);
-                if (attributeModifiers.isEmpty()) continue;
                 String slotID = (String) STRING_REPRESENTABLE_GET_SERIALIZED_NAME.invoke(slot);
-                for (Object attribute : attributeModifiers.keys()){
+                ITEM_STACK_FOR_EACH_MODIFIERS.invoke(itemStack, slot, LanguageUtils.sneakyExceptionBiConsumer((attribute, attributeModifier) -> {
                     String attributeID = InjectedProcess.holderToString(attribute);
-                    for (Object attributeModifier : attributeModifiers.get(attribute)){
-                        String operation = (String) STRING_REPRESENTABLE_GET_SERIALIZED_NAME.invoke(ATTRIBUTE_MODIFIER_GET_OPERATION.invoke(attributeModifier));
-                        ATTRIBUTE_MODIFIERS.add(itemID, attributeID, slotID, (Double) ATTRIBUTE_MODIFIER_GET_AMOUNT.invoke(attributeModifier), operation);
-                    }
-                }
+                    String operation = (String) STRING_REPRESENTABLE_GET_SERIALIZED_NAME.invoke(ATTRIBUTE_MODIFIER_GET_OPERATION.invoke(attributeModifier));
+                    ATTRIBUTE_MODIFIERS.add(itemID, attributeID, slotID, (Double) ATTRIBUTE_MODIFIER_GET_AMOUNT.invoke(attributeModifier), operation);
+                }));
             }
+
             @SourceClass("Rarity")
             Object rarity = ITEM_RARITY.get(item);
             String rarityName = (String) InjectedProcess.ENUM_NAME.invoke(rarity);
