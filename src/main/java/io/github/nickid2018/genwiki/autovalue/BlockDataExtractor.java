@@ -15,7 +15,10 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class BlockDataExtractor {
@@ -34,12 +37,16 @@ public class BlockDataExtractor {
     public static final Class<?> BLOCKSTATE_PROPERTIES_CLASS;
     public static final Class<?> PROPERTY_CLASS;
     public static final Class<?> STATE_HOLDER_CLASS;
+    public static final Class<?> BLOCK_BEHAVIOR_CLASS;
+    public static final Class<?> VOXEL_SHAPE_CLASS;
+    public static final Class<?> AABB_CLASS;
 
     @SourceClass("StateDefinition<Block, BlockState>")
     public static final MethodHandle GET_STATE_DEFINITION;
     @SourceClass("BlockBehaviour.Properties")
     public static final MethodHandle PROPERTIES;
     public static final MethodHandle STATE_PREDICATE_TEST;
+    public static final MethodHandle OCCLUSION_SHAPE;
     @SourceClass("BlockState")
     public static final MethodHandle BLOCK_DEFAULT_BLOCK_STATE;
     public static final MethodHandle STATE_DEFINITION_GET_POSSIBLE_STATES;
@@ -51,6 +58,11 @@ public class BlockDataExtractor {
     public static final MethodHandle GET_PROPERTY_NAME;
     public static final MethodHandle GET_NAME;
     public static final MethodHandle STATE_HOLDER_GET_VALUES;
+    public static final MethodHandle SHAPES_GET_FACE_SHAPE;
+    public static final MethodHandle VOXEL_SHAPE_TO_AABBS;
+    public static final MethodHandle VOXEL_SHAPE_IS_EMPTY;
+    public static final MethodHandle BLOCK_STATE_CAN_OCCLUDE;
+    public static final MethodHandle BLOCK_STATE_BASE_BLOCKS_MOTION;
 
     public static final VarHandle PROPERTIES_EXPLOSION_RESISTANCE;
     public static final VarHandle PROPERTIES_DESTROY_TIME;
@@ -64,6 +76,12 @@ public class BlockDataExtractor {
     public static final VarHandle VAR_LEGACY_SOLID;
     public static final VarHandle VAR_MAP_COLOR;
     public static final VarHandle VAR_MAP_COLOR_ID;
+    public static final VarHandle AABB_MINX;
+    public static final VarHandle AABB_MINY;
+    public static final VarHandle AABB_MINZ;
+    public static final VarHandle AABB_MAXX;
+    public static final VarHandle AABB_MAXY;
+    public static final VarHandle AABB_MAXZ;
 
     public static final Object TAG_NEEDS_DIAMOND_TOOL;
     public static final Object TAG_NEEDS_IRON_TOOL;
@@ -98,6 +116,9 @@ public class BlockDataExtractor {
             BLOCKSTATE_PROPERTIES_CLASS = Class.forName("net.minecraft.world.level.block.state.properties.BlockStateProperties");
             PROPERTY_CLASS = Class.forName("net.minecraft.world.level.block.state.properties.Property");
             STATE_HOLDER_CLASS = Class.forName("net.minecraft.world.level.block.state.StateHolder");
+            BLOCK_BEHAVIOR_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour");
+            VOXEL_SHAPE_CLASS = Class.forName("net.minecraft.world.phys.shapes.VoxelShape");
+            AABB_CLASS = Class.forName("net.minecraft.world.phys.AABB");
 
             GET_STATE_DEFINITION = lookup.unreflect(BLOCK_CLASS.getMethod("getStateDefinition"));
             PROPERTIES = lookup.unreflect(BLOCK_CLASS.getMethod("properties"));
@@ -111,6 +132,24 @@ public class BlockDataExtractor {
             GET_PROPERTY_NAME = lookup.unreflect(PROPERTY_CLASS.getMethod("getName"));
             GET_NAME = lookup.unreflect(PROPERTY_CLASS.getMethod("getName", Comparable.class));
             STATE_HOLDER_GET_VALUES = lookup.unreflect(STATE_HOLDER_CLASS.getMethod("getValues"));
+            Method getOcclusionShape = BLOCK_BEHAVIOR_CLASS.getDeclaredMethod(
+                    "getOcclusionShape", BLOCK_STATE_CLASS, BLOCK_GETTER_CLASS, InjectedProcess.BLOCK_POS_CLASS);
+            getOcclusionShape.setAccessible(true);
+            OCCLUSION_SHAPE = lookup.unreflect(getOcclusionShape);
+            Class<?> shapesClass = Class.forName("net.minecraft.world.phys.shapes.Shapes");
+            SHAPES_GET_FACE_SHAPE = lookup.unreflect(shapesClass.getMethod(
+                    "getFaceShape", VOXEL_SHAPE_CLASS, InjectedProcess.DIRECTION_CLASS));
+            VOXEL_SHAPE_TO_AABBS = lookup.unreflect(VOXEL_SHAPE_CLASS.getMethod("toAabbs"));
+            VOXEL_SHAPE_IS_EMPTY = lookup.unreflect(VOXEL_SHAPE_CLASS.getMethod("isEmpty"));
+            BLOCK_STATE_CAN_OCCLUDE = lookup.unreflect(BLOCK_STATE_CLASS.getMethod("canOcclude"));
+            BLOCK_STATE_BASE_BLOCKS_MOTION = lookup.unreflect(BLOCK_STATE_BASE_CLASS.getMethod("blocksMotion"));
+
+            AABB_MINX = lookup.findVarHandle(AABB_CLASS, "minX", double.class);
+            AABB_MINY = lookup.findVarHandle(AABB_CLASS, "minY", double.class);
+            AABB_MINZ = lookup.findVarHandle(AABB_CLASS, "minZ", double.class);
+            AABB_MAXX = lookup.findVarHandle(AABB_CLASS, "maxX", double.class);
+            AABB_MAXY = lookup.findVarHandle(AABB_CLASS, "maxY", double.class);
+            AABB_MAXZ = lookup.findVarHandle(AABB_CLASS, "maxZ", double.class);
 
             Class<?> NOTE_BLOCK_INSTRUMENT_CLASS = Class.forName("net.minecraft.world.level.block.state.properties.NoteBlockInstrument");
             MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(PROPERTIES_CLASS, lookup);
@@ -197,6 +236,8 @@ public class BlockDataExtractor {
     private static final ExceptData SUPPORT_TYPE_EXCEPT = new ExceptData();
     private static final PropertyWikiData BLOCK_PROPERTY_VALUES = new PropertyWikiData();
     private static final PairMapWikiData<String, String> BLOCK_PROPERTIES = new PairMapWikiData<>();
+    private static final StringSetWikiData OCCLUSION_SHAPE_VALUES = new StringSetWikiData();
+    private static final StringSetWikiData LIQUID_COMPUTATION_VALUES = new StringSetWikiData();
 
     @SneakyThrows
     public static void extractBlockData(Object serverObj) {
@@ -252,6 +293,66 @@ public class BlockDataExtractor {
                 INSTRUMENT.put(blockID, instrumentName);
             }
 
+            for (Object state : states) {
+                boolean blocksMotion = (boolean) BLOCK_STATE_BASE_BLOCKS_MOTION.invoke(state);
+                boolean canOcclude = (boolean) BLOCK_STATE_CAN_OCCLUDE.invoke(state);
+                Object occlusionShape = OCCLUSION_SHAPE.invoke(block, state, serverOverworld, InjectedProcess.BLOCK_POS_ZERO);
+                Map<String, String> occlusionMap = new HashMap<>();
+                Set<String> faceSturdySet = new TreeSet<>();
+                for (Object direction : InjectedProcess.DIRECTION_MAP.values()) {
+                    String directionName = ((String) InjectedProcess.ENUM_NAME.invoke(direction)).toLowerCase();
+                    if ((boolean) IS_FACE_STURDY.invoke(
+                            state, serverOverworld, InjectedProcess.BLOCK_POS_ZERO, direction, SUPPORT_TYPE_MAP.get("FULL")))
+                        faceSturdySet.add(directionName);
+                    Object faceShape = SHAPES_GET_FACE_SHAPE.invoke(occlusionShape, direction);
+                    if ((boolean) VOXEL_SHAPE_IS_EMPTY.invoke(faceShape))
+                        continue;
+                    List<?> aabbs = (List<?>) VOXEL_SHAPE_TO_AABBS.invoke(faceShape);
+                    List<String> aabbList = new ArrayList<>();
+                    for (Object aabb : aabbs) {
+                        double minX = (double) AABB_MINX.get(aabb);
+                        double minY = (double) AABB_MINY.get(aabb);
+                        double minZ = (double) AABB_MINZ.get(aabb);
+                        double maxX = (double) AABB_MAXX.get(aabb);
+                        double maxY = (double) AABB_MAXY.get(aabb);
+                        double maxZ = (double) AABB_MAXZ.get(aabb);
+                        switch (directionName) {
+                            case "down":
+                            case "up":
+                                aabbList.add("[" + minX + "," + minZ + "," + maxX + "," + maxZ + "]");
+                                break;
+                            case "north":
+                            case "south":
+                                aabbList.add("[" + minX + "," + minY + "," + maxX + "," + maxY + "]");
+                                break;
+                            case "west":
+                            case "east":
+                                aabbList.add("[" + minZ + "," + minY + "," + maxZ + "," + maxY + "]");
+                                break;
+                        }
+                    }
+                    String aabbString = String.join(",", aabbList);
+                    occlusionMap.put(directionName, "[" + aabbString + "]");
+                }
+                occlusionMap.put("can_occlude", String.valueOf(canOcclude));
+                String occlusionData = occlusionMap.entrySet().stream()
+                        .map(e -> "\"" + e.getKey() + "\":" + e.getValue()).collect(Collectors.joining(","));
+                String stateName = state.toString();
+                if (stateName.contains("[")) {
+                    String[] propertiesArray = stateName.substring(stateName.indexOf('[') + 1, stateName.length() - 1).split(",");
+                    List<String> collected = Stream.of(propertiesArray).filter(s -> !s.startsWith("waterlogged=")).sorted().toList();
+                    stateName = "[" + String.join(",", collected) + "]";
+                } else
+                    stateName = "";
+                OCCLUSION_SHAPE_VALUES.putNew("{" + occlusionData + "}", blockID + stateName);
+
+                if (blocksMotion || !faceSturdySet.isEmpty()) {
+                    String liquidComputationData = "{\"blocks_motion\":" + blocksMotion + ",\"face_sturdy\":["
+                            + String.join(",", faceSturdySet.stream().map(s -> "\"" + s + "\"").toList()) + "]}";
+                    LIQUID_COMPUTATION_VALUES.putNew(liquidComputationData, blockID + stateName);
+                }
+            }
+
             @SourceClass("BlockBehaviour$StatePredicate")
             Object isRedstoneConductor = PROPERTIES_IS_REDSTONE_CONDUCTOR.get(properties);
             makeStatePredicateData(blockID, isRedstoneConductor, states, REDSTONE_CONDUCTOR, REDSTONE_CONDUCTOR_EXCEPT);
@@ -303,6 +404,8 @@ public class BlockDataExtractor {
         WikiData.write(SUPPORT_TYPE, SUPPORT_TYPE_EXCEPT, "block_support_type.txt");
         WikiData.write(BLOCK_PROPERTY_VALUES, "block_property_values.txt");
         WikiData.write(BLOCK_PROPERTIES, "block_properties.txt");
+        WikiData.write(OCCLUSION_SHAPE_VALUES, "block_occlusion_shape.txt");
+        WikiData.write(LIQUID_COMPUTATION_VALUES, "block_liquid_computation.txt");
     }
 
     private static final String[] PUSH_REACTION_NAMES = new String[]{

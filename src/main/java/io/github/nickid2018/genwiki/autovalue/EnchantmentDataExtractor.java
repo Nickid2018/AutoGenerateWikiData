@@ -7,8 +7,10 @@ import lombok.SneakyThrows;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.function.Function;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class EnchantmentDataExtractor {
@@ -18,7 +20,7 @@ public class EnchantmentDataExtractor {
     public static final Class<?> ITEM_CLASS;
     public static final Class<?> TAG_KEY_CLASS;
 
-    public static final MethodHandle ENCHANTMENT_GET_RARITY;
+    public static final MethodHandle ENCHANTMENT_GET_WEIGHT;
     public static final MethodHandle ENCHANTMENT_GET_MAX_LEVEL;
     public static final MethodHandle ENCHANTMENT_IS_TREASURE_ONLY;
     public static final MethodHandle ENCHANTMENT_IS_TRADEABLE;
@@ -26,7 +28,8 @@ public class EnchantmentDataExtractor {
     public static final MethodHandle ENCHANTMENT_IS_COMPATIBLE_WITH;
     public static final MethodHandle ENCHANTMENT_GET_MIN_COST;
     public static final MethodHandle ENCHANTMENT_GET_MAX_COST;
-    public static final MethodHandle ENCHANTMENT_GET_MATCH;
+    public static final MethodHandle ENCHANTMENT_CAN_ENCHANT;
+    public static final MethodHandle ENCHANTMENT_IS_PRIMARY_ITEM;
     public static final MethodHandle ITEM_GET_DEFAULT_INSTANCE;
     public static final MethodHandle ITEM_STACK_IS;
 
@@ -38,7 +41,7 @@ public class EnchantmentDataExtractor {
             TAG_KEY_CLASS = Class.forName("net.minecraft.tags.TagKey");
             MethodHandles.Lookup lookup = MethodHandles.lookup();
 
-            ENCHANTMENT_GET_RARITY = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("getRarity"));
+            ENCHANTMENT_GET_WEIGHT = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("getWeight"));
             ENCHANTMENT_GET_MAX_LEVEL = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("getMaxLevel"));
             ENCHANTMENT_IS_TREASURE_ONLY = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("isTreasureOnly"));
             ENCHANTMENT_IS_TRADEABLE = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("isTradeable"));
@@ -47,7 +50,8 @@ public class EnchantmentDataExtractor {
 
             ENCHANTMENT_GET_MIN_COST = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("getMinCost", int.class));
             ENCHANTMENT_GET_MAX_COST = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("getMaxCost", int.class));
-            ENCHANTMENT_GET_MATCH = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("getMatch"));
+            ENCHANTMENT_CAN_ENCHANT = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("canEnchant", ITEM_STACK_CLASS));
+            ENCHANTMENT_IS_PRIMARY_ITEM = lookup.unreflect(ENCHANTMENT_CLASS.getMethod("isPrimaryItem", ITEM_STACK_CLASS));
 
             ITEM_GET_DEFAULT_INSTANCE = lookup.unreflect(ITEM_CLASS.getMethod("getDefaultInstance"));
             ITEM_STACK_IS = lookup.unreflect(ITEM_STACK_CLASS.getMethod("is", TAG_KEY_CLASS));
@@ -56,12 +60,13 @@ public class EnchantmentDataExtractor {
         }
     }
 
-    public static final StringWikiData ENCHANTMENT_RARITY = new StringWikiData();
+    public static final NumberWikiData ENCHANTMENT_WEIGHT = new NumberWikiData();
     public static final NumberWikiData ENCHANTMENT_MAX_LEVEL = new NumberWikiData();
     public static final StringWikiData ENCHANTMENT_FLAG = new StringWikiData();
     public static final StringListWikiData ENCHANTMENT_INCOMPATIBLE = new StringListWikiData();
     public static final PairMapWikiData<Integer, Integer> ENCHANTMENT_COST = new PairMapWikiData<>();
-    public static final StringListWikiData ENCHANTMENT_MATCH = new StringListWikiData();
+    public static final StringListWikiData ENCHANTMENT_SUPPORT_ITEMS = new StringListWikiData();
+    public static final StringListWikiData ENCHANTMENT_PRIMARY_ITEMS = new StringListWikiData();
 
     @SneakyThrows
     private static String getRegistryName(Object enchantment) {
@@ -87,8 +92,8 @@ public class EnchantmentDataExtractor {
         for (Map.Entry<String, ?> entry : enchantmentMap.entrySet()) {
             String name = entry.getKey();
             Object enchantment = entry.getValue();
-            Object rarity = ENCHANTMENT_GET_RARITY.invoke(enchantment);
-            ENCHANTMENT_RARITY.put(name, InjectedProcess.ENUM_NAME.invoke(rarity).toString());
+            int rarity = (int) ENCHANTMENT_GET_WEIGHT.invoke(enchantment);
+            ENCHANTMENT_WEIGHT.put(name, rarity);
             int maxLevel = (int) ENCHANTMENT_GET_MAX_LEVEL.invoke(enchantment);
             ENCHANTMENT_MAX_LEVEL.put(name, maxLevel);
 
@@ -126,12 +131,6 @@ public class EnchantmentDataExtractor {
             }
         }
 
-        Map<String, ?> tagKeys = enchantmentMap.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                ((Function<? super Map.Entry<String, ?>, ?>) Map.Entry::getValue).andThen(ENCHANTMENT_GET_MATCH::invoke)
-        ));
-        Map<String, List<String>> enchantItems = new HashMap<>();
-
         @SourceClass("DefaultedRegistry<Item>")
         Object itemRegistry = InjectedProcess.getRegistry("ITEM");
         @SourceClass("Set<ResourceKey<Item>>")
@@ -144,29 +143,34 @@ public class EnchantmentDataExtractor {
             Object item = InjectedProcess.REGISTRY_GET.invoke(itemRegistry, itemKey);
             @SourceClass("ItemStack")
             Object itemStack = ITEM_GET_DEFAULT_INSTANCE.invoke(item);
-            for (Map.Entry<String, ?> entry : tagKeys.entrySet()) {
-                String enchantmentName = entry.getKey();
-                Object tagKey = entry.getValue();
-                boolean isEnchanted = (boolean) ITEM_STACK_IS.invoke(itemStack, tagKey);
-                if (isEnchanted) {
-                    List<String> items = enchantItems.computeIfAbsent(enchantmentName, k -> new ArrayList<>());
-                    items.add(itemID);
+            for (Map.Entry<String, ?> enchantmentEntry : enchantmentMap.entrySet()) {
+                Object enchantment = enchantmentEntry.getValue();
+                String name = enchantmentEntry.getKey();
+                boolean support = (boolean) ENCHANTMENT_CAN_ENCHANT.invoke(enchantment, itemStack);
+                if (support) {
+                    ENCHANTMENT_SUPPORT_ITEMS.putNew(name, itemID);
+                    boolean isPrimary = (boolean) ENCHANTMENT_IS_PRIMARY_ITEM.invoke(enchantment, itemStack);
+                    if (isPrimary)
+                        ENCHANTMENT_PRIMARY_ITEMS.putNew(name, itemID);
                 }
             }
         }
 
-        for (Map.Entry<String, List<String>> entry : enchantItems.entrySet()) {
-            String enchantmentName = entry.getKey();
-            List<String> items = entry.getValue();
-            items.sort(Comparator.naturalOrder());
-            ENCHANTMENT_MATCH.put(enchantmentName, items);
+        for (String name : enchantmentMap.keySet()) {
+            if (!ENCHANTMENT_SUPPORT_ITEMS.hasKey(name))
+                ENCHANTMENT_SUPPORT_ITEMS.put(name, new ArrayList<>());
+            if (!ENCHANTMENT_PRIMARY_ITEMS.hasKey(name))
+                ENCHANTMENT_PRIMARY_ITEMS.put(name, new ArrayList<>());
+            ENCHANTMENT_SUPPORT_ITEMS.sort(name);
+            ENCHANTMENT_PRIMARY_ITEMS.sort(name);
         }
 
-        WikiData.write(ENCHANTMENT_RARITY, "enchantment_rarity.txt");
+        WikiData.write(ENCHANTMENT_WEIGHT, "enchantment_weight.txt");
         WikiData.write(ENCHANTMENT_MAX_LEVEL, "enchantment_max_level.txt");
         WikiData.write(ENCHANTMENT_FLAG, "enchantment_flag.txt");
         WikiData.write(ENCHANTMENT_INCOMPATIBLE, "enchantment_incompatible.txt");
         WikiData.write(ENCHANTMENT_COST, "enchantment_cost.txt");
-        WikiData.write(ENCHANTMENT_MATCH, "enchantment_match.txt");
+        WikiData.write(ENCHANTMENT_SUPPORT_ITEMS, "enchantment_support_items.txt");
+        WikiData.write(ENCHANTMENT_PRIMARY_ITEMS, "enchantment_primary_items.txt");
     }
 }

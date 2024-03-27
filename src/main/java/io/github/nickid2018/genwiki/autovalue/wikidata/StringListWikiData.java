@@ -34,6 +34,12 @@ public class StringListWikiData implements WikiData {
             val.add(value);
     }
 
+    public void sort(String id) {
+        List<String> val = data.get(id);
+        if (val != null)
+            val.sort(String::compareTo);
+    }
+
     public List<String> get(String id) {
         return data.get(id);
     }
