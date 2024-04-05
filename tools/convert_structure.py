@@ -67,8 +67,7 @@ def read_with_tag(tag: int, offset: int, stream: bytes) -> tuple[any, int]:
             length = int.from_bytes(stream[offset : offset + 4], "big", signed=False)
             return list(stream[offset + 4 : offset + 4 + length]), offset + 4 + length
         case 8:  # TAG_String
-            length = int.from_bytes(stream[offset : offset + 2], "big", signed=False)
-            return stream[offset + 2 : offset + 2 + length].decode("utf-8"), offset + 2 + length
+            return read_mutf8(stream, offset)
         case 9:  # TAG_List
             tag = stream[offset]
             length = int.from_bytes(stream[offset + 1 : offset + 5], "big", signed=False)
@@ -233,7 +232,7 @@ def parse_litematic_file(nbt: dict[str, any], sub_region: str | None) -> tuple[d
                     else:
                         value = (block_state_data[byte_index] >> bit_index) & ((1 << (64 - bit_index)) - 1)
                         value |= (block_state_data[byte_index + 1] & ((1 << (bits - 64 + bit_index)) - 1)) << (
-                            64 - bit_index
+                                64 - bit_index
                         )
                     structure_list[py + y][pz + z][px + x] = palette[value]
 
