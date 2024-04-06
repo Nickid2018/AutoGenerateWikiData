@@ -104,6 +104,7 @@
 * `CHUNK_POS_PROVIDER_FACTORY`：（默认为 `continuous`）区块位置提供器工厂。
     - `random`：以分块为单位随机选择区块。
     - `continuous`：连续选择区块，以世界原点为中心。
+* `DIMENSIONS`：（默认为空）以逗号分隔的维度列表，不为空时代表仅处理指定的维度。
 
 在同目录下，创建`eula.txt`，并写入`eula=true`。
 
