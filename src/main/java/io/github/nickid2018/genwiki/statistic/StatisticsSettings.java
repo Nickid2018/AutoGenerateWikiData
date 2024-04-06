@@ -11,7 +11,9 @@ import java.io.FileReader;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class StatisticsSettings {
@@ -39,6 +41,8 @@ public class StatisticsSettings {
     private int chunkTotal;
     @Getter
     private int saveInterval;
+    @Getter
+    private Set<String> dimensions;
 
     private final Map<String, ChunkPosProvider> providerMap = new HashMap<>();
     private Supplier<ChunkPosProvider> fallbackProvider = () -> new ContinuousChunkPosProvider(chunkTotal, 1089);
@@ -70,6 +74,9 @@ public class StatisticsSettings {
                         throw new IllegalArgumentException("Unknown provider: " + provider);
                 }
             }
+            if (object.has("dimensions")) {
+                dimensions = object.getAsJsonArray("dimensions").asList().stream().map(JsonElement::getAsString).collect(Collectors.toSet());
+            }
         }
     }
 
@@ -84,6 +91,9 @@ public class StatisticsSettings {
             case "random" -> () -> new RandomChunkPosProvider(chunkTotal, blockSize);
             default -> throw new IllegalArgumentException("Unknown provider: " + provider);
         };
+        String dimensions = envGetOrDefault("DIMENSIONS", "");
+        if (!dimensions.isEmpty())
+            this.dimensions = Set.of(dimensions.split(","));
     }
 
     public ChunkPosProvider getChunkPosProvider(String dimension) {
@@ -95,6 +105,7 @@ public class StatisticsSettings {
         log.info("Batch Size: {}", batchSize);
         log.info("Chunk Total: {}", chunkTotal);
         log.info("Save Interval: {}", saveInterval);
+        log.info("Dimensions: {}", dimensions);
         log.info("Fallback Chunk Position Provider: {}", fallbackProvider.get());
         for (Map.Entry<String, ChunkPosProvider> entry : providerMap.entrySet())
             log.info("Override Chunk Position Provider for {}: {}", entry.getKey(), entry.getValue());

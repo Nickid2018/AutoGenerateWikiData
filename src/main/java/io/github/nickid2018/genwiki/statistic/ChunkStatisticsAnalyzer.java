@@ -35,6 +35,7 @@ public class ChunkStatisticsAnalyzer {
     public static final Class<?> CHUNK_ACCESS_CLASS;
     public static final Class<?> LEVEL_READER_CLASS;
     public static final Class<?> BLOCK_STATE_BASE_CLASS;
+    public static final Class<?> CHUNK_RESULT_SUCCESS_CLASS;
 
     public static final Object CHUNK_STATUS_FEATURES;
 
@@ -52,6 +53,7 @@ public class ChunkStatisticsAnalyzer {
     public static final MethodHandle GET_STATUS;
     public static final MethodHandle GET_NOISE_BIOME;
     public static final MethodHandle GET_SEED;
+    public static final MethodHandle VALUE;
 
     public static final VarHandle NO_SAVE;
 
@@ -61,10 +63,11 @@ public class ChunkStatisticsAnalyzer {
             LEVEL_CLASS = Class.forName("net.minecraft.world.level.Level");
             SERVER_LEVEL_CLASS = Class.forName("net.minecraft.server.level.ServerLevel");
             SERVER_CHUNK_CACHE_CLASS = Class.forName("net.minecraft.server.level.ServerChunkCache");
-            CHUNK_STATUS_CLASS = Class.forName("net.minecraft.world.level.chunk.ChunkStatus");
+            CHUNK_STATUS_CLASS = Class.forName("net.minecraft.world.level.chunk.status.ChunkStatus");
             CHUNK_ACCESS_CLASS = Class.forName("net.minecraft.world.level.chunk.ChunkAccess");
             LEVEL_READER_CLASS = Class.forName("net.minecraft.world.level.LevelReader");
             BLOCK_STATE_BASE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase");
+            CHUNK_RESULT_SUCCESS_CLASS = Class.forName("net.minecraft.server.level.ChunkResult$Success");
 
             CHUNK_STATUS_FEATURES = CHUNK_STATUS_CLASS.getField("FEATURES").get(null);
 
@@ -84,6 +87,7 @@ public class ChunkStatisticsAnalyzer {
             GET_STATUS = lookup.unreflect(CHUNK_ACCESS_CLASS.getMethod("getStatus"));
             GET_NOISE_BIOME = lookup.unreflect(CHUNK_ACCESS_CLASS.getMethod("getNoiseBiome", int.class, int.class, int.class));
             GET_SEED = lookup.unreflect(SERVER_LEVEL_CLASS.getMethod("getSeed"));
+            VALUE = lookup.unreflect(CHUNK_RESULT_SUCCESS_CLASS.getMethod("value"));
 
             NO_SAVE = lookup.findVarHandle(SERVER_LEVEL_CLASS, "noSave", boolean.class);
         } catch (Exception e) {
@@ -114,10 +118,16 @@ public class ChunkStatisticsAnalyzer {
             System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err)));
 
             levels = StreamSupport.stream(((Iterable<?>) InjectedProcess.GET_ALL_LEVELS.invoke(server)).spliterator(), false).collect(Collectors.toList());
-            for (Object level : levels) {
+            Iterator<?> levelIterator = levels.iterator();
+            while (levelIterator.hasNext()) {
+                Object level = levelIterator.next();
                 Object dimension = DIMENSION.invoke(level);
                 Object location = InjectedProcess.RESOURCE_KEY_LOCATION.invoke(dimension);
                 String dimensionID = InjectedProcess.getResourceLocationPath(location);
+                if (SETTINGS.getDimensions() != null && !SETTINGS.getDimensions().contains(dimensionID)) {
+                    levelIterator.remove();
+                    continue;
+                }
                 LEVEL_NAME.put(level, dimensionID);
                 NO_SAVE.set(level, true);
 
@@ -151,8 +161,7 @@ public class ChunkStatisticsAnalyzer {
             while (iterator.hasNext()) {
                 CompletableFuture<?> future = iterator.next();
                 if (future.isDone()) {
-                    Optional<?> either = (Optional<?>) InjectedProcess.EITHER_LEFT.invoke(future.get());
-                    createdChunk.offer(either.get());
+                    createdChunk.offer(VALUE.invoke(future.get()));
                     iterator.remove();
                     bar.step();
                 }
