@@ -27,7 +27,7 @@ public class ItemDataExtractor {
     private static final MethodHandle ITEM_STACK_COMPONENTS;
     private static final MethodHandle DATA_COMPONENT_MAP_GET;
     private static final MethodHandle FOOD_PROPERTIES_NUTRITION;
-    private static final MethodHandle FOOD_PROPERTIES_SATURATION_MODIFIER;
+    private static final MethodHandle FOOD_PROPERTIES_SATURATION;
     private static final MethodHandle BUILD_TAB_CONTENTS;
     private static final MethodHandle ITEM_STACK_CTOR;
     private static final MethodHandle ITEM_STACK_FOR_EACH_MODIFIERS;
@@ -51,7 +51,7 @@ public class ItemDataExtractor {
             EQUIPMENT_SLOT_CLASS = Class.forName("net.minecraft.world.entity.EquipmentSlot");
             Class<?> creativeModeTabClass = Class.forName("net.minecraft.world.item.CreativeModeTab");
             FOOD_PROPERTIES_NUTRITION = lookup.unreflect(FOOD_PROPERTIES_CLASS.getMethod("nutrition"));
-            FOOD_PROPERTIES_SATURATION_MODIFIER = lookup.unreflect(FOOD_PROPERTIES_CLASS.getMethod("saturationModifier"));
+            FOOD_PROPERTIES_SATURATION = lookup.unreflect(FOOD_PROPERTIES_CLASS.getMethod("saturation"));
             Class<?> attributeModifier = Class.forName("net.minecraft.world.entity.ai.attributes.AttributeModifier");
             ATTRIBUTE_MODIFIER_GET_AMOUNT = lookup.unreflect(attributeModifier.getMethod("amount"));
             ATTRIBUTE_MODIFIER_GET_OPERATION = lookup.unreflect(attributeModifier.getMethod("operation"));
@@ -132,8 +132,8 @@ public class ItemDataExtractor {
             Object foodProperties = DATA_COMPONENT_MAP_GET.invoke(componentMap, FOOD_COMPONENT);
             if (foodProperties != null) {
                 int nutrition = (int) FOOD_PROPERTIES_NUTRITION.invoke(foodProperties);
-                float saturationModifier = (float) FOOD_PROPERTIES_SATURATION_MODIFIER.invoke(foodProperties);
-                FOOD_PROPERTIES.put(itemID, nutrition, saturationModifier);
+                float saturation = (float) FOOD_PROPERTIES_SATURATION.invoke(foodProperties);
+                FOOD_PROPERTIES.put(itemID, nutrition, saturation);
             } else
                 FOOD_PROPERTIES.put(itemID, 0, 0);
         }
