@@ -152,15 +152,27 @@ def parse_structure_file(nbt: dict[str, any], palette_sel: str | None) -> tuple[
     else:
         raise ValueError("No blocks found")
 
+    counter = 0
     for palette_data in palette:
         name = convert_block_state(palette_data)
-        mapping_data.append((name, get_available_name(len(mapping_data))))
+        if name == "structure_void":
+            mapping_data.append((name, "-"))
+        elif name == "air":
+            mapping_data.append((name, "+"))
+        else:
+            mapping_data.append((name, get_available_name(counter)))
+            counter += 1
 
-    structure_list = [[["-" for _ in range(x)] for _ in range(z)] for _ in range(y)]
+    structure_list = [[["+" for _ in range(x)] for _ in range(z)] for _ in range(y)]
     for block_data in blocks:
         name = mapping_data[block_data["state"]][1]
         x, y, z = block_data["pos"]
         structure_list[y][z][x] = name
+
+    if ("air", "+") in mapping_data:
+        mapping_data.remove(("air", "+"))
+    if ("structure_void", "-") in mapping_data:
+        mapping_data.remove(("structure_void", "-"))
 
     return dict((v[1], v[0]) for v in mapping_data), structure_list
 
@@ -202,7 +214,7 @@ def parse_litematic_file(nbt: dict[str, any], sub_region: str | None) -> tuple[d
             make_regions.append((region_data, rx, ry, rz, px, py, pz))
 
     global_mapping = {}
-    structure_list = [[["-" for _ in range(ex)] for _ in range(ez)] for _ in range(ey)]
+    structure_list = [[["+" for _ in range(ex)] for _ in range(ez)] for _ in range(ey)]
     for region_make in make_regions:
         this_region = region_make[0]
         tx, ty, tz = region_make[1], region_make[2], region_make[3]
@@ -215,9 +227,11 @@ def parse_litematic_file(nbt: dict[str, any], sub_region: str | None) -> tuple[d
         palette = this_region["BlockStatePalette"]
         palette = [convert_block_state(palette_data) for palette_data in palette]
         for name in palette:
-            if name != "air" and name not in global_mapping:
+            if name != "air" and name != "structure_void" and name not in global_mapping:
                 global_mapping[name] = get_available_name(len(global_mapping))
-        palette = [global_mapping[name] if name != "air" else "-" for name in palette]
+        palette = [
+            (global_mapping[name] if name != "structure_void" else "-") if name != "air" else "+" for name in palette
+        ]
         bits = max(2, ceil(log(len(palette), 2)))
         block_state_data = this_region["BlockStates"]
         for y in range(emy):
@@ -236,7 +250,7 @@ def parse_litematic_file(nbt: dict[str, any], sub_region: str | None) -> tuple[d
                         )
                     structure_list[py + y][pz + z][px + x] = palette[value]
 
-    return {v: k for k, v in global_mapping.items() if k != "air"}, structure_list
+    return {v: k for k, v in global_mapping.items() if k != "air" and k != "structure_void"}, structure_list
 
 
 # Final Convert --------------------------------------------------------------------------------------------------------
