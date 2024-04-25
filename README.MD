@@ -57,6 +57,8 @@
     * `mob_effect_category`：状态效果类别。
     * `mob_effect_color`：状态效果颜色。
     * `mob_effect_instantenous`：瞬时状态效果。
+- 其他
+    * `postion effect`：药水效果。
 
 ### 生成数据
 
