@@ -41,8 +41,8 @@ public class EntityDataExtractor {
     public static final MethodHandle MOB_EFFECT_INSTANCE_GET_AMPLIFER;
     public static final MethodHandle POTION_GET_NAME;
     public static final MethodHandle POTION_GET_EFFECTS;
-    private static final MethodHandle ATTRIBUTE_MODIFIER_GET_AMOUNT;
-    private static final MethodHandle ATTRIBUTE_MODIFIER_GET_OPERATION;
+    public static final MethodHandle ATTRIBUTE_MODIFIER_GET_AMOUNT;
+    public static final MethodHandle ATTRIBUTE_MODIFIER_GET_OPERATION;
     public static final MethodHandle STRING_REPRESENTABLE_GET_SERIALIZED_NAME;
 
 
