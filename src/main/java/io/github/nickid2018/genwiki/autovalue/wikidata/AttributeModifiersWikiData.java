@@ -35,13 +35,7 @@ public class AttributeModifiersWikiData implements WikiData {
             for (Map.Entry<String, List<AttributeModifier>> slotTypeEntry : itemEntry.getValue().entrySet()) {
                 String category = slotTypeEntry.getKey();
                 builder.append(tab).append("\t['").append(category).append("'] = {\n");
-                for (AttributeModifier entry : slotTypeEntry.getValue()) {
-                    builder.append(tab).append("\t\t{\n");
-                    builder.append(tab).append("\t\t\t['attribute'] = '").append(entry.attribute).append("',\n");
-                    builder.append(tab).append("\t\t\t['amount'] = ").append(formatValue(entry.amount)).append(",\n");
-                    builder.append(tab).append("\t\t\t['operation'] = '").append(entry.operation).append("',\n");
-                    builder.append(tab).append("\t\t},\n");
-                }
+                builder.append(printAttributeModifiers(indent + 2, slotTypeEntry.getValue()));
                 builder.append(tab).append("\t},\n");
             }
             builder.append(tab).append("},\n");
@@ -49,6 +43,19 @@ public class AttributeModifiersWikiData implements WikiData {
         return builder.toString();
     }
 
-    private record AttributeModifier(String attribute, double amount, String operation) {
+    public static String printAttributeModifiers(int indent, Iterable<AttributeModifier> attributeModifiers) {
+        StringBuilder builder = new StringBuilder();
+        String tab = "\t".repeat(indent);
+        for (AttributeModifier entry : attributeModifiers) {
+            builder.append(tab).append("{\n");
+            builder.append(tab).append("\t['attribute'] = '").append(entry.attribute).append("',\n");
+            builder.append(tab).append("\t['amount'] = ").append(formatValue(entry.amount)).append(",\n");
+            builder.append(tab).append("\t['operation'] = '").append(entry.operation).append("',\n");
+            builder.append(tab).append("},\n");
+        }
+        return builder.toString();
+    }
+
+    public record AttributeModifier(String attribute, double amount, String operation) {
     }
 }
