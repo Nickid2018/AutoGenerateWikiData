@@ -50,11 +50,13 @@ public class InjectedProcess {
     public static final MethodHandle GET_ALL_LEVELS;
 
     public static final MethodHandle SERVER_OVERWORLD;
-    public static final MethodHandle REGISTRY_ACCESS;
+    public static final MethodHandle SERVER_REGISTRY_ACCESS;
+    public static final MethodHandle LEVEL_REGISTRY_ACCESS;
     public static final MethodHandle HOLDER_VALUE;
     public static final MethodHandle HOLDER_UNWRAP_KEY;
     public static final MethodHandle EITHER_LEFT;
     public static final MethodHandle GET_HOLDER;
+    public static final MethodHandle WRAP_AS_HODLER;
 
     public static final Path NULL_PATH;
     public static final Object BLOCK_POS_ZERO;
@@ -81,12 +83,14 @@ public class InjectedProcess {
             SERVER_OVERWORLD = lookup.unreflect(MINECRAFT_SERVER_CLASS.getMethod("overworld"));
             GET_ALL_LEVELS = lookup.unreflect(MINECRAFT_SERVER_CLASS.getMethod("getAllLevels"));
             Class<?> levelClass = Class.forName("net.minecraft.world.level.Level");
-            REGISTRY_ACCESS = lookup.unreflect(levelClass.getMethod("registryAccess"));
+            SERVER_REGISTRY_ACCESS = lookup.unreflect(MINECRAFT_SERVER_CLASS.getMethod("registryAccess"));
+            LEVEL_REGISTRY_ACCESS = lookup.unreflect(levelClass.getMethod("registryAccess"));
 
             HOLDER_CLASS = Class.forName("net.minecraft.core.Holder");
             HOLDER_VALUE = lookup.unreflect(HOLDER_CLASS.getMethod("value"));
             HOLDER_UNWRAP_KEY = lookup.unreflect(HOLDER_CLASS.getMethod("unwrapKey"));
             GET_HOLDER = lookup.unreflect(registryClass.getMethod("getHolder", RESOURCE_KEY_CLASS));
+            WRAP_AS_HODLER = lookup.unreflect(registryClass.getMethod("wrapAsHolder", Object.class));
 
             EITHER_CLASS = Class.forName("com.mojang.datafixers.util.Either");
             EITHER_LEFT = lookup.unreflect(EITHER_CLASS.getMethod("left"));
@@ -152,8 +156,13 @@ public class InjectedProcess {
     }
 
     @SneakyThrows
-    public static Object getSyncRegistry(Object level, String name) {
-        return REGISTRY_OR_THROW.invoke(REGISTRY_ACCESS.invoke(level), REGISTRY_KEY.get(name));
+    public static Object getLevelSyncRegistry(Object level, String name) {
+        return REGISTRY_OR_THROW.invoke(LEVEL_REGISTRY_ACCESS.invoke(level), REGISTRY_KEY.get(name));
+    }
+
+    @SneakyThrows
+    public static Object getServerSyncRegistry(Object server, String name) {
+        return REGISTRY_OR_THROW.invoke(SERVER_REGISTRY_ACCESS.invoke(server), REGISTRY_KEY.get(name));
     }
 
     @SneakyThrows
@@ -161,12 +170,23 @@ public class InjectedProcess {
         return getResourceLocationPath(RESOURCE_KEY_LOCATION.invoke(((Optional<?>) HOLDER_UNWRAP_KEY.invoke(holder)).get()));
     }
 
+    @SneakyThrows
+    public static Object getHolder(Object registry, Object resourceKey) {
+        return ((Optional<?>) GET_HOLDER.invoke(registry, resourceKey)).get();
+    }
+
+    @SneakyThrows
+    public static Object wrapAsHolder(Object registry, Object obj) {
+        return WRAP_AS_HODLER.invoke(registry, obj);
+    }
+
     @SuppressWarnings("unused")
     @SneakyThrows
     public static String preprocessDataPacks() {
         log.info("Writing data packs...");
 
-        Object featureFlagRegistry = Class.forName("net.minecraft.world.flag.FeatureFlags").getField("REGISTRY").get(null);
+        Object featureFlagRegistry = Class.forName("net.minecraft.world.flag.FeatureFlags").getField("REGISTRY").get(
+            null);
         Class<?> featureFlagRegistryClass = Class.forName("net.minecraft.world.flag.FeatureFlagRegistry");
         Field names = featureFlagRegistryClass.getDeclaredField("names");
         Method fromNames = featureFlagRegistryClass.getDeclaredMethod("fromNames", Iterable.class);
@@ -174,7 +194,8 @@ public class InjectedProcess {
         Map<?, ?> namesObj = (Map<?, ?>) names.get(featureFlagRegistry);
         Set<?> namesIterable = namesObj.keySet();
 
-        String ret = namesObj.keySet().stream().map(RESOURCE_LOCATION_PATH::invoke).map(Object::toString).collect(Collectors.joining(","));
+        String ret = namesObj.keySet().stream().map(RESOURCE_LOCATION_PATH::invoke).map(Object::toString).collect(
+            Collectors.joining(","));
         featureFlagSet = fromNames.invoke(featureFlagRegistry, namesIterable);
 
         return ret;
@@ -193,7 +214,7 @@ public class InjectedProcess {
         ItemDataExtractor.extractItemData(server);
         EntityDataExtractor.extractEntityData(server);
         BiomeDataExtractor.extractBiomeData(server);
-        EnchantmentDataExtractor.extractEnchantmentData();
+        EnchantmentDataExtractor.extractEnchantmentData(server);
 
         throw new RuntimeException("Program exited, wiki data has been written.");
     }

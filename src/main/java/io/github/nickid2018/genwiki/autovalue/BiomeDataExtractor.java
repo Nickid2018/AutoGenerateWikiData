@@ -107,7 +107,7 @@ public class BiomeDataExtractor {
 
         for (Object level : levels) {
             @SourceClass("Registry<Biome>")
-            Object biomeRegistry = InjectedProcess.getSyncRegistry(level, "BIOME");
+            Object biomeRegistry = InjectedProcess.getLevelSyncRegistry(level, "BIOME");
             @SourceClass("Set<ResourceKey<Biome>>")
             Set<?> biomeKeySet = InjectedProcess.getRegistryKeySet(biomeRegistry);
             for (@SourceClass("ResourceKey<Biome>") Object biomeKey : biomeKeySet) {

@@ -30,13 +30,15 @@ public class FileProcessor {
     public static void processServer(File fileInput, MappingFormat remapper, File output, boolean chunkStatistics) throws Exception {
         ZipFile file = new ZipFile(fileInput);
         String versionData = IOUtils.toString(
-                file.getInputStream(file.getEntry("META-INF/versions.list")), StandardCharsets.UTF_8);
+            file.getInputStream(file.getEntry("META-INF/versions.list")), StandardCharsets.UTF_8);
         String[] extractData = versionData.split("\t", 3);
         File tempZip = new File("temp-server.jar");
         File tempRemapped = new File("temp-server-remapped.jar");
 
-        IOUtils.copy(file.getInputStream(file.getEntry("META-INF/versions/" + extractData[2])),
-                new FileOutputStream(tempZip));
+        IOUtils.copy(
+            file.getInputStream(file.getEntry("META-INF/versions/" + extractData[2])),
+            new FileOutputStream(tempZip)
+        );
         checkIntegrity(tempZip.toPath(), extractData[0]);
         try (ZipFile server = new ZipFile(tempZip)) {
             process(server, remapper, tempRemapped, chunkStatistics);
@@ -128,8 +130,8 @@ public class FileProcessor {
     }
 
     public static Map<String, byte[]> remapAllClasses(ZipFile file, ASMRemapper remapper,
-                                                      MappingFormat format, boolean chunkStatistics)
-            throws IOException {
+        MappingFormat format, boolean chunkStatistics)
+        throws IOException {
         Map<String, byte[]> remappedData = new HashMap<>();
 
         Enumeration<? extends ZipEntry> entries = file.entries();
@@ -151,12 +153,16 @@ public class FileProcessor {
             byte[] remapped = writer.toByteArray();
             String classNameRemapped = format.getToNamedClass(className).mapName();
             remapped = postTransform(classNameRemapped, remapped, chunkStatistics);
-            remappedData.put(ClassUtils.toInternalName(classNameRemapped) + ".class",
-                    remapped);
+            remappedData.put(
+                ClassUtils.toInternalName(classNameRemapped) + ".class",
+                remapped
+            );
         }
 
-        remappedData.put("META-INF/MANIFEST.MF",
-                "Manifest-Version: 1.0\r\nMain-Class: net.minecraft.server.Main".getBytes());
+        remappedData.put(
+            "META-INF/MANIFEST.MF",
+            "Manifest-Version: 1.0\r\nMain-Class: net.minecraft.server.Main".getBytes()
+        );
 
         return remappedData;
     }
@@ -170,24 +176,16 @@ public class FileProcessor {
             boolean injected = false;
             for (int i = 0; i < node.methods.size(); i++) {
                 MethodNode method = node.methods.get(i);
-                if (!chunkStatistics && method.name.equals(Constants.INJECT_POINT_METHOD)
-                        && method.desc.equals(Constants.INJECT_POINT_METHOD_DESC)) {
+                if (method.name.equals(Constants.INJECT_METHOD) && method.desc.equals(Constants.INJECT_METHOD_DESC)) {
                     InsnList list = new InsnList();
                     list.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                            "io/github/nickid2018/genwiki/inject/InjectedProcess", "extractDataInjection",
-                            "(Ljava/lang/Object;)V", false));
-                    method.instructions.insert(list);
-                    injected = true;
-                    break;
-                }
-                if (chunkStatistics && method.name.equals(Constants.INJECT_CHUNK_STATISTICS_METHOD)
-                        && method.desc.equals(Constants.INJECT_CHUNK_STATISTICS_METHOD_DESC)) {
-                    InsnList list = new InsnList();
-                    list.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                            "io/github/nickid2018/genwiki/inject/InjectedProcess", "chunkStatisticsInjection",
-                            "(Ljava/lang/Object;)V", false));
+                    list.add(new MethodInsnNode(
+                        Opcodes.INVOKESTATIC,
+                        "io/github/nickid2018/genwiki/inject/InjectedProcess",
+                        chunkStatistics ? "chunkStatisticsInjection" : "extractDataInjection",
+                        "(Ljava/lang/Object;)V",
+                        false
+                    ));
                     list.add(method.instructions);
                     method.instructions = list;
                     injected = true;
@@ -210,32 +208,35 @@ public class FileProcessor {
             for (int i = 0; i < node.methods.size(); i++) {
                 MethodNode method = node.methods.get(i);
                 if ((method.name.equals(Constants.INJECT_REGION_FILE_METHOD) && method.desc.equals(Constants.INJECT_REGION_FILE_METHOD_DESC)) ||
-                        (method.name.equals(Constants.INJECT_REGION_FILE_METHOD4) && method.desc.equals(Constants.INJECT_REGION_FILE_METHOD4_DESC))) {
+                    (method.name.equals(Constants.INJECT_REGION_FILE_METHOD4) && method.desc.equals(Constants.INJECT_REGION_FILE_METHOD4_DESC))) {
                     InsnList list = new InsnList();
                     list.add(new InsnNode(Opcodes.RETURN));
                     method.instructions = list;
                     injectedCount++;
                 }
                 if (method.name.equals(Constants.INJECT_REGION_FILE_METHOD3) &&
-                        method.desc.equals(Constants.INJECT_REGION_FILE_METHOD3_DESC)) {
+                    method.desc.equals(Constants.INJECT_REGION_FILE_METHOD3_DESC)) {
                     InsnList list = new InsnList();
                     list.add(new FieldInsnNode(Opcodes.GETSTATIC,
-                            "io/github/nickid2018/genwiki/inject/InjectedProcess", "NULL_PATH",
-                            "Ljava/nio/file/Path;"));
+                                               "io/github/nickid2018/genwiki/inject/InjectedProcess", "NULL_PATH",
+                                               "Ljava/nio/file/Path;"
+                    ));
                     list.add(new VarInsnNode(Opcodes.ASTORE, 2));
                     list.add(method.instructions);
                     method.instructions = list;
                     injectedCount++;
                 }
                 if (method.name.equals(Constants.INJECT_REGION_FILE_METHOD2) &&
-                        method.desc.equals(Constants.INJECT_REGION_FILE_METHOD2_DESC)) {
+                    method.desc.equals(Constants.INJECT_REGION_FILE_METHOD2_DESC)) {
                     InsnList list = new InsnList();
                     list.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     list.add(new FieldInsnNode(Opcodes.GETFIELD,
-                            "net/minecraft/world/level/chunk/storage/RegionFile", "file",
-                            "Ljava/nio/channels/FileChannel;"));
+                                               "net/minecraft/world/level/chunk/storage/RegionFile", "file",
+                                               "Ljava/nio/channels/FileChannel;"
+                    ));
                     list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
-                            "java/nio/channels/FileChannel", "close", "()V", false));
+                                                "java/nio/channels/FileChannel", "close", "()V", false
+                    ));
                     list.add(new InsnNode(Opcodes.RETURN));
                     method.instructions = list;
                     method.tryCatchBlocks.clear();
@@ -258,11 +259,15 @@ public class FileProcessor {
             for (int i = 0; i < node.methods.size(); i++) {
                 MethodNode method = node.methods.get(i);
                 if (method.name.equals(Constants.INJECT_SERVER_PROPERTIES_METHOD) &&
-                        method.desc.equals(Constants.INJECT_SERVER_PROPERTIES_METHOD_DESC)) {
+                    method.desc.equals(Constants.INJECT_SERVER_PROPERTIES_METHOD_DESC)) {
                     InsnList list = new InsnList();
-                    list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,
-                            "io/github/nickid2018/genwiki/inject/InjectedProcess", "preprocessDataPacks",
-                            "()Ljava/lang/String;", false));
+                    list.add(new MethodInsnNode(
+                        Opcodes.INVOKESTATIC,
+                        "io/github/nickid2018/genwiki/inject/InjectedProcess",
+                        "preprocessDataPacks",
+                        "()Ljava/lang/String;",
+                        false
+                    ));
                     list.add(new VarInsnNode(Opcodes.ASTORE, 0));
                     method.instructions.insert(list);
                     injected = true;
@@ -287,7 +292,12 @@ public class FileProcessor {
             zos.write(map.get(entry));
         }
 
-        JarFile thisJar = new JarFile(FileProcessor.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+        JarFile thisJar = new JarFile(FileProcessor.class
+                                          .getProtectionDomain()
+                                          .getCodeSource()
+                                          .getLocation()
+                                          .toURI()
+                                          .getPath());
         for (Enumeration<? extends ZipEntry> it = thisJar.entries(); it.hasMoreElements(); ) {
             ZipEntry entry = it.nextElement();
             if (entry.getName().startsWith("META-INF") || entry.getName().contains("log4j2.xml"))

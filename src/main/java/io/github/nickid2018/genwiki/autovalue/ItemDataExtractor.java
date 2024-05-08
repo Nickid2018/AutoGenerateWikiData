@@ -149,7 +149,7 @@ public class ItemDataExtractor {
 
         Object serverOverworld = InjectedProcess.SERVER_OVERWORLD.invoke(serverObj);
         @SourceClass("RegistryAccess")
-        Object registryAccess = InjectedProcess.REGISTRY_ACCESS.invoke(serverOverworld);
+        Object registryAccess = InjectedProcess.LEVEL_REGISTRY_ACCESS.invoke(serverOverworld);
         BUILD_TAB_CONTENTS.invoke(InjectedProcess.featureFlagSet, true, registryAccess);
 
         @SourceClass("Registry<CreativeModeTab>")
