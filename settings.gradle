@@ -1,2 +1,4 @@
 rootProject.name = 'AutoGenerateWikiData'
 
+include(':wrapped-mc')
+project(':wrapped-mc').projectDir = file('wrapped-mc')

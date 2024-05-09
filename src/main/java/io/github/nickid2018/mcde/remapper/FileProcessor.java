@@ -183,7 +183,7 @@ public class FileProcessor {
                         Opcodes.INVOKESTATIC,
                         "io/github/nickid2018/genwiki/inject/InjectedProcess",
                         chunkStatistics ? "chunkStatisticsInjection" : "extractDataInjection",
-                        "(Ljava/lang/Object;)V",
+                        "(Lnet/minecraft/server/MinecraftServer;)V",
                         false
                     ));
                     list.add(method.instructions);
@@ -194,6 +194,19 @@ public class FileProcessor {
             }
             if (!injected)
                 throw new RuntimeException("Failed to inject " + Constants.INJECT_POINT_CLASS + "!");
+            ClassWriter writer = new ClassWriter(0);
+            node.accept(writer);
+            return writer.toByteArray();
+        }
+
+        if (className.equals("net.minecraft.world.flag.FeatureFlagRegistry") ||
+            className.equals("net.minecraft.world.level.biome.MobSpawnSettings")) {
+            ClassReader reader = new ClassReader(classFileBuffer);
+            ClassNode node = new ClassNode();
+            reader.accept(node, 0);
+
+            for (FieldNode field : node.fields)
+                field.access = (field.access & ~Opcodes.ACC_PRIVATE) | Opcodes.ACC_PUBLIC;
             ClassWriter writer = new ClassWriter(0);
             node.accept(writer);
             return writer.toByteArray();
@@ -217,9 +230,10 @@ public class FileProcessor {
                 if (method.name.equals(Constants.INJECT_REGION_FILE_METHOD3) &&
                     method.desc.equals(Constants.INJECT_REGION_FILE_METHOD3_DESC)) {
                     InsnList list = new InsnList();
-                    list.add(new FieldInsnNode(Opcodes.GETSTATIC,
-                                               "io/github/nickid2018/genwiki/inject/InjectedProcess", "NULL_PATH",
-                                               "Ljava/nio/file/Path;"
+                    list.add(new FieldInsnNode(
+                        Opcodes.GETSTATIC,
+                        "io/github/nickid2018/genwiki/inject/InjectedProcess", "NULL_PATH",
+                        "Ljava/nio/file/Path;"
                     ));
                     list.add(new VarInsnNode(Opcodes.ASTORE, 2));
                     list.add(method.instructions);
@@ -230,12 +244,14 @@ public class FileProcessor {
                     method.desc.equals(Constants.INJECT_REGION_FILE_METHOD2_DESC)) {
                     InsnList list = new InsnList();
                     list.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                    list.add(new FieldInsnNode(Opcodes.GETFIELD,
-                                               "net/minecraft/world/level/chunk/storage/RegionFile", "file",
-                                               "Ljava/nio/channels/FileChannel;"
+                    list.add(new FieldInsnNode(
+                        Opcodes.GETFIELD,
+                        "net/minecraft/world/level/chunk/storage/RegionFile", "file",
+                        "Ljava/nio/channels/FileChannel;"
                     ));
-                    list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
-                                                "java/nio/channels/FileChannel", "close", "()V", false
+                    list.add(new MethodInsnNode(
+                        Opcodes.INVOKEVIRTUAL,
+                        "java/nio/channels/FileChannel", "close", "()V", false
                     ));
                     list.add(new InsnNode(Opcodes.RETURN));
                     method.instructions = list;

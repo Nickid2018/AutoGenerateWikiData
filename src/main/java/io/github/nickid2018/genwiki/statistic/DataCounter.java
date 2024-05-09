@@ -1,6 +1,5 @@
 package io.github.nickid2018.genwiki.statistic;
 
-import it.unimi.dsi.fastutil.Function;
 import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -16,26 +15,27 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Function;
 
 @Slf4j
-public class DataCounter {
+public class DataCounter<T> {
 
-    private final Object2ObjectMap<Object, Int2LongMap> counter = new Object2ObjectOpenHashMap<>();
+    private final Object2ObjectMap<T, Int2LongMap> counter = new Object2ObjectOpenHashMap<>();
 
     private final String name;
-    private final Function<Object, String> objectToString;
+    private final Function<T, String> objectToString;
 
-    public DataCounter(String name, Function<Object, String> objectToString) {
+    public DataCounter(String name, Function<T, String> objectToString) {
         this.name = name;
         this.objectToString = objectToString;
     }
 
-    public void increase(Object block, int y) {
+    public void increase(T block, int y) {
         Int2LongMap pair = counter.computeIfAbsent(block, k -> new Int2LongOpenHashMap());
         pair.put(y, pair.getOrDefault(y, 0L) + 1);
     }
 
-    public void increase(Object block, int y, long count) {
+    public void increase(T block, int y, long count) {
         Int2LongMap pair = counter.computeIfAbsent(block, k -> new Int2LongOpenHashMap());
         pair.put(y, pair.getOrDefault(y, 0L) + count);
     }
@@ -54,8 +54,8 @@ public class DataCounter {
         builder.append("\t\"posProvider\": \"").append(posProvider).append("\",\n");
 
         Map<String, String> lines = new TreeMap<>();
-        for (Object2ObjectMap.Entry<Object, Int2LongMap> entry : counter.object2ObjectEntrySet()) {
-            Object item = entry.getKey();
+        for (Object2ObjectMap.Entry<T, Int2LongMap> entry : counter.object2ObjectEntrySet()) {
+            T item = entry.getKey();
             String name = objectToString.apply(item);
             LongList array = new LongArrayList();
             for (int i = minHeight; i < maxHeight; i++) {

@@ -9,6 +9,13 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.DefaultedRegistry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -240,12 +247,10 @@ public class BlockDataExtractor {
     private static final StringSetWikiData LIQUID_COMPUTATION_VALUES = new StringSetWikiData();
 
     @SneakyThrows
-    public static void extractBlockData(Object serverObj) {
-        @SourceClass("DefaultedRegistry<Block>")
-        Object blockRegistry = InjectedProcess.getRegistry("BLOCK");
-        @SourceClass("Set<ResourceKey<Block>>")
-        Set<?> blockKeySet = InjectedProcess.getRegistryKeySet(blockRegistry);
-        Object serverOverworld = InjectedProcess.SERVER_OVERWORLD.invoke(serverObj);
+    public static void extractBlockData(MinecraftServer serverObj) {
+        DefaultedRegistry<Block> blockRegistry = BuiltInRegistries.BLOCK;
+        Set<ResourceKey<Block>> blockKeySet = blockRegistry.registryKeySet();
+        ServerLevel serverOverworld = serverObj.overworld();
 
         Field[] blockStateProperties = BLOCKSTATE_PROPERTIES_CLASS.getDeclaredFields();
         Map<Object, String> revPropertyMap = new HashMap<>();
@@ -264,12 +269,9 @@ public class BlockDataExtractor {
             }
         }
 
-        for (@SourceClass("ResourceKey<Block>") Object key : blockKeySet) {
-            @SourceClass("ResourceLocation")
-            Object location = InjectedProcess.RESOURCE_KEY_LOCATION.invoke(key);
-            String blockID = InjectedProcess.getResourceLocationPath(location);
-            @SourceClass("Block")
-            Object block = InjectedProcess.REGISTRY_GET.invoke(blockRegistry, key);
+        for (ResourceKey<Block> key : blockKeySet) {
+            String blockID = key.location().getPath();
+            Block block = blockRegistry.get(key);
             @SourceClass("StateDefinition<Block, BlockState>")
             Object stateDefinition = GET_STATE_DEFINITION.invoke(block);
             @SourceClass("ImmutableList<BlockState>")
@@ -296,13 +298,13 @@ public class BlockDataExtractor {
             for (Object state : states) {
                 boolean blocksMotion = (boolean) BLOCK_STATE_BASE_BLOCKS_MOTION.invoke(state);
                 boolean canOcclude = (boolean) BLOCK_STATE_CAN_OCCLUDE.invoke(state);
-                Object occlusionShape = OCCLUSION_SHAPE.invoke(block, state, serverOverworld, InjectedProcess.BLOCK_POS_ZERO);
+                Object occlusionShape = OCCLUSION_SHAPE.invoke(block, state, serverOverworld, BlockPos.ZERO);
                 Map<String, String> occlusionMap = new HashMap<>();
                 Set<String> faceSturdySet = new TreeSet<>();
                 for (Object direction : InjectedProcess.DIRECTION_MAP.values()) {
                     String directionName = ((String) InjectedProcess.ENUM_NAME.invoke(direction)).toLowerCase();
                     if ((boolean) IS_FACE_STURDY.invoke(
-                            state, serverOverworld, InjectedProcess.BLOCK_POS_ZERO, direction, SUPPORT_TYPE_MAP.get("FULL")))
+                        state, serverOverworld, BlockPos.ZERO, direction, SUPPORT_TYPE_MAP.get("FULL")))
                         faceSturdySet.add(directionName);
                     Object faceShape = SHAPES_GET_FACE_SHAPE.invoke(occlusionShape, direction);
                     if ((boolean) VOXEL_SHAPE_IS_EMPTY.invoke(faceShape))
@@ -584,14 +586,14 @@ public class BlockDataExtractor {
                 if (stateString.contains("["))
                     stateString = stateString.substring(stateString.indexOf('['));
                 boolean testFULL = (boolean) IS_FACE_STURDY.invoke(
-                        state, level, InjectedProcess.BLOCK_POS_ZERO, direction, SUPPORT_TYPE_MAP.get("FULL"));
+                        state, level, BlockPos.ZERO, direction, SUPPORT_TYPE_MAP.get("FULL"));
                 if (testFULL)
                     subMap.computeIfAbsent("FULL", k -> new ArrayList<>()).add(stateString);
                 else {
                     boolean testCENTER = (boolean) IS_FACE_STURDY.invoke(
-                            state, level, InjectedProcess.BLOCK_POS_ZERO, direction, SUPPORT_TYPE_MAP.get("CENTER"));
+                            state, level, BlockPos.ZERO, direction, SUPPORT_TYPE_MAP.get("CENTER"));
                     boolean testRIGID = (boolean) IS_FACE_STURDY.invoke(
-                            state, level, InjectedProcess.BLOCK_POS_ZERO, direction, SUPPORT_TYPE_MAP.get("RIGID"));
+                            state, level, BlockPos.ZERO, direction, SUPPORT_TYPE_MAP.get("RIGID"));
                     if (testCENTER && testRIGID)
                         subMap.computeIfAbsent("CENTER_AND_RIGID", k -> new ArrayList<>()).add(stateString);
                     else if (testCENTER)
