@@ -2,224 +2,35 @@ package io.github.nickid2018.genwiki.autovalue;
 
 import com.google.common.collect.ImmutableList;
 import io.github.nickid2018.genwiki.autovalue.wikidata.*;
-import io.github.nickid2018.genwiki.inject.InjectedProcess;
-import io.github.nickid2018.genwiki.inject.SourceClass;
-import io.github.nickid2018.genwiki.util.LanguageUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.DefaultedRegistry;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.invoke.VarHandle;
+import java.lang.reflect.AccessFlag;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
 public class BlockDataExtractor {
-
-    public static final Class<?> BLOCK_CLASS;
-    public static final Class<?> PROPERTIES_CLASS;
-    public static final Class<?> PUSH_REACTION_CLASS;
-    public static final Class<?> BLOCK_STATE_CLASS;
-    public static final Class<?> STATE_PREDICATE_CLASS;
-    public static final Class<?> ENTITY_BLOCK_CLASS;
-    public static final Class<?> STATE_DEFINITION_CLASS;
-    public static final Class<?> BLOCK_STATE_BASE_CLASS;
-    public static final Class<?> MAP_COLOR_CLASS;
-    public static final Class<?> SUPPORT_TYPE_CLASS;
-    public static final Class<?> BLOCK_GETTER_CLASS;
-    public static final Class<?> BLOCKSTATE_PROPERTIES_CLASS;
-    public static final Class<?> PROPERTY_CLASS;
-    public static final Class<?> STATE_HOLDER_CLASS;
-    public static final Class<?> BLOCK_BEHAVIOR_CLASS;
-    public static final Class<?> VOXEL_SHAPE_CLASS;
-    public static final Class<?> AABB_CLASS;
-
-    @SourceClass("StateDefinition<Block, BlockState>")
-    public static final MethodHandle GET_STATE_DEFINITION;
-    @SourceClass("BlockBehaviour.Properties")
-    public static final MethodHandle PROPERTIES;
-    public static final MethodHandle STATE_PREDICATE_TEST;
-    public static final MethodHandle OCCLUSION_SHAPE;
-    @SourceClass("BlockState")
-    public static final MethodHandle BLOCK_DEFAULT_BLOCK_STATE;
-    public static final MethodHandle STATE_DEFINITION_GET_POSSIBLE_STATES;
-    public static final MethodHandle BLOCKSTATE_IS;
-    public static final MethodHandle GET_BURN_ODDS;
-    public static final MethodHandle GET_IGNITE_ODDS;
-    public static final MethodHandle IS_FACE_STURDY;
-    public static final MethodHandle GET_POSSIBLE_VALUES;
-    public static final MethodHandle GET_PROPERTY_NAME;
-    public static final MethodHandle GET_NAME;
-    public static final MethodHandle STATE_HOLDER_GET_VALUES;
-    public static final MethodHandle SHAPES_GET_FACE_SHAPE;
-    public static final MethodHandle VOXEL_SHAPE_TO_AABBS;
-    public static final MethodHandle VOXEL_SHAPE_IS_EMPTY;
-    public static final MethodHandle BLOCK_STATE_CAN_OCCLUDE;
-    public static final MethodHandle BLOCK_STATE_BASE_BLOCKS_MOTION;
-
-    public static final VarHandle PROPERTIES_EXPLOSION_RESISTANCE;
-    public static final VarHandle PROPERTIES_DESTROY_TIME;
-    public static final VarHandle PROPERTIES_IGNITE_BY_LAVA;
-    public static final VarHandle PROPERTIES_PUSH_REACTION;
-    public static final VarHandle PROPERTIES_REPLACEABLE;
-    public static final VarHandle PROPERTIES_IS_REDSTONE_CONDUCTOR;
-    public static final VarHandle PROPERTIES_IS_SUFFOCATING;
-    public static final VarHandle PROPERTIES_REQUIRES_CORRECT_TOOL_FOR_DROPS;
-    public static final VarHandle PROPERTIES_INSTRUMENT;
-    public static final VarHandle VAR_LEGACY_SOLID;
-    public static final VarHandle VAR_MAP_COLOR;
-    public static final VarHandle VAR_MAP_COLOR_ID;
-    public static final VarHandle AABB_MINX;
-    public static final VarHandle AABB_MINY;
-    public static final VarHandle AABB_MINZ;
-    public static final VarHandle AABB_MAXX;
-    public static final VarHandle AABB_MAXY;
-    public static final VarHandle AABB_MAXZ;
-
-    public static final Object TAG_NEEDS_DIAMOND_TOOL;
-    public static final Object TAG_NEEDS_IRON_TOOL;
-    public static final Object TAG_NEEDS_STONE_TOOL;
-    public static final Object TAG_MINEABLE_WITH_AXE;
-    public static final Object TAG_MINEABLE_WITH_HOE;
-    public static final Object TAG_MINEABLE_WITH_PICKAXE;
-    public static final Object TAG_MINEABLE_WITH_SHOVEL;
-    public static final Object TAG_SWORD_EFFICIENT;
-    public static final Object TAG_LEAVES;
-    public static final Object TAG_WOOL;
-
-    public static final Object FIRE_BLOCK;
-
-    public static final Int2ObjectMap<String> MAP_COLOR_MAP = new Int2ObjectAVLTreeMap<>();
-    public static final Map<String, Object> SUPPORT_TYPE_MAP = new HashMap<>();
-
-
-    static {
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-        try {
-            BLOCK_CLASS = Class.forName("net.minecraft.world.level.block.Block");
-            PROPERTIES_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$Properties");
-            PUSH_REACTION_CLASS = Class.forName("net.minecraft.world.level.material.PushReaction");
-            BLOCK_STATE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockState");
-            STATE_PREDICATE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$StatePredicate");
-            ENTITY_BLOCK_CLASS = Class.forName("net.minecraft.world.level.block.EntityBlock");
-            STATE_DEFINITION_CLASS = Class.forName("net.minecraft.world.level.block.state.StateDefinition");
-            BLOCK_STATE_BASE_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase");
-            SUPPORT_TYPE_CLASS = Class.forName("net.minecraft.world.level.block.SupportType");
-            BLOCK_GETTER_CLASS = Class.forName("net.minecraft.world.level.BlockGetter");
-            BLOCKSTATE_PROPERTIES_CLASS = Class.forName("net.minecraft.world.level.block.state.properties.BlockStateProperties");
-            PROPERTY_CLASS = Class.forName("net.minecraft.world.level.block.state.properties.Property");
-            STATE_HOLDER_CLASS = Class.forName("net.minecraft.world.level.block.state.StateHolder");
-            BLOCK_BEHAVIOR_CLASS = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour");
-            VOXEL_SHAPE_CLASS = Class.forName("net.minecraft.world.phys.shapes.VoxelShape");
-            AABB_CLASS = Class.forName("net.minecraft.world.phys.AABB");
-
-            GET_STATE_DEFINITION = lookup.unreflect(BLOCK_CLASS.getMethod("getStateDefinition"));
-            PROPERTIES = lookup.unreflect(BLOCK_CLASS.getMethod("properties"));
-            STATE_PREDICATE_TEST = lookup.unreflect(STATE_PREDICATE_CLASS.getDeclaredMethods()[0]);
-            BLOCK_DEFAULT_BLOCK_STATE = lookup.unreflect(BLOCK_CLASS.getMethod("defaultBlockState"));
-            STATE_DEFINITION_GET_POSSIBLE_STATES = lookup.unreflect(STATE_DEFINITION_CLASS.getMethod("getPossibleStates"));
-            BLOCKSTATE_IS = lookup.unreflect(BLOCK_STATE_CLASS.getMethod("is", InjectedProcess.TAG_KEY_CLASS));
-            IS_FACE_STURDY = lookup.unreflect(BLOCK_STATE_BASE_CLASS.getMethod(
-                    "isFaceSturdy", BLOCK_GETTER_CLASS, InjectedProcess.BLOCK_POS_CLASS, InjectedProcess.DIRECTION_CLASS, SUPPORT_TYPE_CLASS));
-            GET_POSSIBLE_VALUES = lookup.unreflect(PROPERTY_CLASS.getMethod("getPossibleValues"));
-            GET_PROPERTY_NAME = lookup.unreflect(PROPERTY_CLASS.getMethod("getName"));
-            GET_NAME = lookup.unreflect(PROPERTY_CLASS.getMethod("getName", Comparable.class));
-            STATE_HOLDER_GET_VALUES = lookup.unreflect(STATE_HOLDER_CLASS.getMethod("getValues"));
-            Method getOcclusionShape = BLOCK_BEHAVIOR_CLASS.getDeclaredMethod(
-                    "getOcclusionShape", BLOCK_STATE_CLASS, BLOCK_GETTER_CLASS, InjectedProcess.BLOCK_POS_CLASS);
-            getOcclusionShape.setAccessible(true);
-            OCCLUSION_SHAPE = lookup.unreflect(getOcclusionShape);
-            Class<?> shapesClass = Class.forName("net.minecraft.world.phys.shapes.Shapes");
-            SHAPES_GET_FACE_SHAPE = lookup.unreflect(shapesClass.getMethod(
-                    "getFaceShape", VOXEL_SHAPE_CLASS, InjectedProcess.DIRECTION_CLASS));
-            VOXEL_SHAPE_TO_AABBS = lookup.unreflect(VOXEL_SHAPE_CLASS.getMethod("toAabbs"));
-            VOXEL_SHAPE_IS_EMPTY = lookup.unreflect(VOXEL_SHAPE_CLASS.getMethod("isEmpty"));
-            BLOCK_STATE_CAN_OCCLUDE = lookup.unreflect(BLOCK_STATE_CLASS.getMethod("canOcclude"));
-            BLOCK_STATE_BASE_BLOCKS_MOTION = lookup.unreflect(BLOCK_STATE_BASE_CLASS.getMethod("blocksMotion"));
-
-            AABB_MINX = lookup.findVarHandle(AABB_CLASS, "minX", double.class);
-            AABB_MINY = lookup.findVarHandle(AABB_CLASS, "minY", double.class);
-            AABB_MINZ = lookup.findVarHandle(AABB_CLASS, "minZ", double.class);
-            AABB_MAXX = lookup.findVarHandle(AABB_CLASS, "maxX", double.class);
-            AABB_MAXY = lookup.findVarHandle(AABB_CLASS, "maxY", double.class);
-            AABB_MAXZ = lookup.findVarHandle(AABB_CLASS, "maxZ", double.class);
-
-            Class<?> NOTE_BLOCK_INSTRUMENT_CLASS = Class.forName("net.minecraft.world.level.block.state.properties.NoteBlockInstrument");
-            MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(PROPERTIES_CLASS, lookup);
-            PROPERTIES_EXPLOSION_RESISTANCE = privateLookup.findVarHandle(PROPERTIES_CLASS, "explosionResistance", float.class);
-            PROPERTIES_DESTROY_TIME = privateLookup.findVarHandle(PROPERTIES_CLASS, "destroyTime", float.class);
-            PROPERTIES_IGNITE_BY_LAVA = privateLookup.findVarHandle(PROPERTIES_CLASS, "ignitedByLava", boolean.class);
-            PROPERTIES_PUSH_REACTION = privateLookup.findVarHandle(PROPERTIES_CLASS, "pushReaction", PUSH_REACTION_CLASS);
-            PROPERTIES_REPLACEABLE = privateLookup.findVarHandle(PROPERTIES_CLASS, "replaceable", boolean.class);
-            PROPERTIES_IS_REDSTONE_CONDUCTOR = privateLookup.findVarHandle(PROPERTIES_CLASS, "isRedstoneConductor", STATE_PREDICATE_CLASS);
-            PROPERTIES_IS_SUFFOCATING = privateLookup.findVarHandle(PROPERTIES_CLASS, "isSuffocating", STATE_PREDICATE_CLASS);
-            PROPERTIES_REQUIRES_CORRECT_TOOL_FOR_DROPS = privateLookup.findVarHandle(PROPERTIES_CLASS, "requiresCorrectToolForDrops", boolean.class);
-            PROPERTIES_INSTRUMENT = privateLookup.findVarHandle(PROPERTIES_CLASS, "instrument", NOTE_BLOCK_INSTRUMENT_CLASS);
-
-            Field[] fields = Class.forName("net.minecraft.tags.BlockTags").getDeclaredFields();
-            Map<String, Field> tagFields = new HashMap<>();
-            for (Field field : fields)
-                tagFields.put(field.getName(), field);
-            TAG_NEEDS_DIAMOND_TOOL = tagFields.get("NEEDS_DIAMOND_TOOL").get(null);
-            TAG_NEEDS_IRON_TOOL = tagFields.get("NEEDS_IRON_TOOL").get(null);
-            TAG_NEEDS_STONE_TOOL = tagFields.get("NEEDS_STONE_TOOL").get(null);
-            TAG_MINEABLE_WITH_AXE = tagFields.get("MINEABLE_WITH_AXE").get(null);
-            TAG_MINEABLE_WITH_HOE = tagFields.get("MINEABLE_WITH_HOE").get(null);
-            TAG_MINEABLE_WITH_PICKAXE = tagFields.get("MINEABLE_WITH_PICKAXE").get(null);
-            TAG_MINEABLE_WITH_SHOVEL = tagFields.get("MINEABLE_WITH_SHOVEL").get(null);
-            TAG_SWORD_EFFICIENT = tagFields.get("SWORD_EFFICIENT").get(null);
-            TAG_LEAVES = tagFields.get("LEAVES").get(null);
-            TAG_WOOL = tagFields.get("WOOL").get(null);
-
-            Field[] fields2 = Class.forName("net.minecraft.world.level.block.Blocks").getDeclaredFields();
-            Map<String, Field> blockFields = new HashMap<>();
-            for (Field field : fields2)
-                blockFields.put(field.getName(), field);
-            FIRE_BLOCK = blockFields.get("FIRE").get(null);
-            Class<?> CLASS_FIRE = Class.forName("net.minecraft.world.level.block.FireBlock");
-            MethodHandles.Lookup privateLookup2 = MethodHandles.privateLookupIn(CLASS_FIRE, lookup);
-            GET_BURN_ODDS = privateLookup2.findVirtual(CLASS_FIRE, "getBurnOdds", MethodType.methodType(int.class, BLOCK_STATE_CLASS));
-            GET_IGNITE_ODDS = privateLookup2.findVirtual(CLASS_FIRE, "getIgniteOdds", MethodType.methodType(int.class, BLOCK_STATE_CLASS));
-
-            MethodHandles.Lookup privateLookup3 = MethodHandles.privateLookupIn(BLOCK_STATE_BASE_CLASS, lookup);
-            MAP_COLOR_CLASS = Class.forName("net.minecraft.world.level.material.MapColor");
-            VAR_LEGACY_SOLID = privateLookup3.findVarHandle(BLOCK_STATE_BASE_CLASS, "legacySolid", boolean.class);
-            VAR_MAP_COLOR = privateLookup3.findVarHandle(BLOCK_STATE_BASE_CLASS, "mapColor", MAP_COLOR_CLASS);
-
-            VAR_MAP_COLOR_ID = lookup.findVarHandle(MAP_COLOR_CLASS, "id", int.class);
-            Field[] fields3 = MAP_COLOR_CLASS.getDeclaredFields();
-            for (Field field : fields3) {
-                if (field.getType() == MAP_COLOR_CLASS) {
-                    Object mapColor = field.get(null);
-                    int id = (int) VAR_MAP_COLOR_ID.get(mapColor);
-                    String name = field.getName();
-                    MAP_COLOR_MAP.put(id, name);
-                }
-            }
-
-            for (Object obj : SUPPORT_TYPE_CLASS.getEnumConstants()) {
-                String name = (String) InjectedProcess.ENUM_NAME.invoke(obj);
-                SUPPORT_TYPE_MAP.put(name, obj);
-            }
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private static final NumberWikiData EXPLOSION_RESISTANCE = new NumberWikiData();
     private static final NumberWikiData DESTROY_TIME = new NumberWikiData();
     private static final BooleanWikiData IGNITE_BY_LAVA = new BooleanWikiData();
@@ -247,143 +58,128 @@ public class BlockDataExtractor {
     private static final StringSetWikiData LIQUID_COMPUTATION_VALUES = new StringSetWikiData();
 
     @SneakyThrows
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static void extractBlockData(MinecraftServer serverObj) {
         DefaultedRegistry<Block> blockRegistry = BuiltInRegistries.BLOCK;
         Set<ResourceKey<Block>> blockKeySet = blockRegistry.registryKeySet();
         ServerLevel serverOverworld = serverObj.overworld();
 
-        Field[] blockStateProperties = BLOCKSTATE_PROPERTIES_CLASS.getDeclaredFields();
         Map<Object, String> revPropertyMap = new HashMap<>();
-        for (Field propertyField : blockStateProperties) {
+        for (Field propertyField : BlockStateProperties.class.getDeclaredFields()) {
             Object property = propertyField.get(null);
             String propertyID = propertyField.getName();
-            if (PROPERTY_CLASS.isInstance(property)) {
-                Collection<?> possibleValues = (Collection<?>) GET_POSSIBLE_VALUES.invoke(property);
-                String propertyName = (String) GET_PROPERTY_NAME.invoke(property);
+            if (property instanceof Property p) {
+                String propertyName = p.getName();
                 BLOCK_PROPERTY_VALUES.put(propertyID, propertyName);
-                possibleValues.stream()
-                        .map(LanguageUtils.sneakyExceptionFunction(v -> GET_NAME.invoke(property, v)))
-                        .map(LanguageUtils.<Object, String>castFunction())
-                        .forEach(value -> BLOCK_PROPERTY_VALUES.putNew(propertyID, value));
+                p.getPossibleValues().stream()
+                 .map(n -> p.getName((Comparable<?>) n))
+                 .forEach(value -> BLOCK_PROPERTY_VALUES.putNew(propertyID, (String) value));
                 revPropertyMap.put(property, propertyID);
             }
+        }
+
+        Int2ObjectMap<String> mapColorMap = new Int2ObjectAVLTreeMap<>();
+        Field[] mapColorFields = MapColor.class.getDeclaredFields();
+        for (Field field : mapColorFields) {
+            field.setAccessible(true);
+            if (!field.accessFlags().contains(AccessFlag.STATIC))
+                continue;
+            Object obj = field.get(null);
+            if (obj instanceof MapColor mapColor)
+                mapColorMap.put(mapColor.id, field.getName());
         }
 
         for (ResourceKey<Block> key : blockKeySet) {
             String blockID = key.location().getPath();
             Block block = blockRegistry.get(key);
-            @SourceClass("StateDefinition<Block, BlockState>")
-            Object stateDefinition = GET_STATE_DEFINITION.invoke(block);
-            @SourceClass("ImmutableList<BlockState>")
-            ImmutableList<?> states = (ImmutableList<?>) STATE_DEFINITION_GET_POSSIBLE_STATES.invoke(stateDefinition);
-            @SourceClass("BlockBehaviour.Properties")
-            Object properties = PROPERTIES.invoke(block);
+            ImmutableList<BlockState> states = block.getStateDefinition().getPossibleStates();
+            BlockBehaviour.Properties properties = block.properties();
 
-            float explosionResistance = (float) PROPERTIES_EXPLOSION_RESISTANCE.get(properties);
-            EXPLOSION_RESISTANCE.put(blockID, explosionResistance);
-            float destroyTime = (float) PROPERTIES_DESTROY_TIME.get(properties);
-            DESTROY_TIME.put(blockID, destroyTime);
-            boolean igniteByLava = (boolean) PROPERTIES_IGNITE_BY_LAVA.get(properties);
-            IGNITE_BY_LAVA.put(blockID, igniteByLava);
+            EXPLOSION_RESISTANCE.put(blockID, properties.explosionResistance);
+            DESTROY_TIME.put(blockID, properties.destroyTime);
+            IGNITE_BY_LAVA.put(blockID, properties.ignitedByLava);
             if (!blockID.equals("piston") && !blockID.equals("sticky_piston"))
-                PUSH_REACTION.put(blockID, computePushReaction(block, properties, destroyTime, blockID));
-            boolean replaceable = (boolean) PROPERTIES_REPLACEABLE.get(properties);
-            REPLACEABLE.put(blockID, replaceable);
-            Object instrument = PROPERTIES_INSTRUMENT.get(properties);
-            if (instrument != null) {
-                String instrumentName = (String) InjectedProcess.ENUM_NAME.invoke(instrument);
-                INSTRUMENT.put(blockID, instrumentName);
-            }
+                PUSH_REACTION.put(blockID, computePushReaction(block, properties, properties.destroyTime, blockID));
+            REPLACEABLE.put(blockID, properties.replaceable);
+            if (properties.instrument != null)
+                INSTRUMENT.put(blockID, properties.instrument.name());
 
-            for (Object state : states) {
-                boolean blocksMotion = (boolean) BLOCK_STATE_BASE_BLOCKS_MOTION.invoke(state);
-                boolean canOcclude = (boolean) BLOCK_STATE_CAN_OCCLUDE.invoke(state);
-                Object occlusionShape = OCCLUSION_SHAPE.invoke(block, state, serverOverworld, BlockPos.ZERO);
+            for (BlockState state : states) {
+                VoxelShape occlusionShape = block.getOcclusionShape(state, serverOverworld, BlockPos.ZERO);
                 Map<String, String> occlusionMap = new HashMap<>();
                 Set<String> faceSturdySet = new TreeSet<>();
-                for (Object direction : InjectedProcess.DIRECTION_MAP.values()) {
-                    String directionName = ((String) InjectedProcess.ENUM_NAME.invoke(direction)).toLowerCase();
-                    if ((boolean) IS_FACE_STURDY.invoke(
-                        state, serverOverworld, BlockPos.ZERO, direction, SUPPORT_TYPE_MAP.get("FULL")))
+                for (Direction direction : Direction.values()) {
+                    String directionName = direction.name().toLowerCase();
+                    if (state.isFaceSturdy(serverOverworld, BlockPos.ZERO, direction, SupportType.FULL))
                         faceSturdySet.add(directionName);
-                    Object faceShape = SHAPES_GET_FACE_SHAPE.invoke(occlusionShape, direction);
-                    if ((boolean) VOXEL_SHAPE_IS_EMPTY.invoke(faceShape))
+                    VoxelShape faceShape = Shapes.getFaceShape(occlusionShape, direction);
+                    if (faceShape.isEmpty())
                         continue;
-                    List<?> aabbs = (List<?>) VOXEL_SHAPE_TO_AABBS.invoke(faceShape);
-                    List<String> aabbList = new ArrayList<>();
-                    for (Object aabb : aabbs) {
-                        double minX = (double) AABB_MINX.get(aabb);
-                        double minY = (double) AABB_MINY.get(aabb);
-                        double minZ = (double) AABB_MINZ.get(aabb);
-                        double maxX = (double) AABB_MAXX.get(aabb);
-                        double maxY = (double) AABB_MAXY.get(aabb);
-                        double maxZ = (double) AABB_MAXZ.get(aabb);
-                        switch (directionName) {
-                            case "down":
-                            case "up":
-                                aabbList.add("[" + minX + "," + minZ + "," + maxX + "," + maxZ + "]");
-                                break;
-                            case "north":
-                            case "south":
-                                aabbList.add("[" + minX + "," + minY + "," + maxX + "," + maxY + "]");
-                                break;
-                            case "west":
-                            case "east":
-                                aabbList.add("[" + minZ + "," + minY + "," + maxZ + "," + maxY + "]");
-                                break;
-                        }
-                    }
-                    String aabbString = String.join(",", aabbList);
+                    String aabbString = faceShape.toAabbs().stream().map(aabb -> switch (direction) {
+                        case DOWN:
+                        case UP:
+                            yield "[" + aabb.minX + "," + aabb.minZ + "," + aabb.maxX + "," + aabb.maxZ + "]";
+                        case NORTH:
+                        case SOUTH:
+                            yield "[" + aabb.minX + "," + aabb.minY + "," + aabb.maxX + "," + aabb.maxY + "]";
+                        case WEST:
+                        case EAST:
+                            yield "[" + aabb.minZ + "," + aabb.minY + "," + aabb.maxZ + "," + aabb.maxY + "]";
+                    }).collect(Collectors.joining(","));
                     occlusionMap.put(directionName, "[" + aabbString + "]");
                 }
-                occlusionMap.put("can_occlude", String.valueOf(canOcclude));
-                String occlusionData = occlusionMap.entrySet().stream()
-                        .map(e -> "\"" + e.getKey() + "\":" + e.getValue()).collect(Collectors.joining(","));
+                occlusionMap.put("can_occlude", String.valueOf(state.canOcclude()));
+                String occlusionData = occlusionMap
+                    .entrySet().stream()
+                    .map(e -> "\"" + e.getKey() + "\":" + e.getValue())
+                    .collect(Collectors.joining(","));
                 String stateName = state.toString();
                 if (stateName.contains("[")) {
-                    String[] propertiesArray = stateName.substring(stateName.indexOf('[') + 1, stateName.length() - 1).split(",");
-                    List<String> collected = Stream.of(propertiesArray).filter(s -> !s.startsWith("waterlogged=")).sorted().toList();
+                    String[] propertiesArray = stateName
+                        .substring(stateName.indexOf('[') + 1, stateName.length() - 1)
+                        .split(",");
+                    List<String> collected = Stream
+                        .of(propertiesArray)
+                        .filter(s -> !s.startsWith("waterlogged="))
+                        .sorted()
+                        .toList();
                     stateName = "[" + String.join(",", collected) + "]";
                 } else
                     stateName = "";
                 OCCLUSION_SHAPE_VALUES.putNew("{" + occlusionData + "}", blockID + stateName);
 
-                if (blocksMotion || !faceSturdySet.isEmpty()) {
-                    String liquidComputationData = "{\"blocks_motion\":" + blocksMotion + ",\"face_sturdy\":["
-                            + String.join(",", faceSturdySet.stream().map(s -> "\"" + s + "\"").toList()) + "]}";
+                if (state.blocksMotion() || !faceSturdySet.isEmpty()) {
+                    String liquidComputationData = "{\"blocks_motion\":" + state.blocksMotion() + ",\"face_sturdy\":["
+                        + String.join(",", faceSturdySet.stream().map(s -> "\"" + s + "\"").toList()) + "]}";
                     LIQUID_COMPUTATION_VALUES.putNew(liquidComputationData, blockID + stateName);
                 }
             }
 
-            @SourceClass("BlockBehaviour$StatePredicate")
-            Object isRedstoneConductor = PROPERTIES_IS_REDSTONE_CONDUCTOR.get(properties);
-            makeStatePredicateData(blockID, isRedstoneConductor, states, REDSTONE_CONDUCTOR, REDSTONE_CONDUCTOR_EXCEPT);
-            @SourceClass("BlockBehaviour$StatePredicate")
-            Object isSuffocating = PROPERTIES_IS_SUFFOCATING.get(properties);
-            makeStatePredicateData(blockID, isSuffocating, states, SUFFOCATING, SUFFOCATING_EXCEPT);
+            makeStatePredicateData(
+                blockID,
+                properties.isRedstoneConductor,
+                states,
+                REDSTONE_CONDUCTOR,
+                REDSTONE_CONDUCTOR_EXCEPT
+            );
+            makeStatePredicateData(blockID, properties.isSuffocating, states, SUFFOCATING, SUFFOCATING_EXCEPT);
 
             calcSolid(blockID, states);
-            resolveMapColor(blockID, states);
+            resolveMapColor(blockID, states, mapColorMap);
             resolveSupportType(serverOverworld, blockID, states);
 
-            @SourceClass("BlockState")
-            Object defaultBlockState = BLOCK_DEFAULT_BLOCK_STATE.invoke(block);
+            BlockState defaultBlockState = block.defaultBlockState();
             List<String> breakingTools = resolveBreakingTools(blockID, properties, defaultBlockState);
             BREAKING_TOOLS.put(blockID, breakingTools);
 
-            int burnOdds = (int) GET_BURN_ODDS.invoke(FIRE_BLOCK, defaultBlockState);
-            BURN_ODDS.put(blockID, burnOdds);
-            int igniteOdds = (int) GET_IGNITE_ODDS.invoke(FIRE_BLOCK, defaultBlockState);
-            IGNITE_ODDS.put(blockID, igniteOdds);
+            BURN_ODDS.put(blockID, ((FireBlock) Blocks.FIRE).getBurnOdds(defaultBlockState));
+            IGNITE_ODDS.put(blockID, ((FireBlock) Blocks.FIRE).getIgniteOdds(defaultBlockState));
 
-            Map<?, ?> defaultStateMap = (Map<?, ?>) STATE_HOLDER_GET_VALUES.invoke(defaultBlockState);
+            Map<Property<?>, Comparable<?>> defaultStateMap = defaultBlockState.getValues();
             BLOCK_PROPERTIES.put(blockID);
-            for (Map.Entry<?, ?> entry : defaultStateMap.entrySet()) {
-                Object property = entry.getKey();
-                String propertyID = revPropertyMap.get(property);
-                Object value = entry.getValue();
-                String valueID = (String) GET_NAME.invoke(property, value);
-                BLOCK_PROPERTIES.putNew(blockID, propertyID, valueID);
+            for (Map.Entry<Property<?>, Comparable<?>> entry : defaultStateMap.entrySet()) {
+                Property property = entry.getKey();
+                BLOCK_PROPERTIES.putNew(blockID, revPropertyMap.get(property), property.getName(entry.getValue()));
             }
         }
 
@@ -410,43 +206,35 @@ public class BlockDataExtractor {
         WikiData.write(LIQUID_COMPUTATION_VALUES, "block_liquid_computation.txt");
     }
 
-    private static final String[] PUSH_REACTION_NAMES = new String[]{
-            "NORMAL", "DESTROY", "BLOCK", "IGNORE", "PUSH_ONLY"
-    };
-
     private static final Set<String> OVERRIDE_BLOCK_PUSH_REACTION = Set.of(
-            "obsidian",
-            "crying_obsidian",
-            "respawn_anchor",
-            "reinforced_deepslate"
+        "obsidian",
+        "crying_obsidian",
+        "respawn_anchor",
+        "reinforced_deepslate"
     );
 
-    public static String computePushReaction(Object block, Object properties, float destroyTime, String blockID) {
+    public static String computePushReaction(Block block, BlockBehaviour.Properties properties, float destroyTime, String blockID) {
         if (OVERRIDE_BLOCK_PUSH_REACTION.contains(blockID))
             return "BLOCK";
         if (destroyTime == -1.0f)
             return "BLOCK";
-        Object pushReactionObject = PROPERTIES_PUSH_REACTION.get(properties);
-        String pushReaction = pushReactionToString(pushReactionObject);
-        if (ENTITY_BLOCK_CLASS.isInstance(block) && pushReaction.equals("NORMAL"))
+        String pushReaction = properties.pushReaction.name();
+        if (block instanceof EntityBlock && pushReaction.equals("NORMAL"))
             return "BLOCK";
         return pushReaction;
     }
 
     @SneakyThrows
-    public static String pushReactionToString(Object pushReactionObject) {
-        int ordinal = (int) InjectedProcess.ENUM_ORDINAL.invoke(pushReactionObject);
-        return PUSH_REACTION_NAMES[ordinal];
-    }
-
-    @SneakyThrows
-    public static void makeStatePredicateData(String blockID, Object statePredicate, ImmutableList<?> states,
-                                              BooleanWikiData wikiData, ExceptData exceptData) {
+    public static void makeStatePredicateData(
+        String blockID,
+        BlockBehaviour.StatePredicate statePredicate, ImmutableList<BlockState> states,
+        BooleanWikiData wikiData, ExceptData exceptData
+    ) {
         Set<String> trueSet = new LinkedHashSet<>();
         Set<String> falseSet = new LinkedHashSet<>();
-        for (Object state : states) {
+        for (BlockState state : states) {
             try {
-                boolean test = (boolean) STATE_PREDICATE_TEST.invoke(statePredicate, state, null, null);
+                boolean test = statePredicate.test(state, null, null);
                 String stateString = state.toString();
                 if (stateString.contains("["))
                     stateString = stateString.substring(stateString.indexOf('['));
@@ -472,15 +260,14 @@ public class BlockDataExtractor {
     }
 
     @SneakyThrows
-    public static void calcSolid(String blockID, ImmutableList<?> states) {
+    public static void calcSolid(String blockID, ImmutableList<BlockState> states) {
         Set<String> trueSet = new LinkedHashSet<>();
         Set<String> falseSet = new LinkedHashSet<>();
-        for (Object state : states) {
-            boolean test = (boolean) VAR_LEGACY_SOLID.get(state);
+        for (BlockState state : states) {
             String stateString = state.toString();
             if (stateString.contains("["))
                 stateString = stateString.substring(stateString.indexOf('['));
-            if (test)
+            if (state.legacySolid)
                 trueSet.add(stateString);
             else
                 falseSet.add(stateString);
@@ -498,15 +285,13 @@ public class BlockDataExtractor {
     }
 
     @SneakyThrows
-    private static void resolveMapColor(String blockID, ImmutableList<?> states) {
+    private static void resolveMapColor(String blockID, ImmutableList<BlockState> states, Int2ObjectMap<String> mapColorMap) {
         Map<String, List<String>> map = new HashMap<>();
-        for (Object state : states) {
-            int id = (int) VAR_MAP_COLOR_ID.get(VAR_MAP_COLOR.get(state));
+        for (BlockState state : states) {
             String stateString = state.toString();
             if (stateString.contains("["))
                 stateString = stateString.substring(stateString.indexOf('['));
-            String name = MAP_COLOR_MAP.get(id);
-            map.computeIfAbsent(name, k -> new ArrayList<>()).add(stateString);
+            map.computeIfAbsent(mapColorMap.get(state.mapColor.id), k -> new ArrayList<>()).add(stateString);
         }
         if (map.size() == 1)
             MAP_COLOR.put(blockID, map.keySet().iterator().next());
@@ -519,27 +304,21 @@ public class BlockDataExtractor {
         }
     }
 
-    @SneakyThrows
-    private static boolean hasTag(Object blockState, Object tag) {
-        return (boolean) BLOCKSTATE_IS.invoke(blockState, tag);
-    }
-
     private static final Set<String> SHEARS_MINEABLES = Set.of(
-            "cobweb",
-            "vine",
-            "glow_lichen"
+        "cobweb",
+        "vine",
+        "glow_lichen"
     );
 
     @SneakyThrows
-    private static List<String> resolveBreakingTools(String blockID, Object properties, Object defaultBlockState) {
+    private static List<String> resolveBreakingTools(String blockID, BlockBehaviour.Properties properties, BlockState defaultBlockState) {
         String tierPrefix;
-        boolean needsCorrectTool = (boolean) PROPERTIES_REQUIRES_CORRECT_TOOL_FOR_DROPS.get(properties);
-        if (needsCorrectTool) {
-            if (hasTag(defaultBlockState, TAG_NEEDS_DIAMOND_TOOL))
+        if (properties.requiresCorrectToolForDrops) {
+            if (defaultBlockState.is(BlockTags.NEEDS_DIAMOND_TOOL))
                 tierPrefix = "diamond";
-            else if (hasTag(defaultBlockState, TAG_NEEDS_IRON_TOOL))
+            else if (defaultBlockState.is(BlockTags.NEEDS_IRON_TOOL))
                 tierPrefix = "iron";
-            else if (hasTag(defaultBlockState, TAG_NEEDS_STONE_TOOL))
+            else if (defaultBlockState.is(BlockTags.NEEDS_STONE_TOOL))
                 tierPrefix = "stone";
             else
                 tierPrefix = "wooden";
@@ -548,24 +327,26 @@ public class BlockDataExtractor {
 
         List<String> tools = new ArrayList<>();
 
-        if (hasTag(defaultBlockState, TAG_MINEABLE_WITH_AXE))
+        if (defaultBlockState.is(BlockTags.MINEABLE_WITH_AXE))
             tools.add("axe");
-        if (hasTag(defaultBlockState, TAG_MINEABLE_WITH_HOE))
+        if (defaultBlockState.is(BlockTags.MINEABLE_WITH_HOE))
             tools.add("hoe");
-        if (hasTag(defaultBlockState, TAG_MINEABLE_WITH_PICKAXE))
+        if (defaultBlockState.is(BlockTags.MINEABLE_WITH_PICKAXE))
             tools.add("pickaxe");
-        if (hasTag(defaultBlockState, TAG_MINEABLE_WITH_SHOVEL))
+        if (defaultBlockState.is(BlockTags.MINEABLE_WITH_SHOVEL))
             tools.add("shovel");
-        if (hasTag(defaultBlockState, TAG_SWORD_EFFICIENT) || blockID.equals("cobweb") || blockID.equals("bamboo"))
+        if (defaultBlockState.is(BlockTags.SWORD_EFFICIENT) || blockID.equals("cobweb") || blockID.equals("bamboo"))
             tools.add("sword");
 
         if (tierPrefix != null)
             tools.replaceAll(s -> tierPrefix + " " + s);
 
-        if (hasTag(defaultBlockState, TAG_LEAVES) || hasTag(defaultBlockState, TAG_WOOL) || SHEARS_MINEABLES.contains(blockID))
-            tools.add(needsCorrectTool ? "shears required" : "shears");
+        if (defaultBlockState.is(BlockTags.LEAVES) ||
+            defaultBlockState.is(BlockTags.WOOL) ||
+            SHEARS_MINEABLES.contains(blockID))
+            tools.add(properties.requiresCorrectToolForDrops ? "shears required" : "shears");
 
-        if (needsCorrectTool && tools.isEmpty())
+        if (properties.requiresCorrectToolForDrops && tools.isEmpty())
             tools.add("null required");
 
         tools.sort(Comparator.naturalOrder());
@@ -574,26 +355,22 @@ public class BlockDataExtractor {
     }
 
     @SneakyThrows
-    public static void resolveSupportType(Object level, String blockID, ImmutableList<?> states) {
+    public static void resolveSupportType(ServerLevel level, String blockID, ImmutableList<BlockState> states) {
         Map<String, Map<String, List<String>>> map = new HashMap<>();
         boolean needExcept = false;
-        for (Map.Entry<String, Object> entry : InjectedProcess.DIRECTION_MAP.entrySet()) {
+        for (Direction direction : Direction.values()) {
             Map<String, List<String>> subMap = new HashMap<>();
-            map.put(entry.getKey(), subMap);
-            Object direction = entry.getValue();
-            for (Object state : states) {
+            map.put(direction.name(), subMap);
+            for (BlockState state : states) {
                 String stateString = state.toString();
                 if (stateString.contains("["))
                     stateString = stateString.substring(stateString.indexOf('['));
-                boolean testFULL = (boolean) IS_FACE_STURDY.invoke(
-                        state, level, BlockPos.ZERO, direction, SUPPORT_TYPE_MAP.get("FULL"));
+                boolean testFULL = state.isFaceSturdy(level, BlockPos.ZERO, direction, SupportType.FULL);
                 if (testFULL)
                     subMap.computeIfAbsent("FULL", k -> new ArrayList<>()).add(stateString);
                 else {
-                    boolean testCENTER = (boolean) IS_FACE_STURDY.invoke(
-                            state, level, BlockPos.ZERO, direction, SUPPORT_TYPE_MAP.get("CENTER"));
-                    boolean testRIGID = (boolean) IS_FACE_STURDY.invoke(
-                            state, level, BlockPos.ZERO, direction, SUPPORT_TYPE_MAP.get("RIGID"));
+                    boolean testCENTER = state.isFaceSturdy(level, BlockPos.ZERO, direction, SupportType.CENTER);
+                    boolean testRIGID = state.isFaceSturdy(level, BlockPos.ZERO, direction, SupportType.RIGID);
                     if (testCENTER && testRIGID)
                         subMap.computeIfAbsent("CENTER_AND_RIGID", k -> new ArrayList<>()).add(stateString);
                     else if (testCENTER)

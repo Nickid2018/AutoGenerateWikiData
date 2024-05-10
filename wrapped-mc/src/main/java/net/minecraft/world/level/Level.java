@@ -3,7 +3,7 @@ package net.minecraft.world.level;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceKey;
 
-public abstract class Level implements LevelAccessor {
+public abstract class Level implements LevelReader {
 
     public RegistryAccess registryAccess() {
         throw new RuntimeException();

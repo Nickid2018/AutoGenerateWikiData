@@ -200,13 +200,20 @@ public class FileProcessor {
         }
 
         if (className.equals("net.minecraft.world.flag.FeatureFlagRegistry") ||
-            className.equals("net.minecraft.world.level.biome.MobSpawnSettings")) {
+            className.equals("net.minecraft.world.level.biome.MobSpawnSettings") ||
+            className.equals("net.minecraft.world.level.block.state.BlockBehaviour$Properties") ||
+            className.equals("net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase") ||
+            className.equals("net.minecraft.world.level.block.FireBlock") ||
+            className.equals("net.minecraft.world.level.block.state.BlockBehaviour")) {
             ClassReader reader = new ClassReader(classFileBuffer);
             ClassNode node = new ClassNode();
             reader.accept(node, 0);
 
             for (FieldNode field : node.fields)
-                field.access = (field.access & ~Opcodes.ACC_PRIVATE) | Opcodes.ACC_PUBLIC;
+                field.access = ((field.access & ~Opcodes.ACC_PRIVATE) & ~Opcodes.ACC_PROTECTED) | Opcodes.ACC_PUBLIC;
+            for (MethodNode method : node.methods)
+                method.access = ((method.access & ~Opcodes.ACC_PRIVATE) & ~Opcodes.ACC_PROTECTED) | Opcodes.ACC_PUBLIC;
+
             ClassWriter writer = new ClassWriter(0);
             node.accept(writer);
             return writer.toByteArray();
