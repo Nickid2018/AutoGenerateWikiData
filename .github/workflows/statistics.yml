@@ -30,6 +30,6 @@ jobs:
       - name: Upload injected
         uses: actions/upload-artifact@v2
         with:
-          name: wiki-data
+          name: statistics-maker-${{ github.event.inputs.version }}
           path: |
             run/remapped/*.jar
