@@ -1,11 +1,11 @@
 package io.github.nickid2018.genwiki;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import io.github.nickid2018.genwiki.remap.MojangMapping;
+import io.github.nickid2018.genwiki.remap.RemapProgram;
 import io.github.nickid2018.genwiki.util.JsonUtils;
 import io.github.nickid2018.genwiki.util.WebUtils;
-import io.github.nickid2018.mcde.format.MappingFormat;
-import io.github.nickid2018.mcde.format.MojangMappingFormat;
-import io.github.nickid2018.mcde.remapper.FileProcessor;
 import joptsimple.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -20,13 +20,20 @@ import java.util.List;
 
 @Slf4j
 public class GenerateWikiData {
+    public static final String VERSION_MANIFEST = "https://piston-meta.mojang.com/mc/game/version_manifest.json";
+
+    public static final File SERVER_FOLDER = new File("servers");
+    public static final File MAPPING_FOLDER = new File("mappings");
+    public static final File REMAPPED_FOLDER = new File("remapped");
+    public static final File RUNTIME_FOLDER = new File("runtime");
 
     @SneakyThrows
     public static void main(String[] args) {
         OptionParser parser = new OptionParser();
         NonOptionArgumentSpec<String> versionSpec = parser.nonOptions("Minecraft version");
-        ArgumentAcceptingOptionSpec<String> modeSpec = parser.accepts("mode", "Generate chunk statistics")
-                .withOptionalArg().defaultsTo("autovalue");
+        ArgumentAcceptingOptionSpec<String> modeSpec = parser
+            .accepts("mode", "Generate chunk statistics")
+            .withOptionalArg().defaultsTo("autovalue");
         OptionSpecBuilder doNotRun = parser.accepts("not-run", "Do not run server");
         AbstractOptionSpec<Void> helpSpec = parser.accepts("help", "Show help").forHelp();
 
@@ -52,10 +59,10 @@ public class GenerateWikiData {
         log.info("Generate Wiki Data, Minecraft Version: {}", version);
         log.info("Running mode: {}", mode);
         if (notRun)
-            log.info("Do not run server, file will be generated in {}/{}.jar", Constants.REMAPPED_FOLDER, version);
+            log.info("Do not run server, file will be generated in {}/{}.jar", REMAPPED_FOLDER, version);
 
-        File serverFile = new File(Constants.SERVER_FOLDER, version + ".jar");
-        File serverMapping = new File(Constants.MAPPING_FOLDER, version + ".txt");
+        File serverFile = new File(SERVER_FOLDER, version + ".jar");
+        File serverMapping = new File(MAPPING_FOLDER, version + ".txt");
         if (!serverFile.exists() || !serverMapping.exists()) {
             try {
                 log.info("Downloading server jar and mapping...");
@@ -67,7 +74,7 @@ public class GenerateWikiData {
         } else
             log.info("Server jar and mapping already exists, skip downloading.");
 
-        File remappedFile = new File(Constants.REMAPPED_FOLDER, version + ".jar");
+        File remappedFile = new File(REMAPPED_FOLDER, version + ".jar");
         if (notRun || !remappedFile.exists()) {
             try {
                 log.info("Remapping server jar...");
@@ -89,12 +96,12 @@ public class GenerateWikiData {
     }
 
     private static void downloadServerJar(String version) throws Exception {
-        if (!Constants.SERVER_FOLDER.exists())
-            Constants.SERVER_FOLDER.mkdirs();
-        if (!Constants.MAPPING_FOLDER.exists())
-            Constants.MAPPING_FOLDER.mkdirs();
+        if (!SERVER_FOLDER.exists())
+            SERVER_FOLDER.mkdirs();
+        if (!MAPPING_FOLDER.exists())
+            MAPPING_FOLDER.mkdirs();
 
-        JsonElement versionManifest = WebUtils.getJson(Constants.VERSION_MANIFEST);
+        JsonElement versionManifest = WebUtils.getJson(VERSION_MANIFEST);
         String serverURL = null;
         for (JsonElement element : versionManifest.getAsJsonObject().getAsJsonArray("versions")) {
             String id = JsonUtils.getStringOrElse(element.getAsJsonObject(), "id", "");
@@ -109,41 +116,46 @@ public class GenerateWikiData {
             return;
         }
 
-        JsonElement serverManifest = WebUtils.getJson(serverURL);
-        String serverDownloadURL = JsonUtils.getStringInPath(serverManifest.getAsJsonObject(), "downloads.server.url")
-                .orElseThrow(() -> new IOException("Cannot find server jar download url!"));
-        String serverMappingURL = JsonUtils.getStringInPath(serverManifest.getAsJsonObject(),
-                        "downloads.server_mappings.url")
-                .orElseThrow(() -> new IOException("Cannot find server jar mapping url!"));
+        JsonObject serverManifest = WebUtils.getJson(serverURL).getAsJsonObject();
+        String serverDownloadURL = JsonUtils
+            .getStringInPath(serverManifest, "downloads.server.url")
+            .orElseThrow(() -> new IOException("Cannot find server jar download url!"));
+        String serverMappingURL = JsonUtils
+            .getStringInPath(serverManifest, "downloads.server_mappings.url")
+            .orElseThrow(() -> new IOException("Cannot find server jar mapping url!"));
 
-        File serverFile = new File(Constants.SERVER_FOLDER, version + ".jar");
+        File serverFile = new File(SERVER_FOLDER, version + ".jar");
         WebUtils.downloadFile(serverDownloadURL, serverFile);
         log.info("Downloaded server jar to {}", serverFile.getAbsolutePath());
-        File serverMapping = new File(Constants.MAPPING_FOLDER, version + ".txt");
+        File serverMapping = new File(MAPPING_FOLDER, version + ".txt");
         WebUtils.downloadFile(serverMappingURL, serverMapping);
         log.info("Downloaded server jar mapping to {}", serverMapping.getAbsolutePath());
     }
 
     private static void doRemap(File input, File mapping, File output, boolean isChunkStatistics) throws Exception {
-        if (!Constants.REMAPPED_FOLDER.exists())
-            Constants.REMAPPED_FOLDER.mkdirs();
-        MappingFormat format = new MojangMappingFormat(new FileInputStream(mapping));
-        FileProcessor.processServer(input, format, output, isChunkStatistics);
+        if (!REMAPPED_FOLDER.exists())
+            REMAPPED_FOLDER.mkdirs();
+        MojangMapping format = new MojangMapping(new FileInputStream(mapping));
+        RemapProgram program = new RemapProgram(format, input, output);
+        RemapSettings.remapSettings(isChunkStatistics, program);
+        program.extractServer();
+        program.fillRemapFormat();
+        program.remapClasses();
+        program.rePackServer();
         log.info("Remapped server jar to {}", output.getAbsolutePath());
     }
 
     private static void runWikiGenerator(String file) throws Exception {
-        if (Constants.RUNTIME_FOLDER.exists())
-            FileUtils.deleteDirectory(Constants.RUNTIME_FOLDER);
-        Constants.RUNTIME_FOLDER.mkdirs();
+        if (RUNTIME_FOLDER.exists())
+            FileUtils.deleteDirectory(RUNTIME_FOLDER);
+        RUNTIME_FOLDER.mkdirs();
 
-        try (FileWriter w = new FileWriter(new File(Constants.RUNTIME_FOLDER, "eula.txt"))) {
+        try (FileWriter w = new FileWriter(new File(RUNTIME_FOLDER, "eula.txt"))) {
             w.write("eula=true");
         }
-        try (FileWriter w = new FileWriter(new File(Constants.RUNTIME_FOLDER, "server.properties"))) {
+        try (FileWriter w = new FileWriter(new File(RUNTIME_FOLDER, "server.properties"))) {
             w.write("max-tick-time=-1\nsync-chunk-writes=false");
         }
-
 
         ProcessBuilder builder;
         if (System.getenv("JVM_ARGS") != null) {
@@ -156,16 +168,16 @@ public class GenerateWikiData {
             list.add("-nogui");
             builder = new ProcessBuilder(list);
         } else
-            builder = new ProcessBuilder(
-                    "java", "-jar", file, "-nogui"
-            );
-        builder.directory(Constants.RUNTIME_FOLDER);
-        builder.redirectError(ProcessBuilder.Redirect.INHERIT);
-        builder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+            builder = new ProcessBuilder("java", "-jar", file, "-nogui");
 
         log.info("Launch server with command: '{}'", String.join(" ", builder.command()));
 
-        Process process = builder.start();
+        Process process = builder
+            .directory(RUNTIME_FOLDER)
+            .redirectError(ProcessBuilder.Redirect.INHERIT)
+            .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+            .start();
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 if (process.isAlive()) {
@@ -176,6 +188,7 @@ public class GenerateWikiData {
                 throw new RuntimeException(e);
             }
         }));
+
         process.waitFor();
     }
 }

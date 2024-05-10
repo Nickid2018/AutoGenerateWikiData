@@ -1,4 +1,4 @@
-package io.github.nickid2018.genwiki.inject;
+package io.github.nickid2018.genwiki;
 
 import io.github.nickid2018.genwiki.autovalue.*;
 import io.github.nickid2018.genwiki.statistic.ChunkStatisticsAnalyzer;
@@ -10,12 +10,14 @@ import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.flag.FeatureFlags;
 import org.apache.commons.io.FileUtils;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class InjectedProcess {
+public class InjectionEntrypoint {
 
+    public static final File OUTPUT_FOLDER = new File("../output");
     public static FeatureFlagSet featureFlagSet;
 
     @SuppressWarnings("unused")
@@ -40,9 +42,9 @@ public class InjectedProcess {
     public static void extractDataInjection(MinecraftServer server) {
         log.info("Trapped server instance: {}", server);
 
-        if (InjectionConstant.OUTPUT_FOLDER.isDirectory())
-            FileUtils.deleteDirectory(InjectionConstant.OUTPUT_FOLDER);
-        InjectionConstant.OUTPUT_FOLDER.mkdirs();
+        if (OUTPUT_FOLDER.isDirectory())
+            FileUtils.deleteDirectory(OUTPUT_FOLDER);
+        OUTPUT_FOLDER.mkdirs();
 
         BlockDataExtractor.extractBlockData(server);
         ItemDataExtractor.extractItemData(server);
@@ -56,9 +58,9 @@ public class InjectedProcess {
     @SneakyThrows
     @SuppressWarnings("unused")
     public static void chunkStatisticsInjection(MinecraftServer server) {
-        if (InjectionConstant.OUTPUT_FOLDER.isDirectory())
-            FileUtils.deleteDirectory(InjectionConstant.OUTPUT_FOLDER);
-        InjectionConstant.OUTPUT_FOLDER.mkdirs();
+        if (OUTPUT_FOLDER.isDirectory())
+            FileUtils.deleteDirectory(OUTPUT_FOLDER);
+        OUTPUT_FOLDER.mkdirs();
 
         ChunkStatisticsAnalyzer.analyze(server);
     }

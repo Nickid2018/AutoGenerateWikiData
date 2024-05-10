@@ -1,24 +1,21 @@
 package io.github.nickid2018.genwiki.autovalue;
 
 import io.github.nickid2018.genwiki.autovalue.wikidata.*;
-import io.github.nickid2018.genwiki.inject.InjectedProcess;
+import io.github.nickid2018.genwiki.InjectionEntrypoint;
 import io.github.nickid2018.genwiki.util.LanguageUtils;
 import lombok.SneakyThrows;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 
-import java.lang.reflect.Field;
 import java.util.*;
 
 public class ItemDataExtractor {
@@ -66,7 +63,7 @@ public class ItemDataExtractor {
                 FOOD_PROPERTIES.put(itemID, 0, 0);
         }
 
-        CreativeModeTabs.tryRebuildTabContents(InjectedProcess.featureFlagSet, true, serverObj.registryAccess());
+        CreativeModeTabs.tryRebuildTabContents(InjectionEntrypoint.featureFlagSet, true, serverObj.registryAccess());
 
         for (ResourceKey<CreativeModeTab> key : BuiltInRegistries.CREATIVE_MODE_TAB.registryKeySet()) {
             String tabName = key.location().getPath().toUpperCase();

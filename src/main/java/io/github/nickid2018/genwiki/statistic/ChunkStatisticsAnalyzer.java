@@ -68,12 +68,15 @@ public class ChunkStatisticsAnalyzer {
                 LEVEL_NAME.put(level, dimensionID);
                 level.noSave = true;
 
-                BAR_MAP.put(level, new ProgressBarBuilder()
-                    .continuousUpdate()
-                    .setStyle(ProgressBarStyle.ASCII)
-                    .setInitialMax(SETTINGS.getChunkTotal())
-                    .setTaskName("Dimension " + dimensionID)
-                    .build());
+                BAR_MAP.put(
+                    level,
+                    new ProgressBarBuilder()
+                        .continuousUpdate()
+                        .setStyle(ProgressBarStyle.ASCII)
+                        .setInitialMax(SETTINGS.getChunkTotal())
+                        .setTaskName("Dimension " + dimensionID)
+                        .build()
+                );
                 FUTURES_MAP.put(level, new HashSet<>());
                 CHUNK_POS_PROVIDER.put(level, SETTINGS.getChunkPosProvider(dimensionID));
                 CREATED_CHUNKS.put(level, new ConcurrentLinkedQueue<>());
@@ -113,8 +116,8 @@ public class ChunkStatisticsAnalyzer {
             }
 
             for (int i = 0; i < SETTINGS.getBatchSize() && chunkPosProvider.hasNext() && futures.size() < SETTINGS.getBatchSize() * 40; i++) {
-                chunkPosProvider.next((x, z) ->
-                                          futures.add(chunkSource.getChunkFuture(x, z, ChunkStatus.FEATURES, true))
+                chunkPosProvider.next(
+                    (x, z) -> futures.add(chunkSource.getChunkFuture(x, z, ChunkStatus.FEATURES, true))
                 );
                 if (chunkPosProvider.nowUnload()) {
                     NEXT_FLIP_NO_SAVE.add(level);

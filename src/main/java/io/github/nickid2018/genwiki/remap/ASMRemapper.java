@@ -1,7 +1,6 @@
-package io.github.nickid2018.mcde.remapper;
+package io.github.nickid2018.genwiki.remap;
 
-import io.github.nickid2018.mcde.format.MappingClassData;
-import io.github.nickid2018.mcde.util.ClassUtils;
+import io.github.nickid2018.genwiki.util.ClassUtils;
 import org.objectweb.asm.commons.Remapper;
 
 import java.util.Map;
@@ -32,22 +31,9 @@ public class ASMRemapper extends Remapper {
         return get == null ? name : get;
     }
 
-    public String mapFieldNameNoType(String owner, String name) {
-        MappingClassData clazz = classMap.get(ClassUtils.toBinaryName(owner));
-        if (clazz == null)
-            return name;
-        String get = clazz.findFieldNoDesc(name);
-        return get == null ? name : get;
-    }
-
     @Override
     public String map(String typeName) {
         MappingClassData clazz = classMap.get(ClassUtils.toBinaryName(typeName));
         return clazz == null ? typeName : ClassUtils.toInternalName(clazz.mapName());
     }
-
-    public Map<String, MappingClassData> getClassMap() {
-        return classMap;
-    }
-
 }

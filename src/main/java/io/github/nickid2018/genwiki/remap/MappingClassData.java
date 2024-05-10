@@ -1,4 +1,4 @@
-package io.github.nickid2018.mcde.format;
+package io.github.nickid2018.genwiki.remap;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,14 +18,6 @@ public class MappingClassData {
         superClasses = new HashSet<>();
         fieldMappings = new HashMap<>();
         methodMappings = new HashMap<>();
-    }
-
-    public final String findFieldNoDesc(String name) {
-        for (String key : fieldMappings.keySet()) {
-            if (key.startsWith(name + "+"))
-                return fieldMappings.get(key);
-        }
-        return null;
     }
 
     public final String findField(String nameWithDesc) {

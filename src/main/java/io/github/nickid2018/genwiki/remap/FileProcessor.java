@@ -1,21 +1,19 @@
-package io.github.nickid2018.mcde.remapper;
+package io.github.nickid2018.genwiki.remap;
 
-import io.github.nickid2018.genwiki.Constants;
-import io.github.nickid2018.mcde.format.MappingClassData;
-import io.github.nickid2018.mcde.format.MappingFormat;
-import io.github.nickid2018.mcde.util.ClassUtils;
+import com.google.common.hash.Hashing;
+import io.github.nickid2018.genwiki.RemapSettings;
+import io.github.nickid2018.genwiki.util.ClassUtils;
 import org.apache.commons.io.IOUtils;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.tree.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.DigestOutputStream;
-import java.security.MessageDigest;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -27,49 +25,52 @@ import java.util.zip.ZipOutputStream;
 
 public class FileProcessor {
 
-    public static void processServer(File fileInput, MappingFormat remapper, File output, boolean chunkStatistics) throws Exception {
-        ZipFile file = new ZipFile(fileInput);
-        String versionData = IOUtils.toString(
-            file.getInputStream(file.getEntry("META-INF/versions.list")), StandardCharsets.UTF_8);
-        String[] extractData = versionData.split("\t", 3);
-        File tempZip = new File("temp-server.jar");
-        File tempRemapped = new File("temp-server-remapped.jar");
+    public static void processServer(File fileInput, MojangMapping remapper, File output, boolean chunkStatistics) throws Exception {
+        try (ZipFile file = new ZipFile(fileInput)) {
+            String versionData = IOUtils.toString(
+                file.getInputStream(file.getEntry("META-INF/versions.list")), StandardCharsets.UTF_8);
+            String[] extractData = versionData.split("\t", 3);
+            File tempZip = new File("temp-server.jar");
+            File tempRemapped = new File("temp-server-remapped.jar");
 
-        IOUtils.copy(
-            file.getInputStream(file.getEntry("META-INF/versions/" + extractData[2])),
-            new FileOutputStream(tempZip)
-        );
-        checkIntegrity(tempZip.toPath(), extractData[0]);
-        try (ZipFile server = new ZipFile(tempZip)) {
-            process(server, remapper, tempRemapped, chunkStatistics);
-        }
-        tempZip.delete();
-
-        String remappedHash = computeHash(tempRemapped.toPath());
-        extractData[0] = remappedHash;
-        versionData = String.join("\t", extractData);
-
-        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(output))) {
-            for (Iterator<? extends ZipEntry> it = file.entries().asIterator(); it.hasNext(); ) {
-                ZipEntry entry = it.next();
-                zos.putNextEntry(new ZipEntry(entry.getName()));
-                if (entry.getName().equals("META-INF/versions.list"))
-                    zos.write(versionData.getBytes(StandardCharsets.UTF_8));
-                else if (entry.getName().equals("META-INF/versions/" + extractData[2]))
-                    IOUtils.copy(new FileInputStream(tempRemapped), zos);
-                else
-                    IOUtils.copy(file.getInputStream(entry), zos);
+            IOUtils.copy(
+                file.getInputStream(file.getEntry("META-INF/versions/" + extractData[2])),
+                new FileOutputStream(tempZip)
+            );
+            checkIntegrity(tempZip.toPath(), extractData[0]);
+            try (ZipFile server = new ZipFile(tempZip)) {
+                addPlainClasses(server, remapper);
+                generateInheritTree(server, remapper);
+                runPack(
+                    output,
+                    remapAllClasses(server, remapper.getRemapper(), remapper, chunkStatistics),
+                    chunkStatistics
+                );
             }
+            tempZip.delete();
+
+            String remappedHash = computeHash(tempRemapped.toPath());
+            extractData[0] = remappedHash;
+            versionData = String.join("\t", extractData);
+
+            try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(output))) {
+                for (Iterator<? extends ZipEntry> it = file.entries().asIterator(); it.hasNext(); ) {
+                    ZipEntry entry = it.next();
+                    zos.putNextEntry(new ZipEntry(entry.getName()));
+                    if (entry.getName().equals("META-INF/versions.list"))
+                        zos.write(versionData.getBytes(StandardCharsets.UTF_8));
+                    else if (entry.getName().equals("META-INF/versions/" + extractData[2]))
+                        IOUtils.copy(new FileInputStream(tempRemapped), zos);
+                    else
+                        IOUtils.copy(file.getInputStream(entry), zos);
+                }
+            }
+            tempRemapped.delete();
         }
-        tempRemapped.delete();
     }
 
     private static String computeHash(Path file) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        try (InputStream output = Files.newInputStream(file)) {
-            output.transferTo(new DigestOutputStream(OutputStream.nullOutputStream(), digest));
-            return byteToHex(digest.digest());
-        }
+        return Hashing.sha256().hashBytes(Files.readAllBytes(file)).toString();
     }
 
     private static void checkIntegrity(Path file, String expectedHash) throws Exception {
@@ -78,22 +79,7 @@ public class FileProcessor {
             throw new Exception("Hash mismatch! Expected: " + expectedHash + ", got: " + hash);
     }
 
-    private static String byteToHex(byte[] bytes) {
-        StringBuilder result = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            result.append(Character.forDigit(b >> 4 & 15, 16));
-            result.append(Character.forDigit(b & 15, 16));
-        }
-        return result.toString();
-    }
-
-    public static void process(ZipFile file, MappingFormat remapper, File output, boolean chunkStatistics) throws Exception {
-        addPlainClasses(file, remapper);
-        generateInheritTree(file, remapper);
-        runPack(output, remapAllClasses(file, remapper.getToNamedMapper(), remapper, chunkStatistics), chunkStatistics);
-    }
-
-    public static void addPlainClasses(ZipFile file, MappingFormat format) throws Exception {
+    public static void addPlainClasses(ZipFile file, MojangMapping format) throws Exception {
         Enumeration<? extends ZipEntry> entries = file.entries();
         while (entries.hasMoreElements()) {
             ZipEntry entry = entries.nextElement();
@@ -115,7 +101,7 @@ public class FileProcessor {
         }
     }
 
-    public static void generateInheritTree(ZipFile file, MappingFormat format) throws IOException {
+    public static void generateInheritTree(ZipFile file, MojangMapping format) throws IOException {
         Enumeration<? extends ZipEntry> entries = file.entries();
         while (entries.hasMoreElements()) {
             ZipEntry entry = entries.nextElement();
@@ -130,7 +116,7 @@ public class FileProcessor {
     }
 
     public static Map<String, byte[]> remapAllClasses(ZipFile file, ASMRemapper remapper,
-        MappingFormat format, boolean chunkStatistics)
+        MojangMapping format, boolean chunkStatistics)
         throws IOException {
         Map<String, byte[]> remappedData = new HashMap<>();
 
@@ -149,7 +135,7 @@ public class FileProcessor {
             ClassWriter writer = new ClassWriter(0);
             String className = ClassUtils.toBinaryName(entry.getName());
             className = className.substring(0, className.length() - 6);
-            reader.accept(new ClassRemapperFix(writer, remapper), 0);
+            reader.accept(new ClassRemapper(writer, remapper), 0);
             byte[] remapped = writer.toByteArray();
             String classNameRemapped = format.getToNamedClass(className).mapName();
             remapped = postTransform(classNameRemapped, remapped, chunkStatistics);
@@ -168,7 +154,7 @@ public class FileProcessor {
     }
 
     public static byte[] postTransform(String className, byte[] classFileBuffer, boolean chunkStatistics) {
-        if (className.equals(Constants.INJECT_POINT_CLASS)) {
+        if (className.equals(RemapSettings.INJECT_POINT_CLASS)) {
             ClassReader reader = new ClassReader(classFileBuffer);
             ClassNode node = new ClassNode();
             reader.accept(node, 0);
@@ -176,12 +162,12 @@ public class FileProcessor {
             boolean injected = false;
             for (int i = 0; i < node.methods.size(); i++) {
                 MethodNode method = node.methods.get(i);
-                if (method.name.equals(Constants.INJECT_METHOD) && method.desc.equals(Constants.INJECT_METHOD_DESC)) {
+                if (method.name.equals(RemapSettings.INJECT_METHOD) && method.desc.equals(RemapSettings.INJECT_METHOD_DESC)) {
                     InsnList list = new InsnList();
                     list.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     list.add(new MethodInsnNode(
                         Opcodes.INVOKESTATIC,
-                        "io/github/nickid2018/genwiki/inject/InjectedProcess",
+                        "io/github/nickid2018/genwiki/InjectionEntrypoint",
                         chunkStatistics ? "chunkStatisticsInjection" : "extractDataInjection",
                         "(Lnet/minecraft/server/MinecraftServer;)V",
                         false
@@ -193,7 +179,7 @@ public class FileProcessor {
                 }
             }
             if (!injected)
-                throw new RuntimeException("Failed to inject " + Constants.INJECT_POINT_CLASS + "!");
+                throw new RuntimeException("Failed to inject " + RemapSettings.INJECT_POINT_CLASS + "!");
             ClassWriter writer = new ClassWriter(0);
             node.accept(writer);
             return writer.toByteArray();
@@ -219,7 +205,7 @@ public class FileProcessor {
             return writer.toByteArray();
         }
 
-        if (className.equals(Constants.INJECT_REGION_FILE)) {
+        if (className.equals(RemapSettings.INJECT_REGION_FILE)) {
             ClassReader reader = new ClassReader(classFileBuffer);
             ClassNode node = new ClassNode();
             reader.accept(node, 0);
@@ -227,19 +213,19 @@ public class FileProcessor {
             int injectedCount = 0;
             for (int i = 0; i < node.methods.size(); i++) {
                 MethodNode method = node.methods.get(i);
-                if ((method.name.equals(Constants.INJECT_REGION_FILE_METHOD) && method.desc.equals(Constants.INJECT_REGION_FILE_METHOD_DESC)) ||
-                    (method.name.equals(Constants.INJECT_REGION_FILE_METHOD4) && method.desc.equals(Constants.INJECT_REGION_FILE_METHOD4_DESC))) {
+                if ((method.name.equals(RemapSettings.INJECT_REGION_FILE_METHOD) && method.desc.equals(RemapSettings.INJECT_REGION_FILE_METHOD_DESC)) ||
+                    (method.name.equals(RemapSettings.INJECT_REGION_FILE_METHOD4) && method.desc.equals(RemapSettings.INJECT_REGION_FILE_METHOD4_DESC))) {
                     InsnList list = new InsnList();
                     list.add(new InsnNode(Opcodes.RETURN));
                     method.instructions = list;
                     injectedCount++;
                 }
-                if (method.name.equals(Constants.INJECT_REGION_FILE_METHOD3) &&
-                    method.desc.equals(Constants.INJECT_REGION_FILE_METHOD3_DESC)) {
+                if (method.name.equals(RemapSettings.INJECT_REGION_FILE_METHOD3) &&
+                    method.desc.equals(RemapSettings.INJECT_REGION_FILE_METHOD3_DESC)) {
                     InsnList list = new InsnList();
                     list.add(new FieldInsnNode(
                         Opcodes.GETSTATIC,
-                        "io/github/nickid2018/genwiki/inject/InjectedProcess", "NULL_PATH",
+                        "io/github/nickid2018/genwiki/inject/InjectionEntrypoint", "NULL_PATH",
                         "Ljava/nio/file/Path;"
                     ));
                     list.add(new VarInsnNode(Opcodes.ASTORE, 2));
@@ -247,8 +233,8 @@ public class FileProcessor {
                     method.instructions = list;
                     injectedCount++;
                 }
-                if (method.name.equals(Constants.INJECT_REGION_FILE_METHOD2) &&
-                    method.desc.equals(Constants.INJECT_REGION_FILE_METHOD2_DESC)) {
+                if (method.name.equals(RemapSettings.INJECT_REGION_FILE_METHOD2) &&
+                    method.desc.equals(RemapSettings.INJECT_REGION_FILE_METHOD2_DESC)) {
                     InsnList list = new InsnList();
                     list.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     list.add(new FieldInsnNode(
@@ -267,13 +253,13 @@ public class FileProcessor {
                 }
             }
             if (injectedCount != 4)
-                throw new RuntimeException("Failed to inject " + Constants.INJECT_REGION_FILE + "!");
+                throw new RuntimeException("Failed to inject " + RemapSettings.INJECT_REGION_FILE + "!");
             ClassWriter writer = new ClassWriter(0);
             node.accept(writer);
             return writer.toByteArray();
         }
 
-        if (!chunkStatistics && className.equals(Constants.INJECT_SERVER_PROPERTIES)) {
+        if (!chunkStatistics && className.equals(RemapSettings.INJECT_SERVER_PROPERTIES)) {
             ClassReader reader = new ClassReader(classFileBuffer);
             ClassNode node = new ClassNode();
             reader.accept(node, 0);
@@ -281,12 +267,12 @@ public class FileProcessor {
             boolean injected = false;
             for (int i = 0; i < node.methods.size(); i++) {
                 MethodNode method = node.methods.get(i);
-                if (method.name.equals(Constants.INJECT_SERVER_PROPERTIES_METHOD) &&
-                    method.desc.equals(Constants.INJECT_SERVER_PROPERTIES_METHOD_DESC)) {
+                if (method.name.equals(RemapSettings.INJECT_SERVER_PROPERTIES_METHOD) &&
+                    method.desc.equals(RemapSettings.INJECT_SERVER_PROPERTIES_METHOD_DESC)) {
                     InsnList list = new InsnList();
                     list.add(new MethodInsnNode(
                         Opcodes.INVOKESTATIC,
-                        "io/github/nickid2018/genwiki/inject/InjectedProcess",
+                        "io/github/nickid2018/genwiki/inject/InjectionEntrypoint",
                         "preprocessDataPacks",
                         "()Ljava/lang/String;",
                         false
@@ -298,7 +284,7 @@ public class FileProcessor {
                 }
             }
             if (!injected)
-                throw new RuntimeException("Failed to inject " + Constants.INJECT_SERVER_PROPERTIES + "!");
+                throw new RuntimeException("Failed to inject " + RemapSettings.INJECT_SERVER_PROPERTIES + "!");
             ClassWriter writer = new ClassWriter(0);
             node.accept(writer);
             return writer.toByteArray();
