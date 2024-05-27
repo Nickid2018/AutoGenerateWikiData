@@ -54,8 +54,8 @@ public class BlockDataExtractor {
     private static final ExceptData SUPPORT_TYPE_EXCEPT = new ExceptData();
     private static final PropertyWikiData BLOCK_PROPERTY_VALUES = new PropertyWikiData();
     private static final PairMapWikiData<String, String> BLOCK_PROPERTIES = new PairMapWikiData<>();
-    private static final StringSetWikiData OCCLUSION_SHAPE_VALUES = new StringSetWikiData();
-    private static final StringSetWikiData LIQUID_COMPUTATION_VALUES = new StringSetWikiData();
+    private static final OcclusionWikiData OCCLUSION_SHAPE_VALUES = new OcclusionWikiData();
+    private static final LiquidComputationWikiData LIQUID_COMPUTATION_VALUES = new LiquidComputationWikiData();
 
     @SneakyThrows
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -106,33 +106,8 @@ public class BlockDataExtractor {
 
             for (BlockState state : states) {
                 VoxelShape occlusionShape = block.getOcclusionShape(state, serverOverworld, BlockPos.ZERO);
-                Map<String, String> occlusionMap = new HashMap<>();
+                Map<String, List<double[]>> occlusionMap = new HashMap<>();
                 Set<String> faceSturdySet = new TreeSet<>();
-                for (Direction direction : Direction.values()) {
-                    String directionName = direction.name().toLowerCase();
-                    if (state.isFaceSturdy(serverOverworld, BlockPos.ZERO, direction, SupportType.FULL))
-                        faceSturdySet.add(directionName);
-                    VoxelShape faceShape = Shapes.getFaceShape(occlusionShape, direction);
-                    if (faceShape.isEmpty())
-                        continue;
-                    String aabbString = faceShape.toAabbs().stream().map(aabb -> switch (direction) {
-                        case DOWN:
-                        case UP:
-                            yield "[" + aabb.minX + "," + aabb.minZ + "," + aabb.maxX + "," + aabb.maxZ + "]";
-                        case NORTH:
-                        case SOUTH:
-                            yield "[" + aabb.minX + "," + aabb.minY + "," + aabb.maxX + "," + aabb.maxY + "]";
-                        case WEST:
-                        case EAST:
-                            yield "[" + aabb.minZ + "," + aabb.minY + "," + aabb.maxZ + "," + aabb.maxY + "]";
-                    }).collect(Collectors.joining(","));
-                    occlusionMap.put(directionName, "[" + aabbString + "]");
-                }
-                occlusionMap.put("can_occlude", String.valueOf(state.canOcclude()));
-                String occlusionData = occlusionMap
-                    .entrySet().stream()
-                    .map(e -> "\"" + e.getKey() + "\":" + e.getValue())
-                    .collect(Collectors.joining(","));
                 String stateName = state.toString();
                 if (stateName.contains("[")) {
                     String[] propertiesArray = stateName
@@ -146,13 +121,30 @@ public class BlockDataExtractor {
                     stateName = "[" + String.join(",", collected) + "]";
                 } else
                     stateName = "";
-                OCCLUSION_SHAPE_VALUES.putNew("{" + occlusionData + "}", blockID + stateName);
 
-                if (state.blocksMotion() || !faceSturdySet.isEmpty()) {
-                    String liquidComputationData = "{\"blocks_motion\":" + state.blocksMotion() + ",\"face_sturdy\":["
-                        + String.join(",", faceSturdySet.stream().map(s -> "\"" + s + "\"").toList()) + "]}";
-                    LIQUID_COMPUTATION_VALUES.putNew(liquidComputationData, blockID + stateName);
+                for (Direction direction : Direction.values()) {
+                    String directionName = direction.name().toLowerCase();
+                    if (state.isFaceSturdy(serverOverworld, BlockPos.ZERO, direction, SupportType.FULL))
+                        faceSturdySet.add(directionName);
+                    VoxelShape faceShape = Shapes.getFaceShape(occlusionShape, direction);
+                    if (faceShape.isEmpty())
+                        continue;
+                    List<double[]> aabbArray = faceShape.toAabbs().stream().map(aabb -> switch (direction) {
+                        case DOWN:
+                        case UP:
+                            yield new double[]{aabb.minX , aabb.minZ , aabb.maxX ,aabb.maxZ};
+                        case NORTH:
+                        case SOUTH:
+                            yield new double[]{aabb.minX , aabb.minY , aabb.maxX , aabb.maxY };
+                        case WEST:
+                        case EAST:
+                            yield new double[]{aabb.minZ , aabb.minY , aabb.maxZ , aabb.maxY };
+                    }).toList();
+                    occlusionMap.put(directionName, aabbArray);
                 }
+
+                OCCLUSION_SHAPE_VALUES.put(blockID + stateName, state.canOcclude(), occlusionMap);
+                LIQUID_COMPUTATION_VALUES.put(blockID + stateName, state.blocksMotion(), faceSturdySet);
             }
 
             makeStatePredicateData(
