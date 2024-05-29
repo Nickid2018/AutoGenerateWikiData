@@ -135,6 +135,8 @@ public class RemapSettings {
         );
 
         if (isChunkStatistics) {
+            remapProgram.addPostTransform("net.minecraft.server.level.DistanceManager", ExtendAccessTransform.ALL);
+            remapProgram.addPostTransform("net.minecraft.server.level.ServerChunkCache", ExtendAccessTransform.ALL);
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.statistic"));
             remapProgram.addInjectEntries(new IncludeJarPackages("me.tongfei.progressbar", ProgressBar.class));
             remapProgram.addInjectEntries(new IncludeJarPackages("org.jline", TerminalBuilder.class));

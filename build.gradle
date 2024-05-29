@@ -71,6 +71,7 @@ tasks.register("run", Exec) {
     if (environment["MAKE_VERSION"] == null)
         environment["MAKE_VERSION"] = ""
     commandLine("java", "-jar", "../build/libs/GenWiki.jar", environment["MAKE_VERSION"])
+    standardInput = System.in
 }.configure {
     dependsOn(shadowJar)
 }
@@ -84,6 +85,7 @@ tasks.register("runStatistics", Exec) {
     if (environment["MAKE_VERSION"] == null)
         environment["MAKE_VERSION"] = ""
     commandLine("java", "-jar", "../build/libs/GenWiki.jar", environment["MAKE_VERSION"], "--mode", "statistics")
+    standardInput = System.in
 }.configure {
     dependsOn(shadowJar)
 }

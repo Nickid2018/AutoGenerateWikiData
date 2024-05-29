@@ -156,6 +156,14 @@ public class GenerateWikiData {
         try (FileWriter w = new FileWriter(new File(RUNTIME_FOLDER, "server.properties"))) {
             w.write("max-tick-time=-1\nsync-chunk-writes=false");
         }
+        try (FileWriter w = new FileWriter(new File(RUNTIME_FOLDER, "ops.json"))) {
+            w.write("[{\n" +
+                        "    \"uuid\": \"79380052-7171-4dc6-9362-7ef172d88adc\",\n" +
+                        "    \"name\": \"Nickid2018\",\n" +
+                        "    \"level\": 4,\n" +
+                        "    \"bypassesPlayerLimit\": false\n" +
+                        "  }]");
+        }
 
         ProcessBuilder builder;
         if (System.getenv("JVM_ARGS") != null) {

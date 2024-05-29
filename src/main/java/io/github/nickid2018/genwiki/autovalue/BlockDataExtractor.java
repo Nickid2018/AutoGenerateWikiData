@@ -194,8 +194,8 @@ public class BlockDataExtractor {
         WikiData.write(SUPPORT_TYPE, SUPPORT_TYPE_EXCEPT, "block_support_type.txt");
         WikiData.write(BLOCK_PROPERTY_VALUES, "block_property_values.txt");
         WikiData.write(BLOCK_PROPERTIES, "block_properties.txt");
-        WikiData.write(OCCLUSION_SHAPE_VALUES, "block_occlusion_shape.txt");
-        WikiData.write(LIQUID_COMPUTATION_VALUES, "block_liquid_computation.txt");
+        WikiData.write(OCCLUSION_SHAPE_VALUES, "block_occlusion_shape.json");
+        WikiData.write(LIQUID_COMPUTATION_VALUES, "block_liquid_computation.json");
     }
 
     private static final Set<String> OVERRIDE_BLOCK_PUSH_REACTION = Set.of(

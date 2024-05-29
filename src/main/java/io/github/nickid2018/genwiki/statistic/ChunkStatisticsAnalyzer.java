@@ -13,8 +13,10 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTickRateManager;
 import net.minecraft.server.level.ChunkResult;
+import net.minecraft.server.level.DistanceManager;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -104,8 +106,15 @@ public class ChunkStatisticsAnalyzer {
             while (iterator.hasNext()) {
                 CompletableFuture<ChunkResult<ChunkAccess>> future = iterator.next();
                 if (future.isDone()) {
-                    createdChunk.offer(future.get().orElse(null));
+                    ChunkAccess chunk = future.get().orElse(null);
+                    createdChunk.offer(chunk);
                     iterator.remove();
+
+                    ChunkPos chunkPos = chunk.getPos();
+                    long chunkPosLong = chunkPos.toLong();
+                    chunkSource.distanceManager.getTickets(chunkPosLong).forEach(
+                        ticket -> chunkSource.distanceManager.removeTicket(chunkPosLong, ticket)
+                    );
                     bar.step();
                 }
             }
