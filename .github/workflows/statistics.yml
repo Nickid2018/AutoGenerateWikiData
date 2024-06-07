@@ -28,7 +28,7 @@ jobs:
           ./gradlew runStatisticsNotRun
 
       - name: Upload injected
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: statistics-maker-${{ github.event.inputs.version }}
           path: |
