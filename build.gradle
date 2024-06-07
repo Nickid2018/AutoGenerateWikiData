@@ -62,7 +62,7 @@ test {
     useJUnitPlatform()
 }
 
-tasks.register("run", Exec) {
+tasks.register("run", JavaExec) {
     if (!file("run").isDirectory())
         mkdir("run")
     if (file("run/remapped").isDirectory())
@@ -70,13 +70,15 @@ tasks.register("run", Exec) {
     workingDir = file("run")
     if (environment["MAKE_VERSION"] == null)
         environment["MAKE_VERSION"] = ""
-    commandLine("java", "-jar", "../build/libs/GenWiki.jar", environment["MAKE_VERSION"])
+    classpath = layout.buildDirectory.files("libs/GenWiki.jar")
+    mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
+    args(environment["MAKE_VERSION"])
     standardInput = System.in
 }.configure {
     dependsOn(shadowJar)
 }
 
-tasks.register("runStatistics", Exec) {
+tasks.register("runStatistics", JavaExec) {
     if (!file("run").isDirectory())
         mkdir("run")
     if (file("run/remapped").isDirectory())
@@ -84,13 +86,15 @@ tasks.register("runStatistics", Exec) {
     workingDir = file("run")
     if (environment["MAKE_VERSION"] == null)
         environment["MAKE_VERSION"] = ""
-    commandLine("java", "-jar", "../build/libs/GenWiki.jar", environment["MAKE_VERSION"], "--mode", "statistics")
+    classpath = layout.buildDirectory.files("libs/GenWiki.jar")
+    mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
+    args(environment["MAKE_VERSION"], "--mode", "statistics")
     standardInput = System.in
 }.configure {
     dependsOn(shadowJar)
 }
 
-tasks.register("runStatisticsNotRun", Exec) {
+tasks.register("runStatisticsNotRun", JavaExec) {
     if (!file("run").isDirectory())
         mkdir("run")
     if (file("run/remapped").isDirectory())
@@ -98,7 +102,9 @@ tasks.register("runStatisticsNotRun", Exec) {
     workingDir = file("run")
     if (environment["MAKE_VERSION"] == null)
         environment["MAKE_VERSION"] = ""
-    commandLine("java", "-jar", "../build/libs/GenWiki.jar", environment["MAKE_VERSION"], "--mode", "statistics", "--not-run")
+    classpath = layout.buildDirectory.files("libs/GenWiki.jar")
+    mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
+    args(environment["MAKE_VERSION"], "--mode", "statistics", "--not-run")
 }.configure {
     dependsOn(shadowJar)
 }

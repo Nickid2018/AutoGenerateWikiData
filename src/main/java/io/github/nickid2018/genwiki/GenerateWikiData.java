@@ -165,18 +165,22 @@ public class GenerateWikiData {
                         "  }]");
         }
 
+        String javaExec = System.getProperty("java.home") + "/bin/java";
+        if (System.getProperty("os.name").startsWith("Windows"))
+            javaExec += ".exe";
+
         ProcessBuilder builder;
         if (System.getenv("JVM_ARGS") != null) {
             String[] jvmArgs = System.getenv("JVM_ARGS").split(" ");
             List<String> list = new ArrayList<>();
-            list.add("java");
+            list.add(javaExec);
             list.addAll(List.of(jvmArgs));
             list.add("-jar");
             list.add(file);
             list.add("-nogui");
             builder = new ProcessBuilder(list);
         } else
-            builder = new ProcessBuilder("java", "-jar", file, "-nogui");
+            builder = new ProcessBuilder(javaExec, "-jar", file, "-nogui");
 
         log.info("Launch server with command: '{}'", String.join(" ", builder.command()));
 
