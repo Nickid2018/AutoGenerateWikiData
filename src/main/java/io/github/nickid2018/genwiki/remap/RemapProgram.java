@@ -41,8 +41,10 @@ public class RemapProgram {
     @Getter
     private final File outputFile;
     @Getter
+    @Setter
     private File serverFile = TEMP_ZIP_SERVER;
     @Getter
+    @Setter
     private File remappedFile = TEMP_REMAPPED_SERVER;
     private String[] extractData;
 

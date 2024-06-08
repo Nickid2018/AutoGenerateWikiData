@@ -29,7 +29,7 @@ public class RemapSettings {
         methodNode.instructions = list;
     }
 
-    private static void commonSettings(RemapProgram remapProgram) {
+    private static void commonServerSettings(RemapProgram remapProgram) {
         remapProgram.addPostTransform(
             "net.minecraft.world.flag.FeatureFlagRegistry",
             ExtendAccessTransform.FIELD
@@ -115,32 +115,48 @@ public class RemapSettings {
         remapProgram.addInjectEntries(new SingleFile("io.github.nickid2018.genwiki.InjectionEntrypoint"));
     }
 
-    public static void remapSettings(boolean isChunkStatistics, RemapProgram remapProgram) {
-        commonSettings(remapProgram);
-        remapProgram.addPostTransform(
-            INJECT_POINT_CLASS,
-            new MethodTransform(INJECT_METHOD, INJECT_METHOD_DESC, methodNode -> {
-                InsnList list = new InsnList();
-                list.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                list.add(new MethodInsnNode(
-                    Opcodes.INVOKESTATIC,
-                    "io/github/nickid2018/genwiki/InjectionEntrypoint",
-                    isChunkStatistics ? "chunkStatisticsInjection" : "extractDataInjection",
-                    "(Lnet/minecraft/server/MinecraftServer;)V",
-                    false
-                ));
-                list.add(methodNode.instructions);
-                methodNode.instructions = list;
-            })
-        );
-
-        if (isChunkStatistics) {
+    public static void remapSettings(GenWikiMode mode, RemapProgram remapProgram) {
+        if (mode == GenWikiMode.STATISTICS) {
+            commonServerSettings(remapProgram);
+            remapProgram.addPostTransform(
+                INJECT_POINT_CLASS,
+                new MethodTransform(INJECT_METHOD, INJECT_METHOD_DESC, methodNode -> {
+                    InsnList list = new InsnList();
+                    list.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    list.add(new MethodInsnNode(
+                        Opcodes.INVOKESTATIC,
+                        "io/github/nickid2018/genwiki/InjectionEntrypoint",
+                        "chunkStatisticsInjection",
+                        "(Lnet/minecraft/server/MinecraftServer;)V",
+                        false
+                    ));
+                    list.add(methodNode.instructions);
+                    methodNode.instructions = list;
+                })
+            );
             remapProgram.addPostTransform("net.minecraft.server.level.DistanceManager", ExtendAccessTransform.ALL);
             remapProgram.addPostTransform("net.minecraft.server.level.ServerChunkCache", ExtendAccessTransform.ALL);
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.statistic"));
             remapProgram.addInjectEntries(new IncludeJarPackages("me.tongfei.progressbar", ProgressBar.class));
             remapProgram.addInjectEntries(new IncludeJarPackages("org.jline", TerminalBuilder.class));
-        } else {
+        } else if (mode == GenWikiMode.AUTOVALUE) {
+            commonServerSettings(remapProgram);
+            remapProgram.addPostTransform(
+                INJECT_POINT_CLASS,
+                new MethodTransform(INJECT_METHOD, INJECT_METHOD_DESC, methodNode -> {
+                    InsnList list = new InsnList();
+                    list.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    list.add(new MethodInsnNode(
+                        Opcodes.INVOKESTATIC,
+                        "io/github/nickid2018/genwiki/InjectionEntrypoint",
+                        "extractDataInjection",
+                        "(Lnet/minecraft/server/MinecraftServer;)V",
+                        false
+                    ));
+                    list.add(methodNode.instructions);
+                    methodNode.instructions = list;
+                })
+            );
             remapProgram.addPostTransform(
                 INJECT_SERVER_PROPERTIES,
                 new MethodTransform(
