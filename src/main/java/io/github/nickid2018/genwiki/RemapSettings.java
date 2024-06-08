@@ -177,6 +177,84 @@ public class RemapSettings {
                 )
             );
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.autovalue"));
+        } else {
+            remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.LightTexture",
+                new MethodTransform(
+                    "clampColor",
+                    "(Lorg/joml/Vector3f;)V",
+                    methodNode -> {
+                        methodNode.instructions.clear();
+                        methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                        methodNode.instructions.add(new MethodInsnNode(
+                            Opcodes.INVOKESTATIC,
+                            "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
+                            "clampColorInjection",
+                            "(Lorg/joml/Vector3f;)V",
+                            false
+                        ));
+                        methodNode.instructions.add(new InsnNode(Opcodes.RETURN));
+                    }
+                )
+            );
+            remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.GameRenderer",
+                new RenameMethodTransform(
+                    "getProjectionMatrix",
+                    "(D)Lorg/joml/Matrix4f;",
+                    "getProjectionMatrixOld"
+                )
+            );
+            remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.GameRenderer",
+                new AddMethodTransform(() -> {
+                    MethodNode methodNode = new MethodNode(
+                        Opcodes.ACC_PUBLIC,
+                        "getProjectionMatrix",
+                        "(D)Lorg/joml/Matrix4f;",
+                        null,
+                        null
+                    );
+                    methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    methodNode.instructions.add(new VarInsnNode(Opcodes.DLOAD, 1));
+                    methodNode.instructions.add(new MethodInsnNode(
+                        Opcodes.INVOKEVIRTUAL,
+                        "net/minecraft/client/renderer/GameRenderer",
+                        "getProjectionMatrixOld",
+                        "(D)Lorg/joml/Matrix4f;",
+                        false
+                    ));
+                    methodNode.instructions.add(new MethodInsnNode(
+                        Opcodes.INVOKESTATIC,
+                        "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
+                        "getProjectionMatrixInjection",
+                        "(Lorg/joml/Matrix4f;)Lorg/joml/Matrix4f;",
+                        false
+                    ));
+                    methodNode.instructions.add(new InsnNode(Opcodes.ARETURN));
+                    return methodNode;
+                })
+            );
+            remapProgram.addPostTransform(
+                "net.minecraft.client.multiplayer.ClientPacketListener",
+                new MethodTransform(
+                    "sendChat",
+                    "(Ljava/lang/String;)V",
+                    methodNode -> {
+                        InsnList list = new InsnList();
+                        list.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                        list.add(new MethodInsnNode(
+                            Opcodes.INVOKESTATIC,
+                            "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
+                            "handleChat",
+                            "(Ljava/lang/String;)V",
+                            false
+                        ));
+                        methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), list);
+                    }
+                )
+            );
+            remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.iso"));
         }
     }
 }

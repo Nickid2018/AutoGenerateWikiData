@@ -9,6 +9,7 @@ import io.github.nickid2018.genwiki.util.JsonUtils;
 import joptsimple.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.util.*;
@@ -185,6 +186,11 @@ public class GenerateWikiData {
         }
 
         collectedLibraries.add(file);
+
+        IOUtils.copy(
+            Objects.requireNonNull(GenerateWikiData.class.getResourceAsStream("/options.txt")),
+            new FileOutputStream(new File(InitializeEnvironment.RUNTIME_FOLDER, "options.txt"))
+        );
 
         String runtime = InitializeEnvironment.RUNTIME_FOLDER.getAbsolutePath();
         ProcessBuilder builder = newProcess();

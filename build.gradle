@@ -38,6 +38,11 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
     compileOnly(project(':wrapped-mc'))
+    compileOnly('org.lwjgl:lwjgl:3.3.3')
+    compileOnly('org.lwjgl:lwjgl-glfw:3.3.3')
+    compileOnly('org.lwjgl:lwjgl-opengl:3.3.3')
+    compileOnly('org.lwjgl:lwjgl-stb:3.3.3')
+    compileOnly('org.joml:joml:1.10.5')
 }
 
 jar {

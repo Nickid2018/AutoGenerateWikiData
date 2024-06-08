@@ -32,7 +32,7 @@ public class RemapProgram {
     public static final File TEMP_ZIP_SERVER = new File("temp-server.jar");
     public static final File TEMP_REMAPPED_SERVER = new File("temp-server-remapped.jar");
 
-    private final Map<String, Set<PostTransform>> postTransforms = new HashMap<>();
+    private final Map<String, List<PostTransform>> postTransforms = new HashMap<>();
     private final Set<InjectEntries> injectEntries = new HashSet<>();
     @Getter
     private final MojangMapping mapping;
@@ -49,7 +49,7 @@ public class RemapProgram {
     private String[] extractData;
 
     public void addPostTransform(String clazz, PostTransform transform) {
-        postTransforms.computeIfAbsent(clazz, k -> new HashSet<>()).add(transform);
+        postTransforms.computeIfAbsent(clazz, k -> new ArrayList<>()).add(transform);
     }
 
     public void addInjectEntries(InjectEntries entries) {
@@ -139,7 +139,7 @@ public class RemapProgram {
                     ClassReader transformed = new ClassReader(writer.toByteArray());
                     transformed.accept(node, 0);
                     postTransforms.get(classNameRemapped).forEach(transform -> transform.transform(node));
-                    writer = new ClassWriter(0);
+                    writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
                     node.accept(writer);
                 }
 
