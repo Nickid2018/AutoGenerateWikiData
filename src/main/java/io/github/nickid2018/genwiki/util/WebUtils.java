@@ -39,6 +39,8 @@ public class WebUtils {
     }
 
     public static void downloadFile(String url, File file) throws IOException {
+        if (!file.getParentFile().isDirectory())
+            file.getParentFile().mkdirs();
         try (InputStream input = new URI(url).toURL().openStream(); FileOutputStream output = new FileOutputStream(file)) {
             IOUtils.copy(input, output);
         } catch (URISyntaxException e) {

@@ -1,18 +1,17 @@
 package io.github.nickid2018.genwiki;
 
 import com.google.common.hash.Hashing;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.nickid2018.genwiki.util.JsonUtils;
 import io.github.nickid2018.genwiki.util.WebUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +30,7 @@ public class InitializeEnvironment {
     public static final File REMAPPED_FOLDER = new File("remapped");
     public static final File RUNTIME_FOLDER = new File("runtime");
 
-    public static void createDirectories(boolean isClient) {
+    public static void createDirectories(boolean isClient) throws IOException {
         if (!SERVER_FOLDER.exists())
             SERVER_FOLDER.mkdirs();
         if (!SERVER_FOLDER.exists() && !isClient)
@@ -50,8 +49,9 @@ public class InitializeEnvironment {
             MAPPING_FOLDER.mkdirs();
         if (!REMAPPED_FOLDER.exists())
             REMAPPED_FOLDER.mkdirs();
-        if (!RUNTIME_FOLDER.exists())
-            RUNTIME_FOLDER.mkdirs();
+        if (RUNTIME_FOLDER.exists())
+            FileUtils.deleteDirectory(RUNTIME_FOLDER);
+        RUNTIME_FOLDER.mkdirs();
     }
 
     public static Map<String, File> downloadBaseFiles(boolean isClient, String version, boolean forceReDownload) throws IOException {
@@ -103,6 +103,7 @@ public class InitializeEnvironment {
         Map<String, File> downloadedData = new HashMap<>();
         downloadedData.put("jar", jarFile);
         downloadedData.put("mapping", mappingFile);
+        downloadedData.put("manifest", jsonFile);
 
         if (!jarFile.isFile() || forceReDownload) {
             downloadsMap.put(jarDownload, jarFile);
@@ -125,10 +126,10 @@ public class InitializeEnvironment {
                 .getStringInPath(manifest, "assetIndex.id")
                 .orElseThrow(() -> new IOException("Cannot find assets index id!"));
             String assetsIndex = JsonUtils
-                .getStringInPath(manifest, "assetsIndex.url")
+                .getStringInPath(manifest, "assetIndex.url")
                 .orElseThrow(() -> new IOException("Cannot find assets index url!"));
             String indexSHA1  = JsonUtils
-                .getStringInPath(manifest, "assetsIndex.sha1")
+                .getStringInPath(manifest, "assetIndex.sha1")
                 .orElseThrow(() -> new IOException("Cannot find assets index sha1!"));
             File indexFile = new File(INDEXES_FOLDER, assetsID + ".json");
             if (!indexFile.isFile() || forceReDownload) {
@@ -151,7 +152,7 @@ public class InitializeEnvironment {
         JsonObject indexObject = JsonParser.parseReader(new FileReader(index)).getAsJsonObject().getAsJsonObject("objects");
         Map<String, File> collectedFiles = new HashMap<>();
         for (Map.Entry<String, JsonElement> entry : indexObject.entrySet()) {
-            String hash = entry.getKey();
+            String hash = entry.getValue().getAsJsonObject().getAsJsonPrimitive("hash").getAsString();
             String directory = hash.substring(0, 2);
             String path = hash.substring(0, 2) + "/" + hash;
             if (!new File(OBJECTS_FOLDER, directory).isDirectory())
@@ -166,6 +167,28 @@ public class InitializeEnvironment {
             }
         }
         log.info("Downloading assets...");
+        WebUtils.downloadInBatch(collectedFiles);
+    }
+
+    public static void downloadLibraries(File manifest) throws IOException {
+        JsonObject json = JsonParser.parseReader(new FileReader(manifest)).getAsJsonObject();
+        JsonArray libraries = json.getAsJsonArray("libraries");
+        Map<String, File> collectedFiles = new HashMap<>();
+        for (JsonElement entry : libraries) {
+            JsonObject library = entry.getAsJsonObject();
+            String sha1 = JsonUtils.getStringInPath(library, "downloads.artifact.sha1").orElseThrow(() -> new IOException("Cannot find sha1!"));
+            String path = JsonUtils.getStringInPath(library, "downloads.artifact.path").orElseThrow(() -> new IOException("Cannot find path!"));
+            File file = new File(LIBRARIES_FOLDER, path);
+            if (!file.isFile()) {
+                collectedFiles.put(JsonUtils.getStringInPath(library, "downloads.artifact.url").orElseThrow(() -> new IOException("Cannot find url!")), file);
+            } else {
+                String fileHash = Hashing.sha1().hashBytes(IOUtils.toByteArray(new FileInputStream(file))).toString().toLowerCase();
+                if (!fileHash.equals(sha1))
+                    collectedFiles.put(JsonUtils.getStringInPath(library, "downloads.artifact.url").orElseThrow(() -> new IOException("Cannot find url!")), file);
+            }
+        }
+
+        log.info("Downloading libraries...");
         WebUtils.downloadInBatch(collectedFiles);
     }
 }

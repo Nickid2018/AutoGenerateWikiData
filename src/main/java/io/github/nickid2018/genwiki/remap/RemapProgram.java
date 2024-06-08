@@ -42,7 +42,7 @@ public class RemapProgram {
     private final File outputFile;
     @Getter
     @Setter
-    private File serverFile = TEMP_ZIP_SERVER;
+    private File sourceJarFile = TEMP_ZIP_SERVER;
     @Getter
     @Setter
     private File remappedFile = TEMP_REMAPPED_SERVER;
@@ -66,17 +66,17 @@ public class RemapProgram {
             extractData = versionData.split("\t", 3);
             IOUtils.copy(
                 file.getInputStream(file.getEntry("META-INF/versions/" + extractData[2])),
-                new FileOutputStream(serverFile)
+                new FileOutputStream(sourceJarFile)
             );
 
-            String serverHash = Hashing.sha256().hashBytes(Files.readAllBytes(serverFile.toPath())).toString();
+            String serverHash = Hashing.sha256().hashBytes(Files.readAllBytes(sourceJarFile.toPath())).toString();
             if (!serverHash.equals(extractData[0]))
                 throw new IOException("Server file hash not match!");
         }
     }
 
     public void fillRemapFormat() throws IOException {
-        try (ZipFile file = new ZipFile(serverFile)) {
+        try (ZipFile file = new ZipFile(sourceJarFile)) {
             Map<String, ClassNode> classNodes = new HashMap<>();
 
             for (ZipEntry e : file.stream().filter(e -> !e.isDirectory() && e.getName().endsWith(".class")).toList()) {
@@ -113,7 +113,7 @@ public class RemapProgram {
 
     public void remapClasses() throws IOException {
         Map<String, byte[]> remappedData = new HashMap<>();
-        try (ZipFile server = new ZipFile(serverFile)) {
+        try (ZipFile server = new ZipFile(sourceJarFile)) {
             List<? extends ZipEntry> entries = server
                 .stream()
                 .filter(e -> !e.isDirectory() && !e.getName().startsWith("META-INF"))
