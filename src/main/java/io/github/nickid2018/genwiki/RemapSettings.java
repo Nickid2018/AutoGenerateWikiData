@@ -3,6 +3,7 @@ package io.github.nickid2018.genwiki;
 import io.github.nickid2018.genwiki.remap.*;
 import me.tongfei.progressbar.ProgressBar;
 import org.jline.terminal.TerminalBuilder;
+import org.lwjgl.opengl.GL11;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
@@ -242,15 +243,67 @@ public class RemapSettings {
                     "(Ljava/lang/String;)V",
                     methodNode -> {
                         InsnList list = new InsnList();
+                        list.add(new VarInsnNode(Opcodes.ALOAD, 0));
                         list.add(new VarInsnNode(Opcodes.ALOAD, 1));
                         list.add(new MethodInsnNode(
                             Opcodes.INVOKESTATIC,
                             "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
                             "handleChat",
-                            "(Ljava/lang/String;)V",
+                            "(Lnet/minecraft/client/multiplayer/ClientPacketListener;Ljava/lang/String;)V",
                             false
                         ));
                         methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), list);
+                    }
+                )
+            );
+            remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.FogRenderer",
+                new MethodTransform(
+                    "setupFog",
+                    "(Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/FogRenderer$FogMode;FZF)V",
+                    methodNode -> {
+                        methodNode.instructions.clear();
+                        methodNode.instructions.add(new MethodInsnNode(
+                            Opcodes.INVOKESTATIC,
+                            "net/minecraft/client/renderer/FogRenderer",
+                            "setupNoFog",
+                            "()V",
+                            false
+                        ));
+                        methodNode.instructions.add(new InsnNode(Opcodes.RETURN));
+                    }
+                )
+            );
+            remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.FogRenderer",
+                new MethodTransform(
+                    "levelFogColor",
+                    "()V",
+                    methodNode -> {
+                        methodNode.instructions.clear();
+                        methodNode.instructions.add(new InsnNode(Opcodes.FCONST_0));
+                        methodNode.instructions.add(new InsnNode(Opcodes.FCONST_0));
+                        methodNode.instructions.add(new InsnNode(Opcodes.FCONST_0));
+                        methodNode.instructions.add(new InsnNode(Opcodes.FCONST_0));
+                        methodNode.instructions.add(new MethodInsnNode(
+                            Opcodes.INVOKESTATIC,
+                            "com/mojang/blaze3d/systems/RenderSystem",
+                            "clearColor",
+                            "(FFFF)V",
+                            false
+                        ));
+                        methodNode.instructions.add(new InsnNode(Opcodes.RETURN));
+                    }
+                )
+            );
+            remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.LevelRenderer",
+                new MethodTransform(
+                    "renderSky",
+                    "(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V",
+                    methodNode -> {
+                        methodNode.instructions.clear();
+                        methodNode.instructions.add(new InsnNode(Opcodes.RETURN));
                     }
                 )
             );

@@ -7,14 +7,21 @@ import org.objectweb.asm.tree.MethodNode;
 import java.util.function.Consumer;
 
 @Slf4j
-public record MethodTransform(String methodName, String methodDesc, Consumer<MethodNode> transform) implements PostTransform {
+public record MethodTransform(
+    String methodName, String methodDesc, Consumer<MethodNode> transform
+) implements PostTransform {
 
     @Override
     public void transform(ClassNode code) {
         for (MethodNode methodNode : code.methods) {
-            if (methodNode.name.equals(methodName) && methodNode.desc.equals(methodDesc)) {
+            if (methodNode.name.equals(methodName) && (methodDesc == null || methodNode.desc.equals(methodDesc))) {
                 transform.accept(methodNode);
-                log.info("Transformed method {}{} in class {}", methodName, methodDesc, code.name);
+                log.info(
+                    "Transformed method {}{} in class {}",
+                    methodName,
+                    methodDesc == null ? "" : methodDesc,
+                    code.name
+                );
             }
         }
     }

@@ -13,6 +13,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class GenerateWikiData {
@@ -100,10 +101,15 @@ public class GenerateWikiData {
         log.info("Remapped jar to {}", output.getAbsolutePath());
     }
 
-    private static ProcessBuilder newProcess() {
+    private static String findJavaPath() {
         String javaExec = System.getProperty("java.home") + "/bin/java";
         if (System.getProperty("os.name").startsWith("Windows"))
             javaExec += ".exe";
+        return javaExec;
+    }
+
+    private static ProcessBuilder newProcess() {
+        String javaExec = findJavaPath();
 
         ProcessBuilder builder;
         if (System.getenv("JVM_ARGS") != null) {
