@@ -79,32 +79,14 @@ public class ISOInjectionEntryPoints {
                             Minecraft.getInstance().gameRenderer.renderLevel(DeltaTracker.ONE);
                             NativeImage image = new NativeImage(mainTarget.width, mainTarget.height, false);
                             RenderSystem.bindTexture(mainTarget.getColorTextureId());
-                            image.downloadTexture(0, true);
+                            image.downloadTexture(0, false);
                             image.flipY();
-                            BufferedImage bufferedImage = new BufferedImage(
-                                mainTarget.width,
-                                mainTarget.height,
-                                BufferedImage.TYPE_INT_ARGB
-                            );
-                            for (int x = 0; x < mainTarget.width; x++) {
-                                for (int y = 0; y < mainTarget.height; y++) {
-                                    int color = image.getPixelRGBA(x, y);
-                                    if (color == 0xFF000000)
-                                        color = 0;
-                                    bufferedImage.setRGB(
-                                        x,
-                                        y,
-                                        (color >>> 16 & 0xFF) | (color & 0xFF00FF00) | (color << 16 & 0xFF0000)
-                                    );
-                                }
-                            }
                             File file = new File("screenshots");
                             file.mkdir();
-                            ImageIO.write(
-                                bufferedImage,
-                                "png",
-                                new File(file, commandArgs.isEmpty() ? "screenshot.png" : commandArgs)
-                            );
+                            image.writeToFile(new File(
+                                file,
+                                commandArgs.isEmpty() ? "screenshot.png" : commandArgs
+                            ).toPath());
                         }
                         case "call" -> clientPacketListener.sendCommand(commandArgs);
                     }

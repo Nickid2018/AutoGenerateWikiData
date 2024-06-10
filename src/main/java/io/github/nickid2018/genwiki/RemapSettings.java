@@ -113,7 +113,10 @@ public class RemapSettings {
             )
         );
         remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.util"));
-        remapProgram.addInjectEntries(new SingleFile("io.github.nickid2018.genwiki.InjectionEntrypoint"));
+        remapProgram.addInjectEntries(new SingleFile(
+            "io/github/nickid2018/genwiki/InjectionEntrypoint.class",
+            "io/github/nickid2018/genwiki/InjectionEntrypoint.class"
+        ));
     }
 
     public static void remapSettings(GenWikiMode mode, RemapProgram remapProgram) {
@@ -308,6 +311,10 @@ public class RemapSettings {
                 )
             );
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.iso"));
+            remapProgram.addInjectEntries(new SingleFile(
+                "transparency.fsh",
+                "assets/minecraft/shaders/program/transparency.fsh"
+            ));
         }
     }
 }

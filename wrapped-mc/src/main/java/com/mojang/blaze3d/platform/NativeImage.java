@@ -1,5 +1,8 @@
 package com.mojang.blaze3d.platform;
 
+import java.io.IOException;
+import java.nio.file.Path;
+
 public class NativeImage {
 
     public NativeImage(int n, int n2, boolean bl) {
@@ -14,6 +17,10 @@ public class NativeImage {
     }
 
     public int getPixelRGBA(int n, int n2) {
+        throw new RuntimeException();
+    }
+
+    public void writeToFile(Path path) throws IOException {
         throw new RuntimeException();
     }
 }

@@ -153,11 +153,7 @@ public class RemapProgram {
         }
 
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(remappedFile))) {
-            for (String entry : remappedData.keySet()) {
-                ZipEntry zipEntry = new ZipEntry(entry);
-                zos.putNextEntry(zipEntry);
-                zos.write(remappedData.get(entry));
-            }
+            Set<String> writtenKeys = new HashSet<>();
             for (InjectEntries entries : injectEntries) {
                 Map<String, byte[]> injectData = entries.getInjectEntries();
                 for (String entry : injectData.keySet()) {
@@ -165,6 +161,14 @@ public class RemapProgram {
                     zos.putNextEntry(zipEntry);
                     zos.write(injectData.get(entry));
                 }
+                writtenKeys.addAll(injectData.keySet());
+            }
+            for (String entry : remappedData.keySet()) {
+                if (writtenKeys.contains(entry))
+                    continue;
+                ZipEntry zipEntry = new ZipEntry(entry);
+                zos.putNextEntry(zipEntry);
+                zos.write(remappedData.get(entry));
             }
         }
     }
