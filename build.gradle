@@ -93,7 +93,7 @@ tasks.register("runStatistics", JavaExec) {
         environment["MAKE_VERSION"] = ""
     classpath = layout.buildDirectory.files("libs/GenWiki.jar")
     mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
-    args(environment["MAKE_VERSION"], "--mode", "statistics")
+    args(environment["MAKE_VERSION"], "--mode", "STATISTICS")
     standardInput = System.in
 }.configure {
     dependsOn(shadowJar)
@@ -109,7 +109,7 @@ tasks.register("runStatisticsNotRun", JavaExec) {
         environment["MAKE_VERSION"] = ""
     classpath = layout.buildDirectory.files("libs/GenWiki.jar")
     mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
-    args(environment["MAKE_VERSION"], "--mode", "statistics", "--not-run")
+    args(environment["MAKE_VERSION"], "--mode", "STATISTICS", "--not-run")
 }.configure {
     dependsOn(shadowJar)
 }
@@ -124,7 +124,23 @@ tasks.register("runISO", JavaExec) {
         environment["MAKE_VERSION"] = ""
     classpath = layout.buildDirectory.files("libs/GenWiki.jar")
     mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
-    args("--mode", "ISO", environment["MAKE_VERSION"])
+    args(environment["MAKE_VERSION"], "--mode", "ISO")
+}.configure {
+    dependsOn(shadowJar)
+}
+
+
+tasks.register("runISONotRun", JavaExec) {
+    if (!file("run").isDirectory())
+        mkdir("run")
+    if (file("run/remapped").isDirectory())
+        delete(fileTree("run/remapped"))
+    workingDir = file("run")
+    if (environment["MAKE_VERSION"] == null)
+        environment["MAKE_VERSION"] = ""
+    classpath = layout.buildDirectory.files("libs/GenWiki.jar")
+    mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
+    args(environment["MAKE_VERSION"], "--mode", "ISO", "--not-run")
 }.configure {
     dependsOn(shadowJar)
 }

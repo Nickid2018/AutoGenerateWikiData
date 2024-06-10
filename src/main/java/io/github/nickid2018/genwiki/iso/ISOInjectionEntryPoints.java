@@ -129,7 +129,10 @@ public class ISOInjectionEntryPoints {
         try {
             File commandFile = new File(file);
             String command = IOUtils.toString(commandFile.toURI(), StandardCharsets.UTF_8);
-            List<String> collectedLines = Arrays.stream(command.split("\n")).filter(s -> !s.isEmpty()).toList();
+            List<String> collectedLines = Arrays
+                .stream(command.split("\n"))
+                .filter(s -> !s.isEmpty() && !s.startsWith("#"))
+                .toList();
             commandExecutor.execute(() -> {
                 for (String line : collectedLines) {
                     if (line.toLowerCase().startsWith("sleep"))
