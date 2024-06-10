@@ -246,13 +246,30 @@ public class RemapSettings {
                     "(Ljava/lang/String;)V",
                     methodNode -> {
                         InsnList list = new InsnList();
-                        list.add(new VarInsnNode(Opcodes.ALOAD, 0));
                         list.add(new VarInsnNode(Opcodes.ALOAD, 1));
                         list.add(new MethodInsnNode(
                             Opcodes.INVOKESTATIC,
                             "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
                             "handleChat",
-                            "(Lnet/minecraft/client/multiplayer/ClientPacketListener;Ljava/lang/String;)V",
+                            "(Ljava/lang/String;)V",
+                            false
+                        ));
+                        methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), list);
+                    }
+                )
+            );
+            remapProgram.addPostTransform(
+                "net.minecraft.client.multiplayer.ClientPacketListener",
+                new MethodTransform(
+                    "tick",
+                    "()V",
+                    methodNode -> {
+                        InsnList list = new InsnList();
+                        list.add(new MethodInsnNode(
+                            Opcodes.INVOKESTATIC,
+                            "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
+                            "listenerTick",
+                            "()V",
                             false
                         ));
                         methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), list);

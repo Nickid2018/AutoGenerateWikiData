@@ -6,14 +6,19 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientPacketListener;
+import org.apache.commons.io.IOUtils;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Slf4j
 @SuppressWarnings("unused")
@@ -36,17 +41,33 @@ public class ISOInjectionEntryPoints {
         return source;
     }
 
-    public static void handleChat(ClientPacketListener clientPacketListener, String chat) {
-        chat = chat.toLowerCase();
+    public static void handleChat(String chat) {
+        chat = chat.trim();
+        if (chat.toLowerCase().startsWith("run"))
+            readFileAndRun(chat.substring(3).trim());
+        else
+            doCommand(chat);
+    }
+
+    private static final Queue<String> commandQueue = new ConcurrentLinkedDeque<>();
+
+    public static void listenerTick() {
+        if (!commandQueue.isEmpty()) {
+            String command = commandQueue.poll();
+            doCommand(command);
+        }
+    }
+
+    public static void doCommand(String chat) {
         try {
-            switch (chat) {
+            switch (chat.toLowerCase()) {
                 case "persp" -> ortho = false;
                 case "ortho" -> ortho = true;
                 default -> {
                     String[] commands = chat.split(" ", 2);
                     String commandHead = commands[0];
                     String commandArgs = commands.length > 1 ? commands[1] : "";
-                    switch (commandHead) {
+                    switch (commandHead.toLowerCase()) {
                         case "wsize" -> {
                             String[] sizes = commandArgs.split("[xX]");
                             if (sizes.length == 2) {
@@ -88,12 +109,41 @@ public class ISOInjectionEntryPoints {
                                 commandArgs.isEmpty() ? "screenshot.png" : commandArgs
                             ).toPath());
                         }
-                        case "call" -> clientPacketListener.sendCommand(commandArgs);
+                        case "call" -> Minecraft.getInstance().player.connection.sendCommand(commandArgs);
                     }
                 }
             }
         } catch (Exception e) {
             log.error("Command Error", e);
+        }
+    }
+
+    private static final ExecutorService commandExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r);
+        t.setDaemon(true);
+        t.setName("Command Executor");
+        return t;
+    });
+
+    public static void readFileAndRun(String file) {
+        try {
+            File commandFile = new File(file);
+            String command = IOUtils.toString(commandFile.toURI(), StandardCharsets.UTF_8);
+            List<String> collectedLines = Arrays.stream(command.split("\n")).filter(s -> !s.isEmpty()).toList();
+            commandExecutor.execute(() -> {
+                for (String line : collectedLines) {
+                    if (line.toLowerCase().startsWith("sleep"))
+                        try {
+                            Thread.sleep(Long.parseLong(line.substring(5).trim()));
+                        } catch (Exception e) {
+                            log.error("Sleep Error", e);
+                        }
+                    else
+                        commandQueue.add(line);
+                }
+            });
+        } catch (Exception e) {
+            log.error("Read File Error", e);
         }
     }
 }

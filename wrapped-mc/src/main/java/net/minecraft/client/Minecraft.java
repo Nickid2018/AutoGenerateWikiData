@@ -3,10 +3,12 @@ package net.minecraft.client;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Window;
 import io.github.nickid2018.util.SneakyUtil;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 
 public class Minecraft {
 
+    public LocalPlayer player;
     public final GameRenderer gameRenderer = SneakyUtil.sneakyNotNull();
 
     public static Minecraft getInstance() {
