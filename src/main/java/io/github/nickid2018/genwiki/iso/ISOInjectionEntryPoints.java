@@ -131,6 +131,7 @@ public class ISOInjectionEntryPoints {
             String command = IOUtils.toString(commandFile.toURI(), StandardCharsets.UTF_8);
             List<String> collectedLines = Arrays
                 .stream(command.split("\n"))
+                .map(String::trim)
                 .filter(s -> !s.isEmpty() && !s.startsWith("#"))
                 .toList();
             commandExecutor.execute(() -> {
