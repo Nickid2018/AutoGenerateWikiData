@@ -327,6 +327,34 @@ public class RemapSettings {
                     }
                 )
             );
+            remapProgram.addPostTransform(
+                "net.minecraft.server.MinecraftServer",
+                new MethodTransform(
+                    "tickServer",
+                    "(Ljava/util/function/BooleanSupplier;)V",
+                    methodNode -> {
+                        FieldInsnNode findAutoSaveIntervalPoint = null;
+                        for (AbstractInsnNode node : methodNode.instructions) {
+                            if (node instanceof FieldInsnNode fieldInsnNode) {
+                                if (fieldInsnNode.getOpcode() == Opcodes.PUTFIELD &&
+                                    fieldInsnNode.name.equals("ticksUntilAutosave")) {
+                                    findAutoSaveIntervalPoint = fieldInsnNode;
+                                    break;
+                                }
+                            }
+                        }
+                        if (findAutoSaveIntervalPoint != null) {
+                            methodNode.instructions.insertBefore(findAutoSaveIntervalPoint, new MethodInsnNode(
+                                Opcodes.INVOKESTATIC,
+                                "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
+                                "handleAutoSaveInterval",
+                                "(I)I",
+                                false
+                            ));
+                        }
+                    }
+                )
+            );
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.iso"));
             remapProgram.addInjectEntries(new SingleFile(
                 "transparency.fsh",

@@ -30,6 +30,7 @@ public class ISOInjectionEntryPoints {
 
     private static boolean ortho = false;
     private static int invokeCount = 0;
+    private static boolean noSave = false;
     private static Matrix4f orthoMatrix = new Matrix4f().ortho(-2, 2, -2, 2, -0.1f, 1000);
 
     public static Matrix4f getProjectionMatrixInjection(Matrix4f source) {
@@ -38,6 +39,12 @@ public class ISOInjectionEntryPoints {
             return source;
         if (ortho)
             return orthoMatrix;
+        return source;
+    }
+
+    public static int handleAutoSaveInterval(int source) {
+        if (noSave)
+            return 1;
         return source;
     }
 
@@ -63,6 +70,8 @@ public class ISOInjectionEntryPoints {
             switch (chat.toLowerCase()) {
                 case "persp" -> ortho = false;
                 case "ortho" -> ortho = true;
+                case "nosave" -> noSave = true;
+                case "save" -> noSave = false;
                 default -> {
                     String[] commands = chat.split(" ", 2);
                     String commandHead = commands[0];
