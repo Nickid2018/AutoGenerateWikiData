@@ -5,6 +5,7 @@ import net.minecraft.core.DefaultedRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.alchemy.Potion;
@@ -18,4 +19,5 @@ public class BuiltInRegistries {
     public static final Registry<MobEffect> MOB_EFFECT = SneakyUtil.sneakyNotNull();
     public static final Registry<Potion> POTION = SneakyUtil.sneakyNotNull();
     public static final DefaultedRegistry<Block> BLOCK = SneakyUtil.sneakyNotNull();
+    public static final Registry<Attribute> ATTRIBUTE = SneakyUtil.sneakyNotNull();
 }

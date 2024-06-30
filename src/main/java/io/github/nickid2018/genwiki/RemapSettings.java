@@ -180,6 +180,10 @@ public class RemapSettings {
                     }
                 )
             );
+            remapProgram.addPostTransform(
+                "net.minecraft.world.entity.ai.attributes.Attribute",
+                ExtendAccessTransform.FIELD
+            );
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.autovalue"));
         } else {
             remapProgram.addPostTransform(

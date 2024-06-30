@@ -14,6 +14,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.RangedAttribute;
 import net.minecraft.world.item.alchemy.Potion;
 
 import java.util.Comparator;
@@ -27,6 +29,10 @@ public class EntityDataExtractor {
     public static final ColorWikiData EFFECT_COLOR = new ColorWikiData();
     public static final BooleanWikiData EFFECT_INSTANTENOUS = new BooleanWikiData();
     public static final StringListWikiData EFFECT_CANNOT_AFFECT = new StringListWikiData();
+
+    public static final StringWikiData ATTRIBUTE_SENTIMENT = new StringWikiData();
+    public static final DoubleNumberWikiData ATTRIBUTE_RANGE = new DoubleNumberWikiData();
+    public static final NumberWikiData ATTRIBUTE_DEFAULT_VALUE = new NumberWikiData();
 
     public static final PotionEffectWikiData POTION_EFFECT = new PotionEffectWikiData();
 
@@ -93,11 +99,26 @@ public class EntityDataExtractor {
             }
         }
 
+        for (ResourceKey<Attribute> attributeKey : BuiltInRegistries.ATTRIBUTE.registryKeySet()) {
+            String attributeID = attributeKey.location().getPath();
+            Attribute attribute = BuiltInRegistries.ATTRIBUTE.get(attributeKey);
+            ATTRIBUTE_SENTIMENT.put(attributeID, attribute.sentiment.name());
+            ATTRIBUTE_DEFAULT_VALUE.put(attributeID, attribute.defaultValue);
+            if (attribute instanceof RangedAttribute rangedAttribute) {
+                double minValue = rangedAttribute.getMinValue();
+                double maxValue = rangedAttribute.getMaxValue();
+                ATTRIBUTE_RANGE.put(attributeID, minValue, maxValue);
+            }
+        }
+
         WikiData.write(MOB_CATEGORY, "entity_mob_category.txt");
         WikiData.write(EFFECT_CATEGORY, "mob_effect_category.txt");
         WikiData.write(EFFECT_COLOR, "mob_effect_color.txt");
         WikiData.write(EFFECT_INSTANTENOUS, "mob_effect_instantenous.txt");
         WikiData.write(EFFECT_CANNOT_AFFECT, "mob_effect_cannot_affect.txt");
         WikiData.write(POTION_EFFECT, "potion_effect.txt");
+        WikiData.write(ATTRIBUTE_SENTIMENT, "attribute_sentiment.txt");
+        WikiData.write(ATTRIBUTE_RANGE, "attribute_range.txt");
+        WikiData.write(ATTRIBUTE_DEFAULT_VALUE, "attribute_default_value.txt");
     }
 }
