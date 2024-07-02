@@ -59,7 +59,7 @@ public class DoubleNumberWikiData implements WikiData {
     }
 
     private String formatValue(double value) {
-        String formatted = String.format("%.3f", value);
+        String formatted = String.format("%.5f", value);
         if (formatted.contains("."))
             while (formatted.endsWith("0"))
                 formatted = formatted.substring(0, formatted.length() - 1);
