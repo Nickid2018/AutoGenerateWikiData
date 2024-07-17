@@ -27,7 +27,7 @@ public class EntityDataExtractor {
 
     public static final StringWikiData EFFECT_CATEGORY = new StringWikiData();
     public static final ColorWikiData EFFECT_COLOR = new ColorWikiData();
-    public static final BooleanWikiData EFFECT_INSTANTENOUS = new BooleanWikiData();
+    public static final BooleanWikiData EFFECT_INSTANTANEOUS = new BooleanWikiData();
     public static final StringListWikiData EFFECT_CANNOT_AFFECT = new StringListWikiData();
 
     public static final StringWikiData ATTRIBUTE_SENTIMENT = new StringWikiData();
@@ -56,7 +56,7 @@ public class EntityDataExtractor {
 
             EFFECT_CATEGORY.put(effectID, effect.getCategory().name());
             EFFECT_COLOR.put(effectID, effect.getColor());
-            EFFECT_INSTANTENOUS.put(effectID, effect.isInstantenous());
+            EFFECT_INSTANTANEOUS.put(effectID, effect.isInstantenous());
 
             EFFECT_CANNOT_AFFECT.put(effectID);
             for (Map.Entry<String, LivingEntity> entry : livingEntityMap.entrySet()) {
@@ -114,7 +114,7 @@ public class EntityDataExtractor {
         WikiData.write(MOB_CATEGORY, "entity_mob_category.txt");
         WikiData.write(EFFECT_CATEGORY, "mob_effect_category.txt");
         WikiData.write(EFFECT_COLOR, "mob_effect_color.txt");
-        WikiData.write(EFFECT_INSTANTENOUS, "mob_effect_instantenous.txt");
+        WikiData.write(EFFECT_INSTANTANEOUS, "mob_effect_instantaneous.txt");
         WikiData.write(EFFECT_CANNOT_AFFECT, "mob_effect_cannot_affect.txt");
         WikiData.write(POTION_EFFECT, "potion_effect.txt");
         WikiData.write(ATTRIBUTE_SENTIMENT, "attribute_sentiment.txt");

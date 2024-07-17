@@ -24,6 +24,10 @@ import java.util.concurrent.Executors;
 @SuppressWarnings("unused")
 public class ISOInjectionEntryPoints {
 
+    public static void onMinecraftBootstrap() {
+        log.info("ISO Injection Entry Points Loaded");
+    }
+
     public static void clampColorInjection(Vector3f vector3f) {
         vector3f.set(1, 1, 1);
     }
