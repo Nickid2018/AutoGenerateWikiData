@@ -116,7 +116,7 @@ public class RemapProgram {
         try (ZipFile server = new ZipFile(sourceJarFile)) {
             List<? extends ZipEntry> entries = server
                 .stream()
-                .filter(e -> !e.isDirectory() && !e.getName().startsWith("META-INF"))
+                .filter(e -> !e.isDirectory() && !e.getName().equals("META-INF/MANIFEST.MF"))
                 .toList();
             for (ZipEntry entry : entries) {
                 String nowFile = entry.getName();
@@ -148,7 +148,7 @@ public class RemapProgram {
 
             remappedData.put(
                 "META-INF/MANIFEST.MF",
-                "Manifest-Version: 1.0\r\nMain-Class: net.minecraft.server.Main".getBytes()
+                "Manifest-Version: 1.0\r\nMain-Class: net.minecraft.server.Main\r\nMulti-Release: true\r\n".getBytes()
             );
         }
 
