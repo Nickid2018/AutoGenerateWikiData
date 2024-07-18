@@ -1,11 +1,13 @@
 package io.github.nickid2018.genwiki.autovalue;
 
+import com.google.common.reflect.ClassPath;
 import io.github.nickid2018.genwiki.autovalue.wikidata.*;
 import io.github.nickid2018.genwiki.util.LanguageUtils;
 import lombok.SneakyThrows;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.effect.MobEffect;
@@ -17,10 +19,10 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.RangedAttribute;
 import net.minecraft.world.item.alchemy.Potion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class EntityDataExtractor {
     private static final StringWikiData MOB_CATEGORY = new StringWikiData();
@@ -36,9 +38,39 @@ public class EntityDataExtractor {
 
     public static final PotionEffectWikiData POTION_EFFECT = new PotionEffectWikiData();
 
+    public static final EntitySyncWikiData ENTITY_SYNC = new EntitySyncWikiData();
+    private static final Logger log = LoggerFactory.getLogger(EntityDataExtractor.class);
+
     @SneakyThrows
     public static void extractEntityData(MinecraftServer serverObj) {
         Map<String, LivingEntity> livingEntityMap = new HashMap<>();
+
+        Map<Object, String> entitySyncDataNames = new HashMap<>();
+        ClassPath
+            .from(Entity.class.getClassLoader())
+            .getTopLevelClassesRecursive("net.minecraft.world.entity")
+            .stream()
+            .map(ClassPath.ClassInfo::load)
+            .flatMap(clazz -> {
+                ArrayList<Class<?>> classes = new ArrayList<>();
+                classes.add(clazz);
+                classes.addAll(Arrays.asList(clazz.getClasses()));
+                return classes.stream();
+            })
+            .filter(Entity.class::isAssignableFrom)
+            .flatMap(clazz -> Arrays.stream(clazz.getDeclaredFields()))
+            .filter(field -> EntityDataAccessor.class.isAssignableFrom(field.getType()))
+            .peek(field -> field.setAccessible(true))
+            .forEach(field -> {
+                try {
+                    EntityDataAccessor<?> accessor = (EntityDataAccessor<?>) field.get(null);
+                    entitySyncDataNames.put(accessor, field.getName());
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            });
+        log.info("Found {} entity sync data fields", entitySyncDataNames.size());
+
         for (ResourceKey<EntityType<?>> key : BuiltInRegistries.ENTITY_TYPE.registryKeySet()) {
             String entityID = key.location().getPath();
 
@@ -48,6 +80,16 @@ public class EntityDataExtractor {
             Entity entityInstance = entity.spawn(serverObj.overworld(), BlockPos.ZERO, MobSpawnType.COMMAND);
             if (entityInstance instanceof LivingEntity livingEntity)
                 livingEntityMap.put(entityID, livingEntity);
+
+            if (entityInstance != null)
+                ENTITY_SYNC.put(
+                    entityID,
+                    Arrays
+                        .stream(entityInstance.getEntityData().itemsById)
+                        .map(item -> item.accessor)
+                        .map(entitySyncDataNames::get)
+                        .toArray(String[]::new)
+                );
         }
 
         for (ResourceKey<MobEffect> effectKey : BuiltInRegistries.MOB_EFFECT.registryKeySet()) {
@@ -120,5 +162,6 @@ public class EntityDataExtractor {
         WikiData.write(ATTRIBUTE_SENTIMENT, "attribute_sentiment.txt");
         WikiData.write(ATTRIBUTE_RANGE, "attribute_range.txt");
         WikiData.write(ATTRIBUTE_DEFAULT_VALUE, "attribute_default_value.txt");
+        WikiData.write(ENTITY_SYNC, "entity_sync.json");
     }
 }

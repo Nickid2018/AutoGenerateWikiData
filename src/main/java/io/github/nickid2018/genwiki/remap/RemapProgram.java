@@ -116,7 +116,7 @@ public class RemapProgram {
         try (ZipFile server = new ZipFile(sourceJarFile)) {
             List<? extends ZipEntry> entries = server
                 .stream()
-                .filter(e -> !e.isDirectory() && !e.getName().equals("META-INF/MANIFEST.MF"))
+                .filter(e -> !e.isDirectory() && !e.getName().equals("META-INF/MANIFEST.MF") && !e.getName().contains("MOJANGCS"))
                 .toList();
             for (ZipEntry entry : entries) {
                 String nowFile = entry.getName();
