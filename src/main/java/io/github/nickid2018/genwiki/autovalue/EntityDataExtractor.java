@@ -45,7 +45,7 @@ public class EntityDataExtractor {
     public static void extractEntityData(MinecraftServer serverObj) {
         Map<String, LivingEntity> livingEntityMap = new HashMap<>();
 
-        Map<Object, String> entitySyncDataNames = new HashMap<>();
+        Map<Object, String> entitySyncDataNames = new IdentityHashMap<>();
         ClassPath
             .from(Entity.class.getClassLoader())
             .getTopLevelClassesRecursive("net.minecraft.world.entity")

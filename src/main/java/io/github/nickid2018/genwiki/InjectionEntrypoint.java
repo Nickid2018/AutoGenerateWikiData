@@ -51,6 +51,7 @@ public class InjectionEntrypoint {
         EntityDataExtractor.extractEntityData(server);
         BiomeDataExtractor.extractBiomeData(server);
         EnchantmentDataExtractor.extractEnchantmentData(server);
+        RegistriesExporter.exportRegistries();
 
         throw new RuntimeException("Program exited, wiki data has been written.");
     }

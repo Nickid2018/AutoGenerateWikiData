@@ -1,7 +1,8 @@
-package io.github.nickid2018.genwiki.registries;
+package io.github.nickid2018.genwiki.autovalue;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonPrimitive;
+import io.github.nickid2018.genwiki.InjectionEntrypoint;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.SneakyThrows;
@@ -21,12 +22,11 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
 
-@SuppressWarnings("unused")
 public class RegistriesExporter {
 
     @SneakyThrows
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static void exportRegistries(MinecraftServer server) {
+    public static void exportRegistries() {
         Class<?> registryClass = Registry.class;
         Field[] fields = BuiltInRegistries.class.getFields();
         for (Field field : fields) {
@@ -47,7 +47,7 @@ public class RegistriesExporter {
                 idMap.forEach((key, id) -> array.set(id, new JsonPrimitive(key)));
 
                 String fieldName = field.getName();
-                File file = new File("registries/" + fieldName.toLowerCase(Locale.ROOT) + ".json");
+                File file = new File(InjectionEntrypoint.OUTPUT_FOLDER, "registries/" + fieldName.toLowerCase(Locale.ROOT) + ".json");
                 if (!file.getParentFile().isDirectory())
                     file.getParentFile().mkdirs();
                 FileWriter writer = new FileWriter(file);
@@ -63,13 +63,11 @@ public class RegistriesExporter {
             BlockState state = iterator.next();
             blockStateArray.add(new JsonPrimitive(state.toString().substring(16).replace("}", "")));
         }
-        File blockStateFile = new File("registries/block_states.json");
+        File blockStateFile = new File(InjectionEntrypoint.OUTPUT_FOLDER, "registries/block_states.json");
         if (!blockStateFile.getParentFile().isDirectory())
             blockStateFile.getParentFile().mkdirs();
         FileWriter writer = new FileWriter(blockStateFile);
         writer.write(blockStateArray.toString());
         writer.close();
-
-        throw new RuntimeException("Program exited.");
     }
 }

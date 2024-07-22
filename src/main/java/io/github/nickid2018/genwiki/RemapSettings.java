@@ -193,25 +193,6 @@ public class RemapSettings {
                 ExtendAccessTransform.FIELD
             );
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.autovalue"));
-        } else if (mode == GenWikiMode.REGISTRIES) {
-            remapProgram.addPostTransform(
-                INJECT_POINT_CLASS,
-                new MethodTransform(INJECT_METHOD, INJECT_METHOD_DESC, methodNode -> {
-                    InsnList list = new InsnList();
-                    list.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                    list.add(new MethodInsnNode(
-                        Opcodes.INVOKESTATIC,
-                        "io/github/nickid2018/genwiki/registries/RegistriesExporter",
-                        "exportRegistries",
-                        "(Lnet/minecraft/server/MinecraftServer;)V",
-                        false
-                    ));
-                    list.add(methodNode.instructions);
-                    methodNode.instructions = list;
-                })
-            );
-            remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.util"));
-            remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.registries"));
         } else {
             remapProgram.addPostTransform(
                 "net.minecraft.client.main.Main",

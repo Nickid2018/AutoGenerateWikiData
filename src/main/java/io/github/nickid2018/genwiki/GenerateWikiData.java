@@ -1,8 +1,6 @@
 package io.github.nickid2018.genwiki;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import io.github.nickid2018.genwiki.remap.MojangMapping;
 import io.github.nickid2018.genwiki.remap.RemapProgram;
 import io.github.nickid2018.genwiki.util.JsonUtils;
@@ -13,7 +11,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class GenerateWikiData {

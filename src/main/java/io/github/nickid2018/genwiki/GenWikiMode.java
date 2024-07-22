@@ -7,7 +7,6 @@ public enum GenWikiMode {
 
     AUTOVALUE(false),
     STATISTICS(false),
-    REGISTRIES(false),
     ISO(true);
 
     public final boolean isClient;
