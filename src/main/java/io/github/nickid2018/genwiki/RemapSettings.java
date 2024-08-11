@@ -138,6 +138,28 @@ public class RemapSettings {
                     methodNode.instructions = list;
                 })
             );
+            remapProgram.addPostTransform(
+                "net.minecraft.world.level.chunk.storage.ChunkSerializer",
+                new MethodTransform(
+                    "write",
+                    null,
+                    methodNode -> {
+                        InsnList list = new InsnList();
+                        list.add(new TypeInsnNode(Opcodes.NEW, "net/minecraft/nbt/CompoundTag"));
+                        list.add(new InsnNode(Opcodes.DUP));
+                        list.add(new MethodInsnNode(
+                            Opcodes.INVOKESPECIAL,
+                            "net/minecraft/nbt/CompoundTag",
+                            "<init>",
+                            "()V",
+                            false
+                        ));
+                        list.add(new InsnNode(Opcodes.ARETURN));
+                        methodNode.instructions.clear();
+                        methodNode.instructions.add(list);
+                    }
+                )
+            );
             remapProgram.addPostTransform("net.minecraft.server.level.DistanceManager", ExtendAccessTransform.ALL);
             remapProgram.addPostTransform("net.minecraft.server.level.ServerChunkCache", ExtendAccessTransform.ALL);
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.statistic"));
