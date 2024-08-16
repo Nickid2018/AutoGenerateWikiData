@@ -214,6 +214,10 @@ public class RemapSettings {
                 "net.minecraft.network.syncher.SynchedEntityData$DataItem",
                 ExtendAccessTransform.FIELD
             );
+            remapProgram.addPostTransform(
+                "net.minecraft.world.level.block.entity.FuelValues",
+                ExtendAccessTransform.FIELD
+            );
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.autovalue"));
         } else {
             remapProgram.addPostTransform(

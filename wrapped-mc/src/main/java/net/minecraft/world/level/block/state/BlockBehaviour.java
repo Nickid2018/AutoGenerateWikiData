@@ -18,10 +18,6 @@ public class BlockBehaviour {
         throw new RuntimeException();
     }
 
-    public VoxelShape getOcclusionShape(BlockState blockState, BlockGetter blockGetter, BlockPos blockPos) {
-        throw new RuntimeException();
-    }
-
     public static abstract class BlockStateBase extends StateHolder<Block, BlockState> {
         public boolean legacySolid;
         public final MapColor mapColor = SneakyUtil.sneakyNotNull();
@@ -35,6 +31,10 @@ public class BlockBehaviour {
         }
 
         public boolean isFaceSturdy(BlockGetter blockGetter, BlockPos blockPos, Direction direction, SupportType supportType) {
+            throw new RuntimeException();
+        }
+
+        public VoxelShape getFaceOcclusionShape(Direction direction) {
             throw new RuntimeException();
         }
 

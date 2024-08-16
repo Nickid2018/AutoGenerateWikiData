@@ -1,5 +1,5 @@
 package net.minecraft.world.entity;
 
-public enum MobSpawnType {
+public enum EntitySpawnReason {
     COMMAND
 }

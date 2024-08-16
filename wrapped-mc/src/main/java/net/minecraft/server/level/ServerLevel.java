@@ -2,6 +2,7 @@ package net.minecraft.server.level;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.FuelValues;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class ServerLevel extends Level {
@@ -18,6 +19,11 @@ public class ServerLevel extends Level {
 
     @Override
     public BlockState getBlockState(BlockPos var1) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public FuelValues fuelValues() {
         throw new RuntimeException();
     }
 }

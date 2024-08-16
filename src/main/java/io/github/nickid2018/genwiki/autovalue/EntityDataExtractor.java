@@ -15,7 +15,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.RangedAttribute;
 import net.minecraft.world.item.alchemy.Potion;
@@ -77,7 +77,7 @@ public class EntityDataExtractor {
             EntityType<?> entity = BuiltInRegistries.ENTITY_TYPE.get(key);
             MOB_CATEGORY.put(entityID, entity.getCategory().name());
 
-            Entity entityInstance = entity.spawn(serverObj.overworld(), BlockPos.ZERO, MobSpawnType.COMMAND);
+            Entity entityInstance = entity.spawn(serverObj.overworld(), BlockPos.ZERO, EntitySpawnReason.COMMAND);
             if (entityInstance instanceof LivingEntity livingEntity)
                 livingEntityMap.put(entityID, livingEntity);
 

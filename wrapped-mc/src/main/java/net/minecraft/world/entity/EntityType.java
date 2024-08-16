@@ -9,7 +9,7 @@ public class EntityType<T extends Entity> {
         throw new RuntimeException();
     }
 
-    public T spawn(ServerLevel serverLevel, BlockPos blockPos, MobSpawnType mobSpawnType) {
+    public T spawn(ServerLevel serverLevel, BlockPos blockPos, EntitySpawnReason mobSpawnType) {
         throw new RuntimeException();
     }
 }

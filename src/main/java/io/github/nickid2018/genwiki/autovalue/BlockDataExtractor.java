@@ -105,7 +105,6 @@ public class BlockDataExtractor {
                 INSTRUMENT.put(blockID, properties.instrument.name());
 
             for (BlockState state : states) {
-                VoxelShape occlusionShape = block.getOcclusionShape(state, serverOverworld, BlockPos.ZERO);
                 Map<String, List<double[]>> occlusionMap = new HashMap<>();
                 Set<String> faceSturdySet = new TreeSet<>();
                 String stateName = state.toString();
@@ -126,7 +125,7 @@ public class BlockDataExtractor {
                     String directionName = direction.name().toLowerCase();
                     if (state.isFaceSturdy(serverOverworld, BlockPos.ZERO, direction, SupportType.FULL))
                         faceSturdySet.add(directionName);
-                    VoxelShape faceShape = Shapes.getFaceShape(occlusionShape, direction);
+                    VoxelShape faceShape =state.getFaceOcclusionShape(direction);
                     if (faceShape.isEmpty())
                         continue;
                     List<double[]> aabbArray = faceShape.toAabbs().stream().map(aabb -> switch (direction) {

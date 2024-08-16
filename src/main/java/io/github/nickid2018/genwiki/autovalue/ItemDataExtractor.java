@@ -14,7 +14,6 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 
 import java.util.*;
 
@@ -54,7 +53,7 @@ public class ItemDataExtractor {
             MAX_STACK_SIZE.put(itemID, itemStack.getMaxStackSize());
             MAX_DAMAGE.put(itemID, itemStack.getMaxDamage());
             RARITY.put(itemID, itemStack.getRarity().name());
-            BURN_DURATION.put(itemID, AbstractFurnaceBlockEntity.getFuel().getOrDefault(item, 0));
+            BURN_DURATION.put(itemID, serverObj.overworld().fuelValues().values.getOrDefault(item, 0));
 
             FoodProperties foodProperties = itemStack.getComponents().get(DataComponents.FOOD);
             if (foodProperties != null) {
