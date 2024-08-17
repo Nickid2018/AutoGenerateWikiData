@@ -239,29 +239,10 @@ public class RemapSettings {
                 )
             );
             remapProgram.addPostTransform(
-                "net.minecraft.client.renderer.LightTexture",
-                new MethodTransform(
-                    "clampColor",
-                    "(Lorg/joml/Vector3f;)V",
-                    methodNode -> {
-                        methodNode.instructions.clear();
-                        methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                        methodNode.instructions.add(new MethodInsnNode(
-                            Opcodes.INVOKESTATIC,
-                            "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
-                            "clampColorInjection",
-                            "(Lorg/joml/Vector3f;)V",
-                            false
-                        ));
-                        methodNode.instructions.add(new InsnNode(Opcodes.RETURN));
-                    }
-                )
-            );
-            remapProgram.addPostTransform(
                 "net.minecraft.client.renderer.GameRenderer",
                 new RenameMethodTransform(
                     "getProjectionMatrix",
-                    "(D)Lorg/joml/Matrix4f;",
+                    "(F)Lorg/joml/Matrix4f;",
                     "getProjectionMatrixOld"
                 )
             );
@@ -271,17 +252,17 @@ public class RemapSettings {
                     MethodNode methodNode = new MethodNode(
                         Opcodes.ACC_PUBLIC,
                         "getProjectionMatrix",
-                        "(D)Lorg/joml/Matrix4f;",
+                        "(F)Lorg/joml/Matrix4f;",
                         null,
                         null
                     );
                     methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                    methodNode.instructions.add(new VarInsnNode(Opcodes.DLOAD, 1));
+                    methodNode.instructions.add(new VarInsnNode(Opcodes.FLOAD, 1));
                     methodNode.instructions.add(new MethodInsnNode(
                         Opcodes.INVOKEVIRTUAL,
                         "net/minecraft/client/renderer/GameRenderer",
                         "getProjectionMatrixOld",
-                        "(D)Lorg/joml/Matrix4f;",
+                        "(F)Lorg/joml/Matrix4f;",
                         false
                     ));
                     methodNode.instructions.add(new MethodInsnNode(
@@ -336,47 +317,24 @@ public class RemapSettings {
                 "net.minecraft.client.renderer.FogRenderer",
                 new MethodTransform(
                     "setupFog",
-                    "(Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/FogRenderer$FogMode;FZF)V",
+                    null,
                     methodNode -> {
                         methodNode.instructions.clear();
-                        methodNode.instructions.add(new MethodInsnNode(
-                            Opcodes.INVOKESTATIC,
-                            "net/minecraft/client/renderer/FogRenderer",
-                            "setupNoFog",
-                            "()V",
-                            false
+                        methodNode.instructions.add(new FieldInsnNode(
+                            Opcodes.GETSTATIC,
+                            "net/minecraft/client/renderer/FogParameters",
+                            "NO_FOG",
+                            "Lnet/minecraft/client/renderer/FogParameters;"
                         ));
-                        methodNode.instructions.add(new InsnNode(Opcodes.RETURN));
-                    }
-                )
-            );
-            remapProgram.addPostTransform(
-                "net.minecraft.client.renderer.FogRenderer",
-                new MethodTransform(
-                    "levelFogColor",
-                    "()V",
-                    methodNode -> {
-                        methodNode.instructions.clear();
-                        methodNode.instructions.add(new InsnNode(Opcodes.FCONST_0));
-                        methodNode.instructions.add(new InsnNode(Opcodes.FCONST_0));
-                        methodNode.instructions.add(new InsnNode(Opcodes.FCONST_0));
-                        methodNode.instructions.add(new InsnNode(Opcodes.FCONST_0));
-                        methodNode.instructions.add(new MethodInsnNode(
-                            Opcodes.INVOKESTATIC,
-                            "com/mojang/blaze3d/systems/RenderSystem",
-                            "clearColor",
-                            "(FFFF)V",
-                            false
-                        ));
-                        methodNode.instructions.add(new InsnNode(Opcodes.RETURN));
+                        methodNode.instructions.add(new InsnNode(Opcodes.ARETURN));
                     }
                 )
             );
             remapProgram.addPostTransform(
                 "net.minecraft.client.renderer.LevelRenderer",
                 new MethodTransform(
-                    "renderSky",
-                    "(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V",
+                    "addSkyPass",
+                    null,
                     methodNode -> {
                         methodNode.instructions.clear();
                         methodNode.instructions.add(new InsnNode(Opcodes.RETURN));
@@ -415,6 +373,10 @@ public class RemapSettings {
             remapProgram.addInjectEntries(new SingleFile(
                 "transparency.fsh",
                 "assets/minecraft/shaders/program/transparency.fsh"
+            ));
+            remapProgram.addInjectEntries(new SingleFile(
+                "lightmap.fsh",
+                "assets/minecraft/shaders/core/lightmap.fsh"
             ));
         }
     }

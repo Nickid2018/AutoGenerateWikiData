@@ -13,6 +13,7 @@ public record MethodTransform(
 
     @Override
     public void transform(ClassNode code) {
+        int count = 0;
         for (MethodNode methodNode : code.methods) {
             if (methodNode.name.equals(methodName) && (methodDesc == null || methodNode.desc.equals(methodDesc))) {
                 transform.accept(methodNode);
@@ -22,7 +23,15 @@ public record MethodTransform(
                     methodDesc == null ? "" : methodDesc,
                     code.name
                 );
+                count++;
             }
         }
+        if (count == 0)
+            log.warn(
+                "Method {}{} not found in class {}",
+                methodName,
+                methodDesc == null ? "" : methodDesc,
+                code.name
+            );
     }
 }
