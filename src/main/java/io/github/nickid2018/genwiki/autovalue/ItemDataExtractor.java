@@ -33,7 +33,7 @@ public class ItemDataExtractor {
         Map<Item, String> itemKeyMap = new HashMap<>();
         for (ResourceKey<Item> itemKey : BuiltInRegistries.ITEM.registryKeySet()) {
             String itemID = itemKey.location().getPath();
-            Item item = BuiltInRegistries.ITEM.get(itemKey);
+            Item item = BuiltInRegistries.ITEM.getValue(itemKey);
             itemKeyMap.put(item, itemID);
 
             ItemStack itemStack = item.getDefaultInstance();
@@ -68,7 +68,7 @@ public class ItemDataExtractor {
             String tabName = key.location().getPath().toUpperCase();
             if (tabName.equals("SEARCH"))
                 continue;
-            CreativeModeTab tab = BuiltInRegistries.CREATIVE_MODE_TAB.get(key);
+            CreativeModeTab tab = BuiltInRegistries.CREATIVE_MODE_TAB.getValue(key);
             Collection<ItemStack> displayItems = tab.getDisplayItems();
             for (ItemStack itemStack : displayItems) {
                 CREATIVE_MODE_TABS.putNew(itemKeyMap.get(itemStack.getItem()), tabName);

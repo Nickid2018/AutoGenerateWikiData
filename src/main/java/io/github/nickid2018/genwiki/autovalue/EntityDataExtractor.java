@@ -74,7 +74,7 @@ public class EntityDataExtractor {
         for (ResourceKey<EntityType<?>> key : BuiltInRegistries.ENTITY_TYPE.registryKeySet()) {
             String entityID = key.location().getPath();
 
-            EntityType<?> entity = BuiltInRegistries.ENTITY_TYPE.get(key);
+            EntityType<?> entity = BuiltInRegistries.ENTITY_TYPE.getValue(key);
             MOB_CATEGORY.put(entityID, entity.getCategory().name());
 
             Entity entityInstance = entity.spawn(serverObj.overworld(), BlockPos.ZERO, EntitySpawnReason.COMMAND);
@@ -94,7 +94,7 @@ public class EntityDataExtractor {
 
         for (ResourceKey<MobEffect> effectKey : BuiltInRegistries.MOB_EFFECT.registryKeySet()) {
             String effectID = effectKey.location().getPath();
-            MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(effectKey);
+            MobEffect effect = BuiltInRegistries.MOB_EFFECT.getValue(effectKey);
 
             EFFECT_CATEGORY.put(effectID, effect.getCategory().name());
             EFFECT_COLOR.put(effectID, effect.getColor());
@@ -113,11 +113,11 @@ public class EntityDataExtractor {
 
         for (ResourceKey<Potion> potionEffectKey : BuiltInRegistries.POTION.registryKeySet()) {
             String potionEffectID = potionEffectKey.location().getPath();
-            Potion potionEffect = BuiltInRegistries.POTION.get(potionEffectKey);
+            Potion potionEffect = BuiltInRegistries.POTION.getValue(potionEffectKey);
 
             POTION_EFFECT.put(
                 potionEffectID,
-                Potion.getName(BuiltInRegistries.POTION.getHolder(potionEffectKey), "")
+                Potion.getName(BuiltInRegistries.POTION.get(potionEffectKey), "")
             );
 
             for (MobEffectInstance effectInstance : potionEffect.getEffects()) {
@@ -143,7 +143,7 @@ public class EntityDataExtractor {
 
         for (ResourceKey<Attribute> attributeKey : BuiltInRegistries.ATTRIBUTE.registryKeySet()) {
             String attributeID = attributeKey.location().getPath();
-            Attribute attribute = BuiltInRegistries.ATTRIBUTE.get(attributeKey);
+            Attribute attribute = BuiltInRegistries.ATTRIBUTE.getValue(attributeKey);
             ATTRIBUTE_SENTIMENT.put(attributeID, attribute.sentiment.name());
             ATTRIBUTE_DEFAULT_VALUE.put(attributeID, attribute.defaultValue);
             if (attribute instanceof RangedAttribute rangedAttribute) {

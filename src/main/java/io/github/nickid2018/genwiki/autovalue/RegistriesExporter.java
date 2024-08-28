@@ -10,7 +10,6 @@ import net.minecraft.core.IdMapper;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -36,7 +35,7 @@ public class RegistriesExporter {
                 int maxID = 0;
                 Object2IntMap<String> idMap = new Object2IntArrayMap<>();
                 for (ResourceKey key : keys) {
-                    int id = registry.getId(registry.get(key));
+                    int id = registry.getId(registry.getValue(key));
                     idMap.put(key.location().getPath(), id);
                     maxID = Math.max(maxID, id);
                 }

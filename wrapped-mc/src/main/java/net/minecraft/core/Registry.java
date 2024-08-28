@@ -11,13 +11,13 @@ public interface Registry<T> {
 
     int getId(@Nullable T var1);
 
-    T get(ResourceKey<T> var1);
+    T getValue(ResourceKey<T> var1);
 
     ResourceLocation getKey(T var1);
 
     Set<ResourceKey<T>> registryKeySet();
 
-    Optional<Holder<T>> getHolder(ResourceKey<T> var1);
+    Optional<Holder<T>> get(ResourceKey<T> var1);
 
     Holder<T> wrapAsHolder(T var1);
 }

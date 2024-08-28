@@ -35,10 +35,10 @@ public class BiomeDataExtractor {
         DefaultedRegistry<EntityType<?>> entityRegistry = BuiltInRegistries.ENTITY_TYPE;
 
         for (ServerLevel level : levels) {
-            Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
+            Registry<Biome> biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
             for (ResourceKey<Biome> biomeKey : biomeRegistry.registryKeySet()) {
                 String biomeID = biomeKey.location().getPath();
-                Biome biome = biomeRegistry.get(biomeKey);
+                Biome biome = biomeRegistry.getValue(biomeKey);
                 SKY_COLOR.put(biomeID, biome.getSkyColor());
                 HAS_PRECIPITATION.put(biomeID, biome.hasPrecipitation());
                 FOG_COLOR.put(biomeID, biome.getFogColor());

@@ -20,13 +20,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.material.MapColor;
-import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.lang.reflect.AccessFlag;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -91,7 +89,7 @@ public class BlockDataExtractor {
 
         for (ResourceKey<Block> key : blockKeySet) {
             String blockID = key.location().getPath();
-            Block block = blockRegistry.get(key);
+            Block block = blockRegistry.getValue(key);
             ImmutableList<BlockState> states = block.getStateDefinition().getPossibleStates();
             BlockBehaviour.Properties properties = block.properties();
 

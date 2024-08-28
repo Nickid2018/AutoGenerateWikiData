@@ -30,11 +30,11 @@ public class EnchantmentDataExtractor {
 
     @SneakyThrows
     public static void extractEnchantmentData(MinecraftServer server) {
-        Registry<Enchantment> enchantmentRegistry = server.registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+        Registry<Enchantment> enchantmentRegistry = server.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
         Set<ResourceKey<Enchantment>> enchantmentKeySet = enchantmentRegistry.registryKeySet();
         Map<String, Enchantment> enchantmentMap = enchantmentKeySet.stream().collect(Collectors.toMap(
             enchantmentResourceKey -> enchantmentResourceKey.location().getPath(),
-            enchantmentRegistry::get
+            enchantmentRegistry::getValue
         ));
 
         for (Map.Entry<String, Enchantment> entry : enchantmentMap.entrySet()) {
@@ -61,7 +61,7 @@ public class EnchantmentDataExtractor {
 
         for (ResourceKey<Item> itemKey : BuiltInRegistries.ITEM.registryKeySet()) {
             String itemID = itemKey.location().getPath();
-            ItemStack itemStack = BuiltInRegistries.ITEM.get(itemKey).getDefaultInstance();
+            ItemStack itemStack = BuiltInRegistries.ITEM.getValue(itemKey).getDefaultInstance();
             for (Map.Entry<String, Enchantment> enchantmentEntry : enchantmentMap.entrySet()) {
                 Enchantment enchantment = enchantmentEntry.getValue();
                 String name = enchantmentEntry.getKey();
