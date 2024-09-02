@@ -277,6 +277,48 @@ public class RemapSettings {
                 })
             );
             remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.entity.DisplayRenderer$ItemDisplayRenderer",
+                new RenameMethodTransform(
+                    "renderInner",
+                    "(Lnet/minecraft/client/renderer/entity/state/ItemDisplayEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IF)V",
+                    "renderInnerOld"
+                )
+            );
+            remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.entity.DisplayRenderer$ItemDisplayRenderer",
+                new AddMethodTransform(() -> {
+                    MethodNode methodNode = new MethodNode(
+                        Opcodes.ACC_PUBLIC,
+                        "renderInner",
+                        "(Lnet/minecraft/client/renderer/entity/state/ItemDisplayEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IF)V",
+                        null,
+                        null
+                    );
+                    methodNode.instructions.add(new MethodInsnNode(
+                        Opcodes.INVOKESTATIC,
+                        "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
+                        "renderItemDisplayInjection",
+                        "()V",
+                        false
+                    ));
+                    methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                    methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 2));
+                    methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 3));
+                    methodNode.instructions.add(new VarInsnNode(Opcodes.ILOAD, 4));
+                    methodNode.instructions.add(new VarInsnNode(Opcodes.FLOAD, 5));
+                    methodNode.instructions.add(new MethodInsnNode(
+                        Opcodes.INVOKEVIRTUAL,
+                        "net/minecraft/client/renderer/entity/DisplayRenderer$ItemDisplayRenderer",
+                        "renderInnerOld",
+                        "(Lnet/minecraft/client/renderer/entity/state/ItemDisplayEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IF)V",
+                        false
+                    ));
+                    methodNode.instructions.add(new InsnNode(Opcodes.RETURN));
+                    return methodNode;
+                })
+            );
+            remapProgram.addPostTransform(
                 "net.minecraft.client.multiplayer.ClientPacketListener",
                 new MethodTransform(
                     "sendChat",
@@ -331,6 +373,27 @@ public class RemapSettings {
                 )
             );
             remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.FogRenderer",
+                new MethodTransform(
+                    "computeFogColor",
+                    null,
+                    methodNode -> {
+                        methodNode.instructions.clear();
+                        methodNode.instructions.add(new TypeInsnNode(Opcodes.NEW, "org/joml/Vector4f"));
+                        methodNode.instructions.add(new InsnNode(Opcodes.DUP));
+                        methodNode.instructions.add(new InsnNode(Opcodes.FCONST_0));
+                        methodNode.instructions.add(new MethodInsnNode(
+                            Opcodes.INVOKESPECIAL,
+                            "org/joml/Vector4f",
+                            "<init>",
+                            "(F)V",
+                            false
+                        ));
+                        methodNode.instructions.add(new InsnNode(Opcodes.ARETURN));
+                    }
+                )
+            );
+            remapProgram.addPostTransform(
                 "net.minecraft.client.renderer.LevelRenderer",
                 new MethodTransform(
                     "addSkyPass",
@@ -372,7 +435,7 @@ public class RemapSettings {
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.iso"));
             remapProgram.addInjectEntries(new SingleFile(
                 "transparency.fsh",
-                "assets/minecraft/shaders/program/transparency.fsh"
+                "assets/minecraft/shaders/post/transparency.fsh"
             ));
             remapProgram.addInjectEntries(new SingleFile(
                 "lightmap.fsh",

@@ -1,6 +1,7 @@
 package io.github.nickid2018.genwiki.iso;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,8 @@ public class ISOInjectionEntryPoints {
     private static boolean ortho = false;
     private static int invokeCount = 0;
     private static boolean noSave = false;
+    public static boolean flatLight = false;
+    public static boolean blockLight = false;
     private static Matrix4f orthoMatrix = new Matrix4f().ortho(-2, 2, -2, 2, -0.1f, 1000);
 
     public static Matrix4f getProjectionMatrixInjection(Matrix4f source) {
@@ -44,6 +47,13 @@ public class ISOInjectionEntryPoints {
         if (ortho)
             return orthoMatrix;
         return source;
+    }
+
+    public static void renderItemDisplayInjection() {
+        if (flatLight)
+            Lighting.setupForFlatItems();
+        if (blockLight)
+            Lighting.setupFor3DItems();
     }
 
     public static int handleAutoSaveInterval(int source) {
@@ -76,6 +86,18 @@ public class ISOInjectionEntryPoints {
                 case "ortho" -> ortho = true;
                 case "nosave" -> noSave = true;
                 case "save" -> noSave = false;
+                case "flatlight" -> {
+                    flatLight = true;
+                    blockLight = false;
+                }
+                case "blocklight" -> {
+                    flatLight = false;
+                    blockLight = true;
+                }
+                case "levellight" -> {
+                    flatLight = false;
+                    blockLight = false;
+                }
                 default -> {
                     String[] commands = chat.split(" ", 2);
                     String commandHead = commands[0];
