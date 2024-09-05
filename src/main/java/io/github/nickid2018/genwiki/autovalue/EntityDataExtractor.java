@@ -117,7 +117,7 @@ public class EntityDataExtractor {
 
             POTION_EFFECT.put(
                 potionEffectID,
-                Potion.getName(BuiltInRegistries.POTION.get(potionEffectKey), "")
+                BuiltInRegistries.POTION.getValue(potionEffectKey).name()
             );
 
             for (MobEffectInstance effectInstance : potionEffect.getEffects()) {

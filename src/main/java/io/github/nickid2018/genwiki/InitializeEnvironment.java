@@ -167,6 +167,9 @@ public class InitializeEnvironment {
             }
         }
         log.info("Downloading assets...");
+        log.info("Following files will be downloaded:");
+        for (String name : collectedFiles.keySet())
+            log.info("- {}", name);
         WebUtils.downloadInBatch(collectedFiles);
     }
 

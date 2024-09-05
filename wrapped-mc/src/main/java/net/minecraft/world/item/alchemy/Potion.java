@@ -9,8 +9,8 @@ import java.util.Optional;
 
 public class Potion {
 
-    public static String getName(Optional<Holder<Potion>> optional, String string) {
-        return SneakyUtil.sneakyNotNull();
+    public String name() {
+        throw new RuntimeException();
     }
 
     public List<MobEffectInstance> getEffects() {
