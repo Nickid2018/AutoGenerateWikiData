@@ -80,6 +80,7 @@ public class EnchantmentDataExtractor {
                 ENCHANTMENT_PRIMARY_ITEMS.put(name, new ArrayList<>());
             ENCHANTMENT_SUPPORT_ITEMS.sort(name);
             ENCHANTMENT_PRIMARY_ITEMS.sort(name);
+            ENCHANTMENT_INCOMPATIBLE.sort(name);
         }
 
         WikiData.write(ENCHANTMENT_WEIGHT, "enchantment_weight.txt");
