@@ -79,7 +79,8 @@ public class ItemDataExtractor {
             String itemID = itemKey.location().getPath();
             if (!CREATIVE_MODE_TABS.hasKey(itemID))
                 CREATIVE_MODE_TABS.put(itemID, List.of());
-            CREATIVE_MODE_TABS.sort(itemID);
+            else
+                CREATIVE_MODE_TABS.sort(itemID);
         }
 
         WikiData.write(MAX_STACK_SIZE, "item_max_stack_size.txt");
