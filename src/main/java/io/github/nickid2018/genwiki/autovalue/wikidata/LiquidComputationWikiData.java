@@ -4,11 +4,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class LiquidComputationWikiData extends JsonWikiData {
 
-    private final JsonObject data = new JsonObject();
+    private final Map<String, JsonObject> data = new TreeMap<>();
 
     public void put(String key, boolean blocksMotion, Set<String> sturdyFaces) {
         JsonObject obj = new JsonObject();
@@ -16,11 +18,13 @@ public class LiquidComputationWikiData extends JsonWikiData {
         JsonArray array = new JsonArray();
         sturdyFaces.forEach(array::add);
         obj.add("face_sturdy", array);
-        data.add(key, obj);
+        data.put(key, obj);
     }
 
     @Override
     public JsonElement asJsonData() {
-        return data;
+        JsonObject obj = new JsonObject();
+        data.forEach(obj::add);
+        return obj;
     }
 }

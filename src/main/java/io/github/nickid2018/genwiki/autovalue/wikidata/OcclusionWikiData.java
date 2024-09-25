@@ -7,10 +7,11 @@ import net.minecraft.world.phys.AABB;
 
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class OcclusionWikiData extends JsonWikiData {
 
-    private final JsonObject data = new JsonObject();
+    private final Map<String, JsonObject> data = new TreeMap<>();
 
     public void put(String key, boolean canOcclude, Map<String, List<double[]>> faces) {
         JsonObject obj = new JsonObject();
@@ -25,11 +26,13 @@ public class OcclusionWikiData extends JsonWikiData {
             }
             obj.add(entry.getKey(), array);
         }
-        data.add(key, obj);
+        data.put(key, obj);
     }
 
     @Override
     public JsonElement asJsonData() {
-        return data;
+        JsonObject obj = new JsonObject();
+        data.forEach(obj::add);
+        return obj;
     }
 }
