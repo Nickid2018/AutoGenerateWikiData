@@ -14,7 +14,7 @@ public class GameRuleDataExtractor {
 
     public static final StringWikiData GAME_RULE_CATEGORY = new StringWikiData();
     public static final StringWikiData GAME_RULE_DEFAULT_VALUE = new StringWikiData();
-    public static final DoubleNumberWikiData GAME_RULE_RANGE = new DoubleNumberWikiData();
+    public static final StringWikiData GAME_RULE_TYPE = new StringWikiData();
 
     @SneakyThrows
     public static void extractGameRuleData(MinecraftServer serverObj) {
@@ -25,6 +25,7 @@ public class GameRuleDataExtractor {
                 String name = key.getId();
                 GameRules.Category category = key.getCategory();
                 GAME_RULE_CATEGORY.put(name, category.name());
+                GAME_RULE_TYPE.put(name, "bool");
                 GameRules.BooleanValue value = type.createRule();
                 GAME_RULE_DEFAULT_VALUE.put(name, String.valueOf(value.get()));
             }
@@ -34,15 +35,13 @@ public class GameRuleDataExtractor {
                 String name = key.getId();
                 GameRules.Category category = key.getCategory();
                 GAME_RULE_CATEGORY.put(name, category.name());
+                GAME_RULE_TYPE.put(name, "int");
                 GameRules.IntegerValue value = type.createRule();
                 GAME_RULE_DEFAULT_VALUE.put(name, String.valueOf(value.get()));
-                RequiredArgumentBuilder<CommandSourceStack, ?> arg = type.createArgument("test");
-                IntegerArgumentType argType = (IntegerArgumentType) arg.getType();
-                GAME_RULE_RANGE.put(name, argType.getMinimum(), argType.getMaximum());
             }
         });
+        WikiData.write(GAME_RULE_TYPE, "game_rule_type.txt");
         WikiData.write(GAME_RULE_CATEGORY, "game_rule_category.txt");
         WikiData.write(GAME_RULE_DEFAULT_VALUE, "game_rule_default_value.txt");
-        WikiData.write(GAME_RULE_RANGE, "game_rule_range.txt");
     }
 }

@@ -1,8 +1,5 @@
 package net.minecraft.world.level;
 
-import net.minecraft.commands.CommandSourceStack;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-
 public class GameRules {
 
     public void visitGameRuleTypes(GameRuleTypeVisitor gameRuleTypeVisitor) {
@@ -38,10 +35,6 @@ public class GameRules {
     public static class Type<T extends Value<T>> {
 
         public T createRule() {
-            throw new RuntimeException();
-        }
-
-        public RequiredArgumentBuilder<CommandSourceStack, ?> createArgument(String string) {
             throw new RuntimeException();
         }
     }
