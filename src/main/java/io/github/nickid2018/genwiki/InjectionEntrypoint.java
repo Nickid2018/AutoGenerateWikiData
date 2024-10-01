@@ -8,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.level.GameRules;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -46,12 +47,13 @@ public class InjectionEntrypoint {
             FileUtils.deleteDirectory(OUTPUT_FOLDER);
         OUTPUT_FOLDER.mkdirs();
 
+        RegistriesExporter.exportRegistries();
         BlockDataExtractor.extractBlockData(server);
         ItemDataExtractor.extractItemData(server);
         EntityDataExtractor.extractEntityData(server);
         BiomeDataExtractor.extractBiomeData(server);
         EnchantmentDataExtractor.extractEnchantmentData(server);
-        RegistriesExporter.exportRegistries();
+        GameRuleDataExtractor.extractGameRuleData(server);
 
         throw new RuntimeException("Program exited, wiki data has been written.");
     }
