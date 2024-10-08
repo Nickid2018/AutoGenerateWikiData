@@ -1,8 +1,9 @@
 package net.minecraft.world.item;
 
+import com.mojang.serialization.Codec;
+import io.github.nickid2018.util.SneakyUtil;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponentMap;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.level.ItemLike;
@@ -35,10 +36,6 @@ public class ItemStack {
     }
 
     public DataComponentMap getComponents() {
-        throw new RuntimeException();
-    }
-
-    public boolean is(TagKey<Item> tagKey) {
         throw new RuntimeException();
     }
 }

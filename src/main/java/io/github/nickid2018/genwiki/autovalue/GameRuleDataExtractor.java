@@ -1,12 +1,8 @@
 package io.github.nickid2018.genwiki.autovalue;
 
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import io.github.nickid2018.genwiki.autovalue.wikidata.DoubleNumberWikiData;
 import io.github.nickid2018.genwiki.autovalue.wikidata.StringWikiData;
 import io.github.nickid2018.genwiki.autovalue.wikidata.WikiData;
 import lombok.SneakyThrows;
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.GameRules;
 

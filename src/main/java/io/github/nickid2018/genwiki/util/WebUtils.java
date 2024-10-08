@@ -4,6 +4,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import lombok.extern.slf4j.Slf4j;
+import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarBuilder;
+import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.io.IOUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -12,9 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,7 +34,10 @@ public class WebUtils {
             return client.execute(get, response -> {
                 if (response.getCode() != 200)
                     throw new IOException("Failed to get json from " + url + ": " + response.getCode());
-                return JsonParser.parseReader(new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8));
+                return JsonParser.parseReader(new InputStreamReader(
+                    response.getEntity().getContent(),
+                    StandardCharsets.UTF_8
+                ));
             });
         }
     }
@@ -41,7 +45,16 @@ public class WebUtils {
     public static void downloadFile(String url, File file) throws IOException {
         if (!file.getParentFile().isDirectory())
             file.getParentFile().mkdirs();
-        try (InputStream input = new URI(url).toURL().openStream(); FileOutputStream output = new FileOutputStream(file)) {
+        try (
+            InputStream input = ProgressBar.wrap(
+                new URI(url).toURL().openConnection().getInputStream(),
+                new ProgressBarBuilder()
+                    .setTaskName(url.substring(url.lastIndexOf('/') + 1))
+                    .setStyle(ProgressBarStyle.ASCII)
+                    .showSpeed()
+                    .continuousUpdate()
+            ); FileOutputStream output = new FileOutputStream(file)
+        ) {
             IOUtils.copy(input, output);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);

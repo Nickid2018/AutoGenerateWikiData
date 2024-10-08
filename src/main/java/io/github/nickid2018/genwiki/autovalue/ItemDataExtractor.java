@@ -1,10 +1,14 @@
 package io.github.nickid2018.genwiki.autovalue;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import io.github.nickid2018.genwiki.autovalue.wikidata.*;
 import io.github.nickid2018.genwiki.InjectionEntrypoint;
 import io.github.nickid2018.genwiki.util.LanguageUtils;
 import lombok.SneakyThrows;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.component.TypedDataComponent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.resources.ResourceKey;
@@ -27,8 +31,10 @@ public class ItemDataExtractor {
         .setFallback(0, 0)
         .setFallbackNil(true);
     private static final AttributeModifiersWikiData ATTRIBUTE_MODIFIERS = new AttributeModifiersWikiData();
+    private static final CodecWikiData DEFAULT_COMPONENTS = new CodecWikiData();
 
     @SneakyThrows
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static void extractItemData(MinecraftServer serverObj) {
         Map<Item, String> itemKeyMap = new HashMap<>();
         for (ResourceKey<Item> itemKey : BuiltInRegistries.ITEM.registryKeySet()) {
@@ -60,6 +66,20 @@ public class ItemDataExtractor {
                 FOOD_PROPERTIES.put(itemID, foodProperties.nutrition(), foodProperties.saturation());
             } else
                 FOOD_PROPERTIES.put(itemID, 0, 0);
+
+            Map<String, JsonElement> data = new TreeMap<>();
+            for (TypedDataComponent component : itemStack.getComponents()) {
+                String type = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(component.type()).getPath();
+                if (component.type().codec() == null) continue;
+                JsonElement element = (JsonElement) component.type().codec().encodeStart(
+                    serverObj.registryAccess().createSerializationContext(JsonOps.INSTANCE),
+                    component.value()
+                ).getOrThrow();
+                data.put(type, element);
+            }
+            JsonObject all = new JsonObject();
+            data.forEach(all::add);
+            DEFAULT_COMPONENTS.add(itemID, all);
         }
 
         CreativeModeTabs.tryRebuildTabContents(InjectionEntrypoint.featureFlagSet, true, serverObj.registryAccess());
@@ -90,5 +110,6 @@ public class ItemDataExtractor {
         WikiData.write(MAX_DAMAGE, "item_max_damage.txt");
         WikiData.write(FOOD_PROPERTIES, "item_food_properties.txt");
         WikiData.write(ATTRIBUTE_MODIFIERS, "item_attribute_modifiers.txt");
+        WikiData.write(DEFAULT_COMPONENTS, "item_default_components.json");
     }
 }
