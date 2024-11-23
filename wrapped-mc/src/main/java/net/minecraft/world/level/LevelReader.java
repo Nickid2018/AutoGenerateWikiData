@@ -2,7 +2,7 @@ package net.minecraft.world.level;
 
 public interface LevelReader extends BlockGetter {
 
-    default int getMinBuildHeight() {
+    default int getMinY() {
         throw new RuntimeException();
     }
 

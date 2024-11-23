@@ -179,7 +179,7 @@ public class ChunkStatisticsAnalyzer {
 
         int count = 0;
         Int2ObjectMap<List<BlockPos>> blockPosMap = new Int2ObjectArrayMap<>();
-        int minBuildHeight = level.getMinBuildHeight();
+        int minBuildHeight = level.getMinY();
         int maxBuildHeight = level.getHeight() + minBuildHeight;
         for (int y = minBuildHeight; y < maxBuildHeight; y++) {
             List<BlockPos> blockPosList = new ArrayList<>();
