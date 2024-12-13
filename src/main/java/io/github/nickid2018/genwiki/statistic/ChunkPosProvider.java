@@ -28,17 +28,9 @@ public abstract class ChunkPosProvider {
         count++;
     }
 
-    public boolean nowUnload() {
-        return count % blockSize == 0;
-    }
-
     protected abstract void next0(ChunkPosConsumer consumer);
 
     public interface ChunkPosConsumer {
         void accept(int x, int z) throws Throwable;
-    }
-
-    public interface ChunkPosProviderProvider {
-        ChunkPosProvider accept(int total, int blockSize);
     }
 }

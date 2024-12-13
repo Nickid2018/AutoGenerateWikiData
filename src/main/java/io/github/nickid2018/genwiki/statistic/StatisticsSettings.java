@@ -15,6 +15,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static io.github.nickid2018.genwiki.util.ConfigUtils.*;
+
 @Slf4j
 public class StatisticsSettings {
 
@@ -27,7 +29,10 @@ public class StatisticsSettings {
     }
 
     private StatisticsSettings() {
-        boolean useLocalFileSettings = Boolean.parseBoolean(System.getProperty("genwiki.statistics.fileSettings", "false"));
+        boolean useLocalFileSettings = Boolean.parseBoolean(System.getProperty(
+            "genwiki.statistics.fileSettings",
+            "false"
+        ));
         if (useLocalFileSettings)
             loadWithFile(propGetOrDefault("genwiki.statistics.settingsFile", "statistics.properties"));
         else
@@ -67,7 +72,14 @@ public class StatisticsSettings {
                         providerMap.put(dimension, new ContinuousChunkPosProvider(chunkTotal, providerBlockSize));
                     else if (provider.equals("random")) {
                         if (providerData.has("seed"))
-                            providerMap.put(dimension, new RandomChunkPosProvider(chunkTotal, providerBlockSize, providerData.get("seed").getAsLong()));
+                            providerMap.put(
+                                dimension,
+                                new RandomChunkPosProvider(
+                                    chunkTotal,
+                                    providerBlockSize,
+                                    providerData.get("seed").getAsLong()
+                                )
+                            );
                         else
                             providerMap.put(dimension, new RandomChunkPosProvider(chunkTotal, providerBlockSize));
                     } else
@@ -75,7 +87,12 @@ public class StatisticsSettings {
                 }
             }
             if (object.has("dimensions")) {
-                dimensions = object.getAsJsonArray("dimensions").asList().stream().map(JsonElement::getAsString).collect(Collectors.toSet());
+                dimensions = object
+                    .getAsJsonArray("dimensions")
+                    .asList()
+                    .stream()
+                    .map(JsonElement::getAsString)
+                    .collect(Collectors.toSet());
             }
         }
     }
@@ -110,28 +127,5 @@ public class StatisticsSettings {
         for (Map.Entry<String, ChunkPosProvider> entry : providerMap.entrySet())
             log.info("Override Chunk Position Provider for {}: {}", entry.getKey(), entry.getValue());
         log.info("-------------------------------");
-    }
-
-    private static String envGetOrDefault(String key, String def) {
-        String value = System.getenv(key);
-        return value == null ? def : value;
-    }
-
-    private static int envGetOrDefault(String key, int def) {
-        String value = System.getenv(key);
-        return value == null ? def : Integer.parseInt(value);
-    }
-
-    private static String propGetOrDefault(String key, String def) {
-        String value = System.getProperty(key);
-        return value == null ? def : value;
-    }
-
-    private static int jsonGetOrDefault(JsonObject object, String key, int def) {
-        return object.has(key) ? object.get(key).getAsInt() : def;
-    }
-
-    private static String jsonGetOrDefault(JsonObject object, String key, String def) {
-        return object.has(key) ? object.get(key).getAsString() : def;
     }
 }

@@ -44,7 +44,6 @@ public class ChunkStatisticsAnalyzer {
     private static final Map<Object, Thread> THREAD_MAP = new HashMap<>();
     private static final Map<Object, Queue<ChunkAccess>> CREATED_CHUNKS = new HashMap<>();
     private static final Map<Object, ChunkPosProvider> CHUNK_POS_PROVIDER = new HashMap<>();
-    private static final Set<Object> NEXT_FLIP_NO_SAVE = new HashSet<>();
 
     @SneakyThrows
     public static void analyze(MinecraftServer server) {
@@ -67,7 +66,6 @@ public class ChunkStatisticsAnalyzer {
                     continue;
                 }
                 LEVEL_NAME.put(level, dimensionID);
-                level.noSave = true;
 
                 BAR_MAP.put(
                     level,
@@ -118,20 +116,10 @@ public class ChunkStatisticsAnalyzer {
                 }
             }
 
-            if (NEXT_FLIP_NO_SAVE.contains(level)) {
-                level.noSave = true;
-                NEXT_FLIP_NO_SAVE.remove(level);
-            }
-
             for (int i = 0; i < SETTINGS.getBatchSize() && chunkPosProvider.hasNext() && futures.size() < SETTINGS.getBatchSize() * 40; i++) {
                 chunkPosProvider.next(
                     (x, z) -> futures.add(chunkSource.getChunkFuture(x, z, ChunkStatus.FEATURES, true))
                 );
-                if (chunkPosProvider.nowUnload()) {
-                    NEXT_FLIP_NO_SAVE.add(level);
-                    level.noSave = false;
-                    log.trace("Unloading chunks in dimension {}...", LEVEL_NAME.get(level));
-                }
             }
 
             if (bar.getCurrent() >= SETTINGS.getChunkTotal() && !chunkPosProvider.hasNext()) {

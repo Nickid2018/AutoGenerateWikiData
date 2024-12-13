@@ -23,6 +23,7 @@ public class InitializeEnvironment {
     public static final File SERVER_FOLDER = new File("servers");
     public static final File CLIENT_FOLDER = new File("clients");
     public static final File ASSETS_FOLDER = new File("assets");
+    public static final File OUTPUT_FOLDER = new File("output");
     public static final File INDEXES_FOLDER = new File(ASSETS_FOLDER, "indexes");
     public static final File OBJECTS_FOLDER = new File(ASSETS_FOLDER, "objects");
     public static final File LIBRARIES_FOLDER = new File("libraries");

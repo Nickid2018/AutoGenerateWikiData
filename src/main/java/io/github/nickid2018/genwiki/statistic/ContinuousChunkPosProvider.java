@@ -6,7 +6,7 @@ import lombok.ToString;
 import java.util.ArrayList;
 import java.util.List;
 
-@ToString(exclude = "blocksList", callSuper=true)
+@ToString(exclude = "blocksList", callSuper = true)
 public class ContinuousChunkPosProvider extends ChunkPosProvider {
 
     private final List<SquareBlock> blocksList = new ArrayList<>();
@@ -24,9 +24,9 @@ public class ContinuousChunkPosProvider extends ChunkPosProvider {
 
         for (int blockID = 0; blockID < blocks; blockID++)
             blocksList.add(new SquareBlock(
-                    startX + (blockID % blocksSqrt) * blockSizeSqrt,
-                    startZ + (blockID / blocksSqrt) * blockSizeSqrt,
-                    blockSizeSqrt
+                startX + (blockID % blocksSqrt) * blockSizeSqrt,
+                startZ + (blockID / blocksSqrt) * blockSizeSqrt,
+                blockSizeSqrt
             ));
     }
 
