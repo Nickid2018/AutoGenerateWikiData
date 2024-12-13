@@ -452,8 +452,12 @@ public class GenerateWikiData {
                         }
                     }
                 }));
-            data.forEach(o -> o.remove(dataName));
-            data.forEach(metadata::add);
+            data.forEach(o -> {
+                o.remove(dataName);
+                o.remove("minHeight");
+                o.remove("maxHeight");
+                metadata.add(o);
+            });
             StringWriter sw = new StringWriter();
             JsonWriter jw = new JsonWriter(sw);
             jw.setIndent("  ");
