@@ -432,7 +432,7 @@ public class GenerateWikiData {
                 return;
             }
             long minHeight = minHeightSet.stream().findFirst().orElse(0L);
-            long maxHeight = minHeightSet.stream().findFirst().orElse(0L);
+            long maxHeight = maxHeightSet.stream().findFirst().orElse(0L);
             Object2ObjectMap<String, LongList> counter = new Object2ObjectOpenHashMap<>();
             data.stream()
                 .map(o -> o.getAsJsonObject(dataName))
