@@ -22,6 +22,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -352,6 +353,7 @@ public class GenerateWikiData {
                 .continuousUpdate()
                 .setTaskName("Sub Task")
                 .setInitialMax(worlds)
+                .showSpeed(new DecimalFormat("#.##"))
                 .build()
         ) {
             while (true) {
