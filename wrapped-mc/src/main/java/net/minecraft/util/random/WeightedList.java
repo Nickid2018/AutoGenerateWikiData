@@ -2,9 +2,9 @@ package net.minecraft.util.random;
 
 import java.util.List;
 
-public class WeightedRandomList<E extends WeightedEntry> {
+public class WeightedList<E> {
 
-    public List<E> unwrap() {
+    public List<Weighted<E>> unwrap() {
         throw new RuntimeException();
     }
 }

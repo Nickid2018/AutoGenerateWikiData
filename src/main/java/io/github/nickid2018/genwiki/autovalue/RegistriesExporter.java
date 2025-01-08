@@ -2,6 +2,8 @@ package io.github.nickid2018.genwiki.autovalue;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.internal.Streams;
+import com.google.gson.stream.JsonWriter;
 import io.github.nickid2018.genwiki.InjectionEntrypoint;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -49,8 +51,9 @@ public class RegistriesExporter {
                 File file = new File(InjectionEntrypoint.OUTPUT_FOLDER, "registries/" + fieldName.toLowerCase(Locale.ROOT) + ".json");
                 if (!file.getParentFile().isDirectory())
                     file.getParentFile().mkdirs();
-                FileWriter writer = new FileWriter(file);
-                writer.write(array.toString());
+                JsonWriter writer = new JsonWriter(new FileWriter(file));
+                writer.setIndent("    ");
+                Streams.write(array, writer);
                 writer.close();
             }
         }
@@ -65,8 +68,9 @@ public class RegistriesExporter {
         File blockStateFile = new File(InjectionEntrypoint.OUTPUT_FOLDER, "registries/block_states.json");
         if (!blockStateFile.getParentFile().isDirectory())
             blockStateFile.getParentFile().mkdirs();
-        FileWriter writer = new FileWriter(blockStateFile);
-        writer.write(blockStateArray.toString());
+        JsonWriter writer = new JsonWriter(new FileWriter(blockStateFile));
+        writer.setIndent("    ");
+        Streams.write(blockStateArray, writer);
         writer.close();
     }
 }

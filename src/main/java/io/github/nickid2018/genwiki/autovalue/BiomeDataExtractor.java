@@ -9,7 +9,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.random.WeightedRandomList;
+import net.minecraft.util.random.Weighted;
+import net.minecraft.util.random.WeightedList;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.Biome;
@@ -54,18 +55,18 @@ public class BiomeDataExtractor {
                     String categoryName = category.name();
                     if (categoryName.equals("MISC"))
                         continue;
-                    WeightedRandomList<MobSpawnSettings.SpawnerData> spawnerList = mobSettings.getMobs(category);
-                    List<MobSpawnSettings.SpawnerData> spawnerDataList = spawnerList.unwrap();
+                    WeightedList<MobSpawnSettings.SpawnerData> spawnerList = mobSettings.getMobs(category);
+                    List<Weighted<MobSpawnSettings.SpawnerData>> spawnerDataList = spawnerList.unwrap();
                     if (spawnerDataList.isEmpty())
                         continue;
-                    for (MobSpawnSettings.SpawnerData spawnerData : spawnerDataList) {
+                    for (Weighted<MobSpawnSettings.SpawnerData> spawnerData : spawnerDataList) {
                         SPAWN_DATA.add(
                             biomeID,
                             categoryName,
-                            entityRegistry.getKey(spawnerData.type).getPath(),
-                            spawnerData.getWeight().asInt(),
-                            spawnerData.minCount,
-                            spawnerData.maxCount
+                            entityRegistry.getKey(spawnerData.value().type()).getPath(),
+                            spawnerData.weight(),
+                            spawnerData.value().minCount(),
+                            spawnerData.value().maxCount()
                         );
                     }
                 }
