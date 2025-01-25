@@ -36,8 +36,9 @@ public class ISOInjectionEntryPoints {
     private static boolean ortho = false;
     private static int invokeCount = 0;
     private static boolean noSave = false;
-    public static boolean flatLight = false;
-    public static boolean blockLight = false;
+    private static long nextCommandCanExecute = 0;
+    private static boolean flatLight = false;
+    private static boolean blockLight = false;
     private static Matrix4f orthoMatrix = new Matrix4f().ortho(-2, 2, -2, 2, -0.1f, 1000);
 
     public static Matrix4f getProjectionMatrixInjection(Matrix4f source) {
@@ -67,7 +68,7 @@ public class ISOInjectionEntryPoints {
         if (chat.toLowerCase().startsWith("run"))
             readFileAndRun(chat.substring(3).trim());
         else
-            doCommand(chat);
+            doCommand(chat, true);
     }
 
     private static final Queue<String> commandQueue = new ConcurrentLinkedDeque<>();
@@ -75,11 +76,13 @@ public class ISOInjectionEntryPoints {
     public static void listenerTick() {
         if (!commandQueue.isEmpty()) {
             String command = commandQueue.poll();
-            doCommand(command);
+            doCommand(command, false);
         }
     }
 
-    public static void doCommand(String chat) {
+    public static void doCommand(String chat, boolean ignoreTime) {
+        if (!ignoreTime && System.currentTimeMillis() < nextCommandCanExecute)
+            return;
         try {
             switch (chat.toLowerCase()) {
                 case "persp" -> ortho = false;
@@ -97,6 +100,9 @@ public class ISOInjectionEntryPoints {
                 case "levellight" -> {
                     flatLight = false;
                     blockLight = false;
+                }
+                case "skiptick" -> {
+                    // Do nothing
                 }
                 default -> {
                     String[] commands = chat.split(" ", 2);
@@ -145,6 +151,10 @@ public class ISOInjectionEntryPoints {
                             ).toPath());
                         }
                         case "call" -> Minecraft.getInstance().player.connection.sendCommand(commandArgs);
+                        case "sleep" -> {
+                            long sleepTime = Long.parseLong(commandArgs);
+                            nextCommandCanExecute = System.currentTimeMillis() + sleepTime;
+                        }
                     }
                 }
             }
@@ -164,23 +174,11 @@ public class ISOInjectionEntryPoints {
         try {
             File commandFile = new File(file);
             String command = IOUtils.toString(commandFile.toURI(), StandardCharsets.UTF_8);
-            List<String> collectedLines = Arrays
+            Arrays
                 .stream(command.split("\n"))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty() && !s.startsWith("#"))
-                .toList();
-            commandExecutor.execute(() -> {
-                for (String line : collectedLines) {
-                    if (line.toLowerCase().startsWith("sleep"))
-                        try {
-                            Thread.sleep(Long.parseLong(line.substring(5).trim()));
-                        } catch (Exception e) {
-                            log.error("Sleep Error", e);
-                        }
-                    else
-                        commandQueue.add(line);
-                }
-            });
+                .forEach(commandQueue::offer);
         } catch (Exception e) {
             log.error("Read File Error", e);
         }
