@@ -123,19 +123,19 @@ public class BlockDataExtractor {
                     String directionName = direction.name().toLowerCase();
                     if (state.isFaceSturdy(serverOverworld, BlockPos.ZERO, direction, SupportType.FULL))
                         faceSturdySet.add(directionName);
-                    VoxelShape faceShape =state.getFaceOcclusionShape(direction);
+                    VoxelShape faceShape = state.getFaceOcclusionShape(direction);
                     if (faceShape.isEmpty())
                         continue;
                     List<double[]> aabbArray = faceShape.toAabbs().stream().map(aabb -> switch (direction) {
                         case DOWN:
                         case UP:
-                            yield new double[]{aabb.minX , aabb.minZ , aabb.maxX ,aabb.maxZ};
+                            yield new double[]{aabb.minX, aabb.minZ, aabb.maxX, aabb.maxZ};
                         case NORTH:
                         case SOUTH:
-                            yield new double[]{aabb.minX , aabb.minY , aabb.maxX , aabb.maxY };
+                            yield new double[]{aabb.minX, aabb.minY, aabb.maxX, aabb.maxY};
                         case WEST:
                         case EAST:
-                            yield new double[]{aabb.minZ , aabb.minY , aabb.maxZ , aabb.maxY };
+                            yield new double[]{aabb.minZ, aabb.minY, aabb.maxZ, aabb.maxY};
                     }).toList();
                     occlusionMap.put(directionName, aabbArray);
                 }
@@ -324,7 +324,7 @@ public class BlockDataExtractor {
             tools.add("pickaxe");
         if (defaultBlockState.is(BlockTags.MINEABLE_WITH_SHOVEL))
             tools.add("shovel");
-        if (defaultBlockState.is(BlockTags.SWORD_EFFICIENT) || blockID.equals("cobweb") || blockID.equals("bamboo"))
+        if (defaultBlockState.is(BlockTags.SWORD_EFFICIENT) || defaultBlockState.is(BlockTags.SWORD_INSTANTLY_MINES))
             tools.add("sword");
 
         if (tierPrefix != null)
