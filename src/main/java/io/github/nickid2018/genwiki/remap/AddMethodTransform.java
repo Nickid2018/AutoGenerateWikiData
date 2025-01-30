@@ -10,9 +10,10 @@ import java.util.function.Supplier;
 public record AddMethodTransform(Supplier<MethodNode> methodNodeSupplier) implements PostTransform {
 
     @Override
-    public void transform(ClassNode code) {
+    public boolean transform(ClassNode code) {
         MethodNode methodNode = methodNodeSupplier.get();
         code.methods.add(methodNode);
         log.info("Added method {}{} to class {}", methodNode.name, methodNode.desc, code.name);
+        return true;
     }
 }

@@ -15,11 +15,8 @@ import org.lwjgl.glfw.GLFW;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Slf4j
 @SuppressWarnings("unused")
@@ -34,7 +31,6 @@ public class ISOInjectionEntryPoints {
     }
 
     private static boolean ortho = false;
-    private static int invokeCount = 0;
     private static boolean noSave = false;
     private static long nextCommandCanExecute = 0;
     private static boolean flatLight = false;
@@ -42,9 +38,6 @@ public class ISOInjectionEntryPoints {
     private static Matrix4f orthoMatrix = new Matrix4f().ortho(-2, 2, -2, 2, -0.1f, 1000);
 
     public static Matrix4f getProjectionMatrixInjection(Matrix4f source) {
-        invokeCount = (invokeCount + 1) % 3;
-        if (invokeCount == 2) // Avoid Frustum Culling
-            return source;
         if (ortho)
             return orthoMatrix;
         return source;
@@ -68,21 +61,21 @@ public class ISOInjectionEntryPoints {
         if (chat.toLowerCase().startsWith("run"))
             readFileAndRun(chat.substring(3).trim());
         else
-            doCommand(chat, true);
+            doCommand(chat);
     }
 
     private static final Queue<String> commandQueue = new ConcurrentLinkedDeque<>();
 
     public static void listenerTick() {
+        if (System.currentTimeMillis() < nextCommandCanExecute)
+            return;
         if (!commandQueue.isEmpty()) {
             String command = commandQueue.poll();
-            doCommand(command, false);
+            doCommand(command);
         }
     }
 
-    public static void doCommand(String chat, boolean ignoreTime) {
-        if (!ignoreTime && System.currentTimeMillis() < nextCommandCanExecute)
-            return;
+    public static void doCommand(String chat) {
         try {
             switch (chat.toLowerCase()) {
                 case "persp" -> ortho = false;
@@ -118,6 +111,7 @@ public class ISOInjectionEntryPoints {
                                 float[] xScale = new float[1];
                                 float[] yScale = new float[1];
                                 GLFW.glfwGetWindowContentScale(window, xScale, yScale);
+                                GLFW.glfwRestoreWindow(window);
                                 GLFW.glfwSetWindowSize(
                                     window,
                                     Math.round(width / xScale[0]),
@@ -162,13 +156,6 @@ public class ISOInjectionEntryPoints {
             log.error("Command Error", e);
         }
     }
-
-    private static final ExecutorService commandExecutor = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r);
-        t.setDaemon(true);
-        t.setName("Command Executor");
-        return t;
-    });
 
     public static void readFileAndRun(String file) {
         try {

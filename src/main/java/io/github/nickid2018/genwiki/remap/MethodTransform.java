@@ -12,7 +12,7 @@ public record MethodTransform(
 ) implements PostTransform {
 
     @Override
-    public void transform(ClassNode code) {
+    public boolean transform(ClassNode code) {
         int count = 0;
         for (MethodNode methodNode : code.methods) {
             if (methodNode.name.equals(methodName) && (methodDesc == null || methodNode.desc.equals(methodDesc))) {
@@ -26,12 +26,11 @@ public record MethodTransform(
                 count++;
             }
         }
-        if (count == 0)
-            log.warn(
-                "Method {}{} not found in class {}",
-                methodName,
-                methodDesc == null ? "" : methodDesc,
-                code.name
-            );
+        return count > 0;
+    }
+
+    @Override
+    public String toString() {
+        return "MethodTransform{" + methodName + methodDesc + '}';
     }
 }

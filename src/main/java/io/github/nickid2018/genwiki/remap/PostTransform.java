@@ -4,5 +4,5 @@ import org.objectweb.asm.tree.ClassNode;
 
 public interface PostTransform {
 
-    void transform(ClassNode code);
+    boolean transform(ClassNode code);
 }

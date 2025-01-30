@@ -1,9 +1,9 @@
 package io.github.nickid2018.genwiki;
 
+import com.google.common.collect.Streams;
 import io.github.nickid2018.genwiki.remap.*;
 import me.tongfei.progressbar.ProgressBar;
 import org.jline.terminal.TerminalBuilder;
-import org.lwjgl.opengl.GL11;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
@@ -124,7 +124,8 @@ public class RemapSettings {
             commonServerSettings(remapProgram);
             remapProgram.addPostTransform(
                 INJECT_POINT_CLASS,
-                new MethodTransform(INJECT_METHOD, INJECT_METHOD_DESC, methodNode -> {
+                new MethodTransform(
+                    INJECT_METHOD, INJECT_METHOD_DESC, methodNode -> {
                     InsnList list = new InsnList();
                     list.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     list.add(new MethodInsnNode(
@@ -136,7 +137,8 @@ public class RemapSettings {
                     ));
                     list.add(methodNode.instructions);
                     methodNode.instructions = list;
-                })
+                }
+                )
             );
             remapProgram.addPostTransform(
                 "net.minecraft.world.level.chunk.storage.ChunkSerializer",
@@ -169,7 +171,8 @@ public class RemapSettings {
             commonServerSettings(remapProgram);
             remapProgram.addPostTransform(
                 INJECT_POINT_CLASS,
-                new MethodTransform(INJECT_METHOD, INJECT_METHOD_DESC, methodNode -> {
+                new MethodTransform(
+                    INJECT_METHOD, INJECT_METHOD_DESC, methodNode -> {
                     InsnList list = new InsnList();
                     list.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     list.add(new MethodInsnNode(
@@ -181,7 +184,8 @@ public class RemapSettings {
                     ));
                     list.add(methodNode.instructions);
                     methodNode.instructions = list;
-                })
+                }
+                )
             );
             remapProgram.addPostTransform(
                 INJECT_SERVER_PROPERTIES,
@@ -240,18 +244,10 @@ public class RemapSettings {
             );
             remapProgram.addPostTransform(
                 "net.minecraft.client.renderer.GameRenderer",
-                new RenameMethodTransform(
-                    "getProjectionMatrix",
-                    "(F)Lorg/joml/Matrix4f;",
-                    "getProjectionMatrixOld"
-                )
-            );
-            remapProgram.addPostTransform(
-                "net.minecraft.client.renderer.GameRenderer",
                 new AddMethodTransform(() -> {
                     MethodNode methodNode = new MethodNode(
                         Opcodes.ACC_PUBLIC,
-                        "getProjectionMatrix",
+                        "getProjectionMatrixWithInjection",
                         "(F)Lorg/joml/Matrix4f;",
                         null,
                         null
@@ -261,7 +257,7 @@ public class RemapSettings {
                     methodNode.instructions.add(new MethodInsnNode(
                         Opcodes.INVOKEVIRTUAL,
                         "net/minecraft/client/renderer/GameRenderer",
-                        "getProjectionMatrixOld",
+                        "getProjectionMatrix",
                         "(F)Lorg/joml/Matrix4f;",
                         false
                     ));
@@ -275,6 +271,20 @@ public class RemapSettings {
                     methodNode.instructions.add(new InsnNode(Opcodes.ARETURN));
                     return methodNode;
                 })
+            );
+            remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.GameRenderer",
+                new MethodTransform(
+                    "renderLevel",
+                    null,
+                    methodNode -> Streams
+                        .stream(methodNode.instructions.iterator())
+                        .filter(insnNode -> insnNode instanceof MethodInsnNode)
+                        .map(insnNode -> (MethodInsnNode) insnNode)
+                        .filter(insnNode -> insnNode.name.equals("getProjectionMatrix"))
+                        .findFirst()
+                        .ifPresent(insnNode -> insnNode.name = "getProjectionMatrixWithInjection")
+                )
             );
             remapProgram.addPostTransform(
                 "net.minecraft.client.renderer.entity.DisplayRenderer$ItemDisplayRenderer",
@@ -421,13 +431,15 @@ public class RemapSettings {
                             }
                         }
                         if (findAutoSaveIntervalPoint != null) {
-                            methodNode.instructions.insertBefore(findAutoSaveIntervalPoint, new MethodInsnNode(
-                                Opcodes.INVOKESTATIC,
-                                "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
-                                "handleAutoSaveInterval",
-                                "(I)I",
-                                false
-                            ));
+                            methodNode.instructions.insertBefore(
+                                findAutoSaveIntervalPoint, new MethodInsnNode(
+                                    Opcodes.INVOKESTATIC,
+                                    "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
+                                    "handleAutoSaveInterval",
+                                    "(I)I",
+                                    false
+                                )
+                            );
                         }
                     }
                 )

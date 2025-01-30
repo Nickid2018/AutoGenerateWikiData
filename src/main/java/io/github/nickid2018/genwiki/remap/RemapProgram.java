@@ -5,6 +5,7 @@ import io.github.nickid2018.genwiki.util.ClassUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -24,6 +25,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+@Slf4j
 @Setter
 @RequiredArgsConstructor
 public class RemapProgram {
@@ -138,13 +140,27 @@ public class RemapProgram {
                     ClassNode node = new ClassNode(Opcodes.ASM9);
                     ClassReader transformed = new ClassReader(writer.toByteArray());
                     transformed.accept(node, 0);
-                    postTransforms.get(classNameRemapped).forEach(transform -> transform.transform(node));
+                    postTransforms
+                        .remove(classNameRemapped)
+                        .stream()
+                        .filter(transform -> !transform.transform(node))
+                        .forEach(transform -> log.warn(
+                            "Post transform failed for class {} with transform {}",
+                            classNameRemapped,
+                            transform
+                        ));
                     writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
                     node.accept(writer);
                 }
 
                 remappedData.put(ClassUtils.toInternalName(classNameRemapped) + ".class", writer.toByteArray());
             }
+
+            postTransforms.forEach((clazz, transforms) -> log.warn(
+                "Post transform failed for class {} with transform {} (Class Not Found)",
+                clazz,
+                transforms
+            ));
 
             remappedData.put(
                 "META-INF/MANIFEST.MF",

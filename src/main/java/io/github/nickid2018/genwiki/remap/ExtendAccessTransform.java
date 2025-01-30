@@ -18,7 +18,7 @@ public record ExtendAccessTransform(
     }
 
     @Override
-    public void transform(ClassNode code) {
+    public boolean transform(ClassNode code) {
         if (mode == Mode.FIELD || mode == Mode.ALL) {
             code.fields.forEach(field -> {
                 field.access &= ~Opcodes.ACC_PROTECTED & ~Opcodes.ACC_PRIVATE;
@@ -32,5 +32,6 @@ public record ExtendAccessTransform(
             });
         }
         log.info("Extend access transform applied to class {} with mode {}", code.name, mode);
+        return true;
     }
 }
