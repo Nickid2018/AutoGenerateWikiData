@@ -108,15 +108,8 @@ public class ISOInjectionEntryPoints {
                                 int width = Integer.parseInt(sizes[0]);
                                 int height = Integer.parseInt(sizes[1]);
                                 long window = Minecraft.getInstance().getWindow().getWindow();
-                                float[] xScale = new float[1];
-                                float[] yScale = new float[1];
-                                GLFW.glfwGetWindowContentScale(window, xScale, yScale);
                                 GLFW.glfwRestoreWindow(window);
-                                GLFW.glfwSetWindowSize(
-                                    window,
-                                    Math.round(width / xScale[0]),
-                                    Math.round(height / yScale[0])
-                                );
+                                GLFW.glfwSetWindowSize(window, width, height);
                             }
                         }
                         case "osize" -> {
