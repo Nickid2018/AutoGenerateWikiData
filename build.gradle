@@ -46,7 +46,6 @@ dependencies {
     compileOnly('org.lwjgl:lwjgl-glfw:3.3.3')
     compileOnly('org.lwjgl:lwjgl-opengl:3.3.3')
     compileOnly('org.lwjgl:lwjgl-stb:3.3.3')
-    compileOnly('org.joml:joml:1.10.5')
     compileOnly('com.mojang:brigadier:1.3.10')
     compileOnly('com.mojang:datafixerupper:8.0.16')
 }
@@ -79,6 +78,7 @@ subprojects {
         api 'net.sf.jopt-simple:jopt-simple:6.0-alpha-3'
         api 'com.mojang:brigadier:1.3.10'
         api 'com.mojang:datafixerupper:8.0.16'
+        api 'org.joml:joml:1.10.5'
     }
 }
 

@@ -1,10 +1,12 @@
 package io.github.nickid2018.genwiki.iso;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.extern.slf4j.Slf4j;
+import net.minecraft.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import org.apache.commons.io.IOUtils;
@@ -22,6 +24,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 @SuppressWarnings("unused")
 public class ISOInjectionEntryPoints {
 
+    private static final Vector3f DIFFUSE_LIGHT_0 = new Vector3f(0.2f, 1.0f, -0.7f).normalize();
+    private static final Vector3f DIFFUSE_LIGHT_1 = new Vector3f(-0.2f, 1.0f, 0.7f).normalize();
+
     public static void onMinecraftBootstrap() {
         log.info("ISO Injection Entry Points Loaded");
     }
@@ -32,9 +37,10 @@ public class ISOInjectionEntryPoints {
 
     private static boolean ortho = false;
     private static boolean noSave = false;
-    private static long nextCommandCanExecute = 0;
     private static boolean flatLight = false;
     private static boolean blockLight = false;
+    private static long glintTimer = -1;
+    private static long nextCommandCanExecute = 0;
     private static Matrix4f orthoMatrix = new Matrix4f().ortho(-2, 2, -2, 2, -0.1f, 1000);
 
     public static Matrix4f getProjectionMatrixInjection(Matrix4f source) {
@@ -43,11 +49,20 @@ public class ISOInjectionEntryPoints {
         return source;
     }
 
+    public static long glintTimeInjection() {
+        if (glintTimer >= 0)
+            return glintTimer * 50;
+        return Util.getMillis();
+    }
+
     public static void renderItemDisplayInjection() {
         if (flatLight)
             Lighting.setupForFlatItems();
-        if (blockLight)
-            Lighting.setupFor3DItems();
+        if (blockLight) {
+            RenderSystem.assertOnRenderThread();
+            Matrix4f matrix4f = new Matrix4f().rotateYXZ(1.0821041f, 3.2375858f, 0.0f).rotateYXZ(-0.3926991f, 2.3561945f, 0.0f);
+            GlStateManager.setupLevelDiffuseLighting(DIFFUSE_LIGHT_0, DIFFUSE_LIGHT_1, matrix4f);
+        }
     }
 
     public static int handleAutoSaveInterval(int source) {
@@ -97,6 +112,13 @@ public class ISOInjectionEntryPoints {
                 case "skiptick" -> {
                     // Do nothing
                 }
+                case "glinttick" -> {
+                    if (glintTimer < 0)
+                        glintTimer = 0;
+                    else
+                        glintTimer++;
+                }
+                case "resetglint" -> glintTimer = -1;
                 default -> {
                     String[] commands = chat.split(" ", 2);
                     String commandHead = commands[0];

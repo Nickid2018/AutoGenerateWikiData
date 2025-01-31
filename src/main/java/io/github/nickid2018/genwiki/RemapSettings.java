@@ -287,6 +287,23 @@ public class RemapSettings {
                 )
             );
             remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.RenderStateShard",
+                new MethodTransform(
+                    "setupGlintTexturing",
+                    null,
+                    methodNode -> Streams
+                        .stream(methodNode.instructions.iterator())
+                        .filter(insnNode -> insnNode instanceof MethodInsnNode)
+                        .map(insnNode -> (MethodInsnNode) insnNode)
+                        .filter(insnNode -> insnNode.name.equals("getMillis"))
+                        .findFirst()
+                        .ifPresent(insnNode -> {
+                            insnNode.owner = "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints";
+                            insnNode.name = "glintTimeInjection";
+                        })
+                )
+            );
+            remapProgram.addPostTransform(
                 "net.minecraft.client.renderer.entity.DisplayRenderer$ItemDisplayRenderer",
                 new RenameMethodTransform(
                     "renderInner",
