@@ -2,6 +2,14 @@
 
 自动生成 Wiki 所需数据。
 
+## 原理
+
+此项目可以自动下载 Minecraft 客户端或服务端，并进行反混淆，之后使用 ASM 注入代码以达到各种自动化操作。
+
+绝大多数注入点都是**稳定**的，即随着游戏版本变化相关的注入点不会产生变化。同时，注入代码也尽量使用最少的导入，以减少版本变化带来的影响。
+
+所有注入点可在`io.github.nickid2018.genwiki.RemapSettings`中找到。
+
 ## 自动值
 
 此项目可以直接生成 Wiki 所需要的 Java 版[自动值](https://zh.minecraft.wiki/?curid=107468)。
@@ -10,11 +18,15 @@
 
 所有数据将生成在`run/output`下。
 
+- 属性
+    * `attribute_default_value`：属性默认值。
+    * `attribute_range`：属性值域。
+    * `attribute_sentiment`：属性类型。
 - 生物群系
     * `biome_base_temperature`：基础温度。
     * `biome_creature_probability`：生物生成概率。
     * `biome_fog_color`：雾颜色。
-    * `biome_foliage_color`：树叶颜色。
+    * `biome_foliage_color`：~~树叶颜色~~。
     * `biome_has_precipitation`：是否有降水。
     * `biome_sky_color`：天空颜色。
     * `biome_spawn_data`：生物生成数据。
@@ -29,36 +41,45 @@
     * `block_ignite_odds`：引燃几率。
     * `block_instrument`：乐器。
     * `block_legacy_solid`：固体方块。
+    * `block_liquid_computation`：用于计算睡眠高度的方块数据。
     * `block_map_color`：地图颜色基色。
+    * `block_occlusion_shape`：方块遮挡形状。
+    * `block_properties`：方块具有的方块属性。
+    * `block_property_value`：所有的方块属性。
     * `block_push_reaction`：活塞推拉行为。
     * `block_redstone_conductor`：红石导体。
     * `block_replaceable`：可替代方块。
     * `block_suffocating`：窒息方块。
     * `block_support_type`：方块支撑属性。
 - 附魔 / 魔咒
-    * `enchantment_category`：魔咒类别。
     * `enchantment_cost`：附魔等级限制。
-    * `enchantment_flag`：出现条件（宝藏等）。
     * `enchantment_incompatible`：不共存魔咒。
     * `enchantment_max_level`：最大等级。
-    * `enchantment_rarity`：魔咒稀有度。
+    * `enchantment_primary_items`：可附魔台附魔物品。
+    * `enchantment_support_items`：可附魔物品。
+    * `enchantment_weight`：魔咒挑选权重。
 - 实体
     * `entity_mob_category`：（暂无译名，控制周期生成）。
+    * `entity_sync`：实体网络同步数据。
+- 游戏规则
+    * `game_rule_category`：游戏规则分类。
+    * `game_rule_default_value`：游戏规则默认值。
+    * `game_rule_type`：游戏规则数据类型。
 - 物品
     * `item_attribute_modifiers`：物品属性修饰符。
     * `item_burn_duration`：烧炼时间（游戏刻计）。
     * `item_creative_mode_tabs`：创造模式标签页。
+    * `item_default_components`：物品堆叠默认组件。
     * `item_food_properties`：食物属性。
     * `item_max_damage`：最大耐久度。
     * `item_max_stack_size`：最大堆叠数量。
     * `item_rarity`：物品基础稀有度。
-- 状态效果
+- 状态效果与药水效果
     * `mob_effect_cannot_affect`：免疫此状态效果的生物。
     * `mob_effect_category`：状态效果类别。
     * `mob_effect_color`：状态效果颜色。
     * `mob_effect_instantenous`：瞬时状态效果。
-- 其他
-    * `postion effect`：药水效果。
+    * `postion_effect`：药水效果。
 
 ### 生成数据
 
@@ -188,8 +209,8 @@ WSIZE 300x300
 OSIZE 1.6x1.6
 ORTHO
 CALL setblock 0 0 0 stone
-SLEEP 200
+SKIPTICK
 SSHOT stone.png
 ```
 
-如果不使用脚本，则`SLEEP 200`不需要执行，所有`CALL`也可以直接调用正常命令而不需要使用这些命令调用。
+如果不使用脚本，则`SKIPTICK`不需要执行，所有`CALL`也可以直接调用正常命令而不需要使用这些命令调用。
