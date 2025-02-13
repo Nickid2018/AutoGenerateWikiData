@@ -1,5 +1,7 @@
 package com.mojang.blaze3d.pipeline;
 
+import com.mojang.blaze3d.textures.GpuTexture;
+
 public abstract class RenderTarget {
 
     public int width;
@@ -9,7 +11,7 @@ public abstract class RenderTarget {
         throw new RuntimeException();
     }
 
-    public int getColorTextureId() {
+    public GpuTexture getColorTexture() {
         throw new RuntimeException();
     }
 }

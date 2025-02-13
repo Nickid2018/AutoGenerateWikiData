@@ -149,7 +149,7 @@ public class ISOInjectionEntryPoints {
                             mainTarget.bindWrite(true);
                             Minecraft.getInstance().gameRenderer.renderLevel(DeltaTracker.ONE);
                             NativeImage image = new NativeImage(mainTarget.width, mainTarget.height, false);
-                            RenderSystem.bindTexture(mainTarget.getColorTextureId());
+                            mainTarget.getColorTexture().bind();
                             image.downloadTexture(0, false);
                             image.flipY();
                             File file = new File("screenshots");
