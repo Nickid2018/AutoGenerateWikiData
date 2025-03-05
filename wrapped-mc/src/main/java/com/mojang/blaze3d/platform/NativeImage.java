@@ -23,4 +23,8 @@ public class NativeImage {
     public void writeToFile(Path path) throws IOException {
         throw new RuntimeException();
     }
+
+    public void setPixelABGR(int n, int n2, int n3) {
+        throw new RuntimeException();
+    }
 }

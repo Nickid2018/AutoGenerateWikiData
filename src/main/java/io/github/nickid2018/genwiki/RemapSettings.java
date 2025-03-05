@@ -462,6 +462,7 @@ public class RemapSettings {
                 )
             );
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.iso"));
+            remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.util"));
             remapProgram.addInjectEntries(new SingleFile(
                 "transparency.fsh",
                 "assets/minecraft/shaders/post/transparency.fsh"

@@ -1,10 +1,16 @@
 package io.github.nickid2018.genwiki.iso;
 
+import com.mojang.blaze3d.buffers.BufferType;
+import com.mojang.blaze3d.buffers.BufferUsage;
+import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
+import io.github.nickid2018.genwiki.util.LanguageUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.minecraft.Util;
 import net.minecraft.client.DeltaTracker;
@@ -60,7 +66,11 @@ public class ISOInjectionEntryPoints {
             Lighting.setupForFlatItems();
         if (blockLight) {
             RenderSystem.assertOnRenderThread();
-            Matrix4f matrix4f = new Matrix4f().rotateYXZ(1.0821041f, 3.2375858f, 0.0f).rotateYXZ(-0.3926991f, 2.3561945f, 0.0f);
+            Matrix4f matrix4f = new Matrix4f().rotateYXZ(1.0821041f, 3.2375858f, 0.0f).rotateYXZ(
+                -0.3926991f,
+                2.3561945f,
+                0.0f
+            );
             GlStateManager.setupLevelDiffuseLighting(DIFFUSE_LIGHT_0, DIFFUSE_LIGHT_1, matrix4f);
         }
     }
@@ -146,18 +156,51 @@ public class ISOInjectionEntryPoints {
                         }
                         case "sshot" -> {
                             RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
-                            mainTarget.bindWrite(true);
+                            CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+                            GpuTexture texture = mainTarget.getColorTexture();
+                            encoder.clearColorAndDepthTextures(
+                                mainTarget.getColorTexture(),
+                                0,
+                                mainTarget.getDepthTexture(),
+                                1.0
+                            );
                             Minecraft.getInstance().gameRenderer.renderLevel(DeltaTracker.ONE);
-                            NativeImage image = new NativeImage(mainTarget.width, mainTarget.height, false);
-                            mainTarget.getColorTexture().bind();
-                            image.downloadTexture(0, false);
-                            image.flipY();
-                            File file = new File("screenshots");
-                            file.mkdir();
-                            image.writeToFile(new File(
-                                file,
-                                commandArgs.isEmpty() ? "screenshot.png" : commandArgs
-                            ).toPath());
+                            GpuBuffer buffer = RenderSystem.getDevice().createBuffer(
+                                () -> "SSHOT",
+                                BufferType.PIXEL_PACK,
+                                BufferUsage.STATIC_READ,
+                                mainTarget.width * mainTarget.height * texture.getFormat().pixelSize()
+                            );
+                            encoder.copyTextureToBuffer(
+                                mainTarget.getColorTexture(), buffer, 0, LanguageUtils.sneakyExceptionRunnable(
+                                    () -> {
+                                        try (GpuBuffer.ReadView readView = encoder.readBuffer(buffer)) {
+                                            NativeImage image = new NativeImage(
+                                                mainTarget.width,
+                                                mainTarget.height,
+                                                false
+                                            );
+                                            for (int i = 0; i < mainTarget.height; ++i) {
+                                                for (int j = 0; j < mainTarget.width; ++j) {
+                                                    int color = readView
+                                                        .data()
+                                                        .getInt((j + i * mainTarget.width) * texture
+                                                            .getFormat()
+                                                            .pixelSize());
+                                                    image.setPixelABGR(j, mainTarget.height - i - 1, color);
+                                                }
+                                            }
+                                            File file = new File("screenshots");
+                                            file.mkdir();
+                                            image.writeToFile(new File(
+                                                file,
+                                                commandArgs.isEmpty() ? "screenshot.png" : commandArgs
+                                            ).toPath());
+                                        }
+                                        buffer.close();
+                                    }, e -> log.error("Error when taking screenshot", e)
+                                ), 0
+                            );
                         }
                         case "call" -> Minecraft.getInstance().player.connection.sendCommand(commandArgs);
                         case "sleep" -> {

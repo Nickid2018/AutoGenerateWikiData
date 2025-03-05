@@ -1,17 +1,18 @@
 package com.mojang.blaze3d.pipeline;
 
 import com.mojang.blaze3d.textures.GpuTexture;
+import io.github.nickid2018.util.SneakyUtil;
 
 public abstract class RenderTarget {
 
     public int width;
     public int height;
 
-    public void bindWrite(boolean bl) {
-        throw new RuntimeException();
+    public GpuTexture getColorTexture() {
+        return SneakyUtil.sneakyNotNull();
     }
 
-    public GpuTexture getColorTexture() {
-        throw new RuntimeException();
+    public GpuTexture getDepthTexture() {
+        return SneakyUtil.sneakyNotNull();
     }
 }
