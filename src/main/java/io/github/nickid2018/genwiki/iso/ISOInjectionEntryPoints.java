@@ -4,7 +4,6 @@ import com.mojang.blaze3d.buffers.BufferType;
 import com.mojang.blaze3d.buffers.BufferUsage;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.CommandEncoder;
@@ -49,6 +48,14 @@ public class ISOInjectionEntryPoints {
     private static long nextCommandCanExecute = 0;
     private static Matrix4f orthoMatrix = new Matrix4f().ortho(-2, 2, -2, 2, -0.1f, 1000);
 
+    public static void setupLevelDiffuseLighting(Vector3f vector3f, Vector3f vector3f2, Matrix4f matrix4f) {
+        RenderSystem.assertOnRenderThread();
+        RenderSystem.setShaderLights(
+            matrix4f.transformDirection(vector3f, new Vector3f()),
+            matrix4f.transformDirection(vector3f2, new Vector3f())
+        );
+    }
+
     public static Matrix4f getProjectionMatrixInjection(Matrix4f source) {
         if (ortho)
             return orthoMatrix;
@@ -71,7 +78,7 @@ public class ISOInjectionEntryPoints {
                 2.3561945f,
                 0.0f
             );
-            GlStateManager.setupLevelDiffuseLighting(DIFFUSE_LIGHT_0, DIFFUSE_LIGHT_1, matrix4f);
+            setupLevelDiffuseLighting(DIFFUSE_LIGHT_0, DIFFUSE_LIGHT_1, matrix4f);
         }
     }
 

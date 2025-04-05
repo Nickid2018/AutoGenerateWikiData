@@ -88,9 +88,13 @@ public class GenerateWikiData {
 
         if (!notRun) {
             if (mode.isClient) {
-                InitializeEnvironment.downloadAssetsIndex(files.get("index"));
                 InitializeEnvironment.downloadLibraries(files.get("manifest"));
-                runWikiGeneratorClient(remappedFile.getAbsolutePath(), version, files.get("manifest"));
+                if (mode == GenWikiMode.ISO) {
+                    InitializeEnvironment.downloadAssetsIndex(files.get("index"));
+                    runWikiGeneratorClient(remappedFile.getAbsolutePath(), version, files.get("manifest"));
+                } else {
+                    runDataGeneratorClient(remappedFile.getAbsolutePath(), version, files.get("manifest"));
+                }
             } else if (mode == GenWikiMode.STATISTICS) {
                 doStatistics(remappedFile.getAbsolutePath());
             } else {
@@ -179,7 +183,7 @@ public class GenerateWikiData {
         runAndWait(builder);
     }
 
-    private static void runWikiGeneratorClient(String file, String version, File manifest) throws Exception {
+    private static Set<String> prepareLibraries(String file, File manifest) throws Exception {
         JsonObject json = JsonParser.parseReader(new FileReader(manifest)).getAsJsonObject();
         Set<String> collectedLibraries = new HashSet<>();
 
@@ -209,6 +213,27 @@ public class GenerateWikiData {
         }
 
         collectedLibraries.add(file);
+        return collectedLibraries;
+    }
+
+    private static void runDataGeneratorClient(String file, String version, File manifest) throws Exception {
+        Set<String> collectedLibraries = prepareLibraries(file, manifest);
+        ProcessBuilder builder = newProcess();
+        builder.command().add("-Dfile.encoding=UTF-8");
+        builder.command().add("-Dstdout.encoding=UTF-8");
+        builder.command().add("-Dstderr.encoding=UTF-8");
+        builder.command().add("-cp");
+        builder.command().add(String.join(File.pathSeparator, collectedLibraries));
+        builder.command().add("net.minecraft.client.data.Main");
+        builder.command().add("--client");
+        builder.command().add("--output");
+        builder.command().add(".");
+        runAndWait(builder);
+    }
+
+    private static void runWikiGeneratorClient(String file, String version, File manifest) throws Exception {
+        JsonObject json = JsonParser.parseReader(new FileReader(manifest)).getAsJsonObject();
+        Set<String> collectedLibraries = prepareLibraries(file, manifest);
 
         IOUtils.copy(
             Objects.requireNonNull(GenerateWikiData.class.getResourceAsStream("/options.txt")),
