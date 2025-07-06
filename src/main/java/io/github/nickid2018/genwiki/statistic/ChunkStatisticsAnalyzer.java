@@ -106,12 +106,6 @@ public class ChunkStatisticsAnalyzer {
                     ChunkAccess chunk = future.get().orElse(null);
                     createdChunk.offer(chunk);
                     iterator.remove();
-
-                    ChunkPos chunkPos = chunk.getPos();
-                    long chunkPosLong = chunkPos.toLong();
-                    chunkSource.distanceManager.getTickets(chunkPosLong).forEach(
-                        ticket -> chunkSource.distanceManager.removeTicket(chunkPosLong, ticket)
-                    );
                     bar.step();
                 }
             }

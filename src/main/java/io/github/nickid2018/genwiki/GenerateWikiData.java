@@ -298,11 +298,12 @@ public class GenerateWikiData {
                 () -> {
                     File subDir = new File(InitializeEnvironment.RUNTIME_FOLDER, "sub-" + finalI);
                     File outputLogFile = new File(InitializeEnvironment.RUNTIME_FOLDER, "sub-" + finalI + "output");
+                    File outputErrorFile = new File(InitializeEnvironment.RUNTIME_FOLDER, "sub-" + finalI + "error");
                     FileUtils.deleteDirectory(subDir);
 
                     ProcessBuilder builder = newProcess()
                         .directory(subDir)
-                        .redirectError(outputLogFile)
+                        .redirectError(outputErrorFile)
                         .redirectOutput(outputLogFile);
                     builder.environment().put("CHUNK_TOTAL", String.valueOf(chunksSub));
                     builder.command().add("-jar");
@@ -316,8 +317,7 @@ public class GenerateWikiData {
                         builder.directory()
                     );
 
-                    int nowTaskID;
-                    while ((nowTaskID = lastWorlds.decrementAndGet()) >= 0) {
+                    while (lastWorlds.decrementAndGet() >= 0) {
                         subDir.mkdirs();
                         try (FileWriter w = new FileWriter(new File(subDir, "eula.txt"))) {
                             w.write("eula=true");
