@@ -355,9 +355,18 @@ public class GenerateWikiData {
                             for (File output : files)
                                 FileUtils.moveFileToDirectory(output, subOutput, true);
                             completedWorldQueue.offer(subOutput);
-                        } else {
+                        } else if (exit != 0) {
                             log.warn("Async SubProcess #{} returns a non-zero exit value {}", finalI, exit);
                             lastWorlds.incrementAndGet();
+                        } else {
+                            log.warn("Async SubProcess #{} crashed!", finalI);
+                            lastWorlds.incrementAndGet();
+                            for (File crashFile : Objects.requireNonNull(new File(
+                                subDir,
+                                "crash-reports"
+                            ).listFiles())) {
+                                FileUtils.moveFileToDirectory(crashFile, InitializeEnvironment.OUTPUT_FOLDER, true);
+                            }
                         }
 
                         FileUtils.deleteDirectory(subDir);
