@@ -283,6 +283,9 @@ public class GenerateWikiData {
 
         if (!InitializeEnvironment.RUNTIME_FOLDER.isDirectory())
             InitializeEnvironment.RUNTIME_FOLDER.mkdirs();
+        File runtimeOutput = new File(InitializeEnvironment.RUNTIME_FOLDER, "output");
+        if (!runtimeOutput.isDirectory())
+            runtimeOutput.mkdirs();
         if (InitializeEnvironment.OUTPUT_FOLDER.isDirectory())
             FileUtils.deleteDirectory(InitializeEnvironment.OUTPUT_FOLDER);
         InitializeEnvironment.OUTPUT_FOLDER.mkdirs();
