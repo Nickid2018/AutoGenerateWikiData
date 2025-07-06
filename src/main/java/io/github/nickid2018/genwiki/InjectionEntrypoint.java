@@ -61,10 +61,6 @@ public class InjectionEntrypoint {
     @SneakyThrows
     @SuppressWarnings("unused")
     public static void chunkStatisticsInjection(MinecraftServer server) {
-        if (OUTPUT_FOLDER.isDirectory())
-            FileUtils.deleteDirectory(OUTPUT_FOLDER);
-        OUTPUT_FOLDER.mkdirs();
-
         ChunkStatisticsAnalyzer.analyze(server);
     }
 }
