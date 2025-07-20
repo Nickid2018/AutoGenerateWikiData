@@ -46,8 +46,8 @@ void try_insert(vec4 color, float depth) {
     }
 }
 
-vec3 blend(vec3 dst, vec4 src) {
-    return (dst * (1.0 - src.a)) + src.rgb;
+vec4 blend(vec4 dst, vec4 src) {
+    return dst * (1.0 - src.a) + src;
 }
 
 void main() {
@@ -61,12 +61,10 @@ void main() {
     try_insert(texture(WeatherSampler, texCoord), texture(WeatherDepthSampler, texCoord).r);
     try_insert(texture(CloudsSampler, texCoord), texture(CloudsDepthSampler, texCoord).r);
 
-    vec3 texelAccum = color_layers[0].rgb;
-    float alpha = color_layers[0].a;
+    vec4 texelAccum = color_layers[0];
     for (int ii = 1; ii < active_layers; ++ii) {
         texelAccum = blend(texelAccum, color_layers[ii]);
-        alpha = alpha * (1.0 - color_layers[ii].a) + color_layers[ii].a;
     }
 
-    fragColor = vec4(texelAccum.rgb, alpha);
+    fragColor = texelAccum;
 }

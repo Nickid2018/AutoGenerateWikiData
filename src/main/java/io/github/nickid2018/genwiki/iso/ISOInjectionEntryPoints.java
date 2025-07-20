@@ -1,7 +1,5 @@
 package io.github.nickid2018.genwiki.iso;
 
-import com.mojang.blaze3d.buffers.BufferType;
-import com.mojang.blaze3d.buffers.BufferUsage;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Lighting;
@@ -174,14 +172,13 @@ public class ISOInjectionEntryPoints {
                             Minecraft.getInstance().gameRenderer.renderLevel(DeltaTracker.ONE);
                             GpuBuffer buffer = RenderSystem.getDevice().createBuffer(
                                 () -> "SSHOT",
-                                BufferType.PIXEL_PACK,
-                                BufferUsage.STATIC_READ,
+                                9,
                                 mainTarget.width * mainTarget.height * texture.getFormat().pixelSize()
                             );
                             encoder.copyTextureToBuffer(
                                 mainTarget.getColorTexture(), buffer, 0, LanguageUtils.sneakyExceptionRunnable(
                                     () -> {
-                                        try (GpuBuffer.ReadView readView = encoder.readBuffer(buffer)) {
+                                        try (GpuBuffer.MappedView readView = encoder.mapBuffer(buffer, true ,false)) {
                                             NativeImage image = new NativeImage(
                                                 mainTarget.width,
                                                 mainTarget.height,

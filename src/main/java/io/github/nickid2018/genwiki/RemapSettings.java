@@ -383,29 +383,28 @@ public class RemapSettings {
                 )
             );
             remapProgram.addPostTransform(
-                "net.minecraft.client.renderer.FogRenderer",
+                "net.minecraft.client.renderer.fog.FogRenderer",
                 new MethodTransform(
                     "setupFog",
                     null,
                     methodNode -> {
                         methodNode.instructions.clear();
-                        methodNode.instructions.add(new FieldInsnNode(
-                            Opcodes.GETSTATIC,
-                            "net/minecraft/client/renderer/FogParameters",
-                            "NO_FOG",
-                            "Lnet/minecraft/client/renderer/FogParameters;"
-                        ));
+                        methodNode.tryCatchBlocks.clear();
+                        methodNode.instructions.add(new TypeInsnNode(Opcodes.NEW, "org/joml/Vector4f"));
+                        methodNode.instructions.add(new InsnNode(Opcodes.DUP));
+                        methodNode.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "org/joml/Vector4f", "<init>", "()V", false));
                         methodNode.instructions.add(new InsnNode(Opcodes.ARETURN));
                     }
                 )
             );
             remapProgram.addPostTransform(
-                "net.minecraft.client.renderer.FogRenderer",
+                "net.minecraft.client.renderer.fog.FogRenderer",
                 new MethodTransform(
                     "computeFogColor",
                     null,
                     methodNode -> {
                         methodNode.instructions.clear();
+                        methodNode.tryCatchBlocks.clear();
                         methodNode.instructions.add(new TypeInsnNode(Opcodes.NEW, "org/joml/Vector4f"));
                         methodNode.instructions.add(new InsnNode(Opcodes.DUP));
                         methodNode.instructions.add(new InsnNode(Opcodes.FCONST_0));

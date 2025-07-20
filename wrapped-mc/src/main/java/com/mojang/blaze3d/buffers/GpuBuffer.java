@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 public abstract class GpuBuffer implements AutoCloseable {
 
-    public interface ReadView extends AutoCloseable {
+    public interface MappedView extends AutoCloseable {
         ByteBuffer data();
 
         @Override
