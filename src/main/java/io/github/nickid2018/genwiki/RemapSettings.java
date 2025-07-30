@@ -306,9 +306,9 @@ public class RemapSettings {
             remapProgram.addPostTransform(
                 "net.minecraft.client.renderer.entity.DisplayRenderer$ItemDisplayRenderer",
                 new RenameMethodTransform(
-                    "renderInner",
-                    "(Lnet/minecraft/client/renderer/entity/state/ItemDisplayEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IF)V",
-                    "renderInnerOld"
+                    "submitInner",
+                    "(Lnet/minecraft/client/renderer/entity/state/ItemDisplayEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;IF)V",
+                    "submitInnerOld"
                 )
             );
             remapProgram.addPostTransform(
@@ -316,8 +316,8 @@ public class RemapSettings {
                 new AddMethodTransform(() -> {
                     MethodNode methodNode = new MethodNode(
                         Opcodes.ACC_PUBLIC,
-                        "renderInner",
-                        "(Lnet/minecraft/client/renderer/entity/state/ItemDisplayEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IF)V",
+                        "submitInner",
+                        "(Lnet/minecraft/client/renderer/entity/state/ItemDisplayEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;IF)V",
                         null,
                         null
                     );
@@ -337,8 +337,8 @@ public class RemapSettings {
                     methodNode.instructions.add(new MethodInsnNode(
                         Opcodes.INVOKEVIRTUAL,
                         "net/minecraft/client/renderer/entity/DisplayRenderer$ItemDisplayRenderer",
-                        "renderInnerOld",
-                        "(Lnet/minecraft/client/renderer/entity/state/ItemDisplayEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IF)V",
+                        "submitInnerOld",
+                        "(Lnet/minecraft/client/renderer/entity/state/ItemDisplayEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;IF)V",
                         false
                     ));
                     methodNode.instructions.add(new InsnNode(Opcodes.RETURN));
