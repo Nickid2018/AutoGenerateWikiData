@@ -27,9 +27,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 @SuppressWarnings("unused")
 public class ISOInjectionEntryPoints {
 
-    private static final Vector3f DIFFUSE_LIGHT_0 = new Vector3f(0.2f, 1.0f, -0.7f).normalize();
-    private static final Vector3f DIFFUSE_LIGHT_1 = new Vector3f(-0.2f, 1.0f, 0.7f).normalize();
-
     public static void onMinecraftBootstrap() {
         log.info("ISO Injection Entry Points Loaded");
     }
@@ -48,10 +45,7 @@ public class ISOInjectionEntryPoints {
 
     public static void setupLevelDiffuseLighting(Vector3f vector3f, Vector3f vector3f2, Matrix4f matrix4f) {
         RenderSystem.assertOnRenderThread();
-        RenderSystem.setShaderLights(
-            matrix4f.transformDirection(vector3f, new Vector3f()),
-            matrix4f.transformDirection(vector3f2, new Vector3f())
-        );
+        Minecraft.getInstance().gameRenderer.getLighting().setupFor(Lighting.Entry.LEVEL);
     }
 
     public static Matrix4f getProjectionMatrixInjection(Matrix4f source) {
@@ -68,15 +62,10 @@ public class ISOInjectionEntryPoints {
 
     public static void renderItemDisplayInjection() {
         if (flatLight)
-            Lighting.setupForFlatItems();
+            Minecraft.getInstance().gameRenderer.getLighting().setupFor(Lighting.Entry.ITEMS_FLAT);
         if (blockLight) {
             RenderSystem.assertOnRenderThread();
-            Matrix4f matrix4f = new Matrix4f().rotateYXZ(1.0821041f, 3.2375858f, 0.0f).rotateYXZ(
-                -0.3926991f,
-                2.3561945f,
-                0.0f
-            );
-            setupLevelDiffuseLighting(DIFFUSE_LIGHT_0, DIFFUSE_LIGHT_1, matrix4f);
+            Minecraft.getInstance().gameRenderer.getLighting().setupFor(Lighting.Entry.ITEMS_3D);
         }
     }
 

@@ -1,11 +1,16 @@
 package com.mojang.blaze3d.platform;
 
-import io.github.nickid2018.util.SneakyUtil;
-
 public class Lighting {
 
-    public static void setupForFlatItems() {
+    public enum Entry {
+        LEVEL,
+        ITEMS_FLAT,
+        ITEMS_3D,
+        ENTITY_IN_UI,
+        PLAYER_SKIN;
     }
-    public static void setupFor3DItems() {
+
+    public void setupFor(Entry entry) {
+        throw new RuntimeException();
     }
 }
