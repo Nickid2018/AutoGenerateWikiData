@@ -3,11 +3,11 @@ package net.minecraft.server;
 import io.github.nickid2018.util.SneakyUtil;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.storage.WorldData;
 
 public abstract class MinecraftServer {
 
-    public GameRules getGameRules() {
+    public WorldData getWorldData() {
         return SneakyUtil.sneakyNotNull();
     }
 

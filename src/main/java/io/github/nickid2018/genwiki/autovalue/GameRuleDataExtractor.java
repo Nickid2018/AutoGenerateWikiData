@@ -14,7 +14,7 @@ public class GameRuleDataExtractor {
 
     @SneakyThrows
     public static void extractGameRuleData(MinecraftServer serverObj) {
-        GameRules gameRules = serverObj.getGameRules();
+        GameRules gameRules = serverObj.getWorldData().getGameRules();
         gameRules.visitGameRuleTypes(new GameRules.GameRuleTypeVisitor() {
             @Override
             public void visitBoolean(GameRules.Key<GameRules.BooleanValue> key, GameRules.Type<GameRules.BooleanValue> type) {
