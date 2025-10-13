@@ -175,24 +175,24 @@ public class BlockDataExtractor {
         PUSH_REACTION_EXCEPT.putUnknown("piston");
         PUSH_REACTION_EXCEPT.putUnknown("sticky_piston");
 
-        WikiData.write(EXPLOSION_RESISTANCE, "block_explosion_resistance.txt");
-        WikiData.write(DESTROY_TIME, "block_destroy_time.txt");
-        WikiData.write(IGNITE_BY_LAVA, "block_ignite_by_lava.txt");
-        WikiData.write(PUSH_REACTION, PUSH_REACTION_EXCEPT, "block_push_reaction.txt");
-        WikiData.write(REPLACEABLE, "block_replaceable.txt");
-        WikiData.write(REDSTONE_CONDUCTOR, REDSTONE_CONDUCTOR_EXCEPT, "block_redstone_conductor.txt");
-        WikiData.write(SUFFOCATING, SUFFOCATING_EXCEPT, "block_suffocating.txt");
-        WikiData.write(BREAKING_TOOLS, "block_breaking_tools.txt");
-        WikiData.write(BURN_ODDS, "block_burn_odds.txt");
-        WikiData.write(IGNITE_ODDS, "block_ignite_odds.txt");
-        WikiData.write(LEGACY_SOLID, LEGACY_SOLID_EXCEPT, "block_legacy_solid.txt");
-        WikiData.write(MAP_COLOR, MAP_COLOR_EXCEPT, "block_map_color.txt");
-        WikiData.write(INSTRUMENT, "block_instrument.txt");
-        WikiData.write(SUPPORT_TYPE, SUPPORT_TYPE_EXCEPT, "block_support_type.txt");
-        WikiData.write(BLOCK_PROPERTY_VALUES, "block_property_values.txt");
-        WikiData.write(BLOCK_PROPERTIES, "block_properties.txt");
-        WikiData.write(OCCLUSION_SHAPE_VALUES, "block_occlusion_shape.json");
-        WikiData.write(LIQUID_COMPUTATION_VALUES, "block_liquid_computation.json");
+        WikiData.write(EXPLOSION_RESISTANCE, "block/explosion_resistance.txt");
+        WikiData.write(DESTROY_TIME, "block/destroy_time.txt");
+        WikiData.write(IGNITE_BY_LAVA, "block/ignite_by_lava.txt");
+        WikiData.write(PUSH_REACTION, PUSH_REACTION_EXCEPT, "block/push_reaction.txt");
+        WikiData.write(REPLACEABLE, "block/replaceable.txt");
+        WikiData.write(REDSTONE_CONDUCTOR, REDSTONE_CONDUCTOR_EXCEPT, "block/redstone_conductor.txt");
+        WikiData.write(SUFFOCATING, SUFFOCATING_EXCEPT, "block/suffocating.txt");
+        WikiData.write(BREAKING_TOOLS, "block/breaking_tools.txt");
+        WikiData.write(BURN_ODDS, "block/burn_odds.txt");
+        WikiData.write(IGNITE_ODDS, "block/ignite_odds.txt");
+        WikiData.write(LEGACY_SOLID, LEGACY_SOLID_EXCEPT, "block/legacy_solid.txt");
+        WikiData.write(MAP_COLOR, MAP_COLOR_EXCEPT, "block/map_color.txt");
+        WikiData.write(INSTRUMENT, "block/instrument.txt");
+        WikiData.write(SUPPORT_TYPE, SUPPORT_TYPE_EXCEPT, "block/support_type.txt");
+        WikiData.write(BLOCK_PROPERTY_VALUES, "block/property_values.txt");
+        WikiData.write(BLOCK_PROPERTIES, "block/properties.txt");
+        WikiData.write(OCCLUSION_SHAPE_VALUES, "block/occlusion_shape.json");
+        WikiData.write(LIQUID_COMPUTATION_VALUES, "block/liquid_computation.json");
     }
 
     private static final Set<String> OVERRIDE_BLOCK_PUSH_REACTION = Set.of(

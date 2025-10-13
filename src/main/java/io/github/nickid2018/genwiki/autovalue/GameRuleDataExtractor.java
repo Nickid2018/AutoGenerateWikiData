@@ -36,8 +36,8 @@ public class GameRuleDataExtractor {
                 GAME_RULE_DEFAULT_VALUE.put(name, String.valueOf(value.get()));
             }
         });
-        WikiData.write(GAME_RULE_TYPE, "game_rule_type.txt");
-        WikiData.write(GAME_RULE_CATEGORY, "game_rule_category.txt");
-        WikiData.write(GAME_RULE_DEFAULT_VALUE, "game_rule_default_value.txt");
+        WikiData.write(GAME_RULE_TYPE, "gamerule/type.txt");
+        WikiData.write(GAME_RULE_CATEGORY, "gamerule/category.txt");
+        WikiData.write(GAME_RULE_DEFAULT_VALUE, "gamerule/default_value.txt");
     }
 }

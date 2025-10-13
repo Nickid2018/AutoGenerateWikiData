@@ -1,6 +1,7 @@
 package io.github.nickid2018.genwiki.autovalue;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonWriter;
@@ -10,8 +11,10 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.SneakyThrows;
 import net.minecraft.core.IdMapper;
 import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -19,9 +22,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 public class RegistriesExporter {
 
@@ -71,6 +72,42 @@ public class RegistriesExporter {
         JsonWriter writer = new JsonWriter(new FileWriter(blockStateFile));
         writer.setIndent("    ");
         Streams.write(blockStateArray, writer);
+        writer.close();
+    }
+
+    @SneakyThrows
+    public static void exportServerRegistries(MinecraftServer serverObj) {
+        RegistryAccess.Frozen access = serverObj.registryAccess();
+        Map<String, JsonObject> registryMap = new TreeMap<>();
+        access.registries().forEach(registryEntry -> {
+            String name = registryEntry.key().location().getPath();
+            Registry<?> registry = registryEntry.value();
+            Map<String, JsonArray> tagMap = new TreeMap<>();
+            registry.getTags().forEach(tag -> {
+                String tagName = tag.key().location().getPath();
+                List<String> list = new ArrayList<>();
+                tag.stream()
+                        .map(holder -> holder.unwrapKey().map(key -> key.location().getPath()))
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .forEach(list::add);
+                list.sort(Comparator.naturalOrder());
+                JsonArray array = new JsonArray();
+                list.forEach(array::add);
+                tagMap.put(tagName, array);
+            });
+            JsonObject tags = new JsonObject();
+            tagMap.forEach(tags::add);
+            registryMap.put(name, tags);
+        });
+        JsonObject registries = new JsonObject();
+        registryMap.forEach(registries::add);
+        File blockStateFile = new File(InjectionEntrypoint.OUTPUT_FOLDER, "tags.json");
+        if (!blockStateFile.getParentFile().isDirectory())
+            blockStateFile.getParentFile().mkdirs();
+        JsonWriter writer = new JsonWriter(new FileWriter(blockStateFile));
+        writer.setIndent("    ");
+        Streams.write(registries, writer);
         writer.close();
     }
 }

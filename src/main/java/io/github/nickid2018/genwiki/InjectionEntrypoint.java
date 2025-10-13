@@ -48,10 +48,10 @@ public class InjectionEntrypoint {
         OUTPUT_FOLDER.mkdirs();
 
         RegistriesExporter.exportRegistries();
+        RegistriesExporter.exportServerRegistries(server);
         BlockDataExtractor.extractBlockData(server);
         ItemDataExtractor.extractItemData(server);
         EntityDataExtractor.extractEntityData(server);
-        BiomeDataExtractor.extractBiomeData(server);
         EnchantmentDataExtractor.extractEnchantmentData(server);
         GameRuleDataExtractor.extractGameRuleData(server);
 

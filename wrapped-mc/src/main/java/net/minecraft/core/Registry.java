@@ -6,6 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public interface Registry<T> {
 
@@ -20,4 +21,6 @@ public interface Registry<T> {
     Optional<Holder<T>> get(ResourceKey<T> var1);
 
     Holder<T> wrapAsHolder(T var1);
+
+    Stream<HolderSet.Named<T>> getTags();
 }

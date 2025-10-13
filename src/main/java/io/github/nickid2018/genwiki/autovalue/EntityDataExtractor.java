@@ -153,15 +153,15 @@ public class EntityDataExtractor {
             }
         }
 
-        WikiData.write(MOB_CATEGORY, "entity_mob_category.txt");
-        WikiData.write(EFFECT_CATEGORY, "mob_effect_category.txt");
-        WikiData.write(EFFECT_COLOR, "mob_effect_color.txt");
-        WikiData.write(EFFECT_INSTANTANEOUS, "mob_effect_instantaneous.txt");
-        WikiData.write(EFFECT_CANNOT_AFFECT, "mob_effect_cannot_affect.txt");
-        WikiData.write(POTION_EFFECT, "potion_effect.txt");
-        WikiData.write(ATTRIBUTE_SENTIMENT, "attribute_sentiment.txt");
-        WikiData.write(ATTRIBUTE_RANGE, "attribute_range.txt");
-        WikiData.write(ATTRIBUTE_DEFAULT_VALUE, "attribute_default_value.txt");
-        WikiData.write(ENTITY_SYNC, "entity_sync.json");
+        WikiData.write(MOB_CATEGORY, "entity/mob_category.txt");
+        WikiData.write(EFFECT_CATEGORY, "mob_effect/category.txt");
+        WikiData.write(EFFECT_COLOR, "mob_effect/color.txt");
+        WikiData.write(EFFECT_INSTANTANEOUS, "mob_effect/instantaneous.txt");
+        WikiData.write(EFFECT_CANNOT_AFFECT, "mob_effect/cannot_affect.txt");
+        WikiData.write(POTION_EFFECT, "mob_effect/potion_effect.txt");
+        WikiData.write(ATTRIBUTE_SENTIMENT, "attribute/sentiment.txt");
+        WikiData.write(ATTRIBUTE_RANGE, "attribute/range.txt");
+        WikiData.write(ATTRIBUTE_DEFAULT_VALUE, "attribute/default_value.txt");
+        WikiData.write(ENTITY_SYNC, "entity_sync_data.json");
     }
 }

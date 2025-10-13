@@ -10,11 +10,15 @@ public interface WikiData {
 
     static void write(WikiData data, String file) throws IOException {
         File outputFile = new File(InjectionEntrypoint.OUTPUT_FOLDER, file);
+        if (!outputFile.getParentFile().isDirectory())
+            outputFile.getParentFile().mkdirs();
         FileUtils.write(outputFile, data.output(1), "UTF-8");
     }
 
     static void write(WikiData data, ExceptData exceptData, String file) throws IOException {
         File outputFile = new File(InjectionEntrypoint.OUTPUT_FOLDER, file);
+        if (!outputFile.getParentFile().isDirectory())
+            outputFile.getParentFile().mkdirs();
         FileUtils.write(outputFile, data.output(1) + "\n=== Except Data ===\n" + exceptData.output(), "UTF-8");
     }
 

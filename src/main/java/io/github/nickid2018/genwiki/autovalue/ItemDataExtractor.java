@@ -22,19 +22,13 @@ import net.minecraft.world.item.ItemStack;
 import java.util.*;
 
 public class ItemDataExtractor {
-    private static final NumberWikiData MAX_STACK_SIZE = new NumberWikiData().setFallback(64);
-    private static final StringWikiData RARITY = new StringWikiData().setFallback("COMMON");
     private static final StringListWikiData CREATIVE_MODE_TABS = new StringListWikiData();
     private static final NumberWikiData BURN_DURATION = new NumberWikiData().setFallback(0);
-    private static final NumberWikiData MAX_DAMAGE = new NumberWikiData().setFallback(0);
     private static final DoubleNumberWikiData FOOD_PROPERTIES = new DoubleNumberWikiData()
         .setFallback(0, 0)
         .setFallbackNil(true);
-    private static final AttributeModifiersWikiData ATTRIBUTE_MODIFIERS = new AttributeModifiersWikiData();
-    private static final CodecWikiData DEFAULT_COMPONENTS = new CodecWikiData();
 
     @SneakyThrows
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public static void extractItemData(MinecraftServer serverObj) {
         Map<Item, String> itemKeyMap = new HashMap<>();
         for (ResourceKey<Item> itemKey : BuiltInRegistries.ITEM.registryKeySet()) {
@@ -42,44 +36,14 @@ public class ItemDataExtractor {
             Item item = BuiltInRegistries.ITEM.getValue(itemKey);
             itemKeyMap.put(item, itemID);
 
-            ItemStack itemStack = item.getDefaultInstance();
-            for (EquipmentSlot slot : EquipmentSlot.values()) {
-                itemStack.forEachModifier(
-                    slot,
-                    LanguageUtils.sneakyExceptionBiConsumer((attribute, attributeModifier) -> ATTRIBUTE_MODIFIERS.add(
-                        itemID,
-                        attribute.unwrapKey().orElseThrow().location().getPath(),
-                        slot.getSerializedName(),
-                        attributeModifier.amount(),
-                        attributeModifier.operation().getSerializedName()
-                    ))
-                );
-            }
-
-            MAX_STACK_SIZE.put(itemID, itemStack.getMaxStackSize());
-            MAX_DAMAGE.put(itemID, itemStack.getMaxDamage());
-            RARITY.put(itemID, itemStack.getRarity().name());
             BURN_DURATION.put(itemID, serverObj.overworld().fuelValues().values.getOrDefault(item, 0));
 
+            ItemStack itemStack = item.getDefaultInstance();
             FoodProperties foodProperties = itemStack.getComponents().get(DataComponents.FOOD);
             if (foodProperties != null) {
                 FOOD_PROPERTIES.put(itemID, foodProperties.nutrition(), foodProperties.saturation());
             } else
                 FOOD_PROPERTIES.put(itemID, 0, 0);
-
-            Map<String, JsonElement> data = new TreeMap<>();
-            for (TypedDataComponent component : itemStack.getComponents()) {
-                String type = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(component.type()).getPath();
-                if (component.type().codec() == null) continue;
-                JsonElement element = (JsonElement) component.type().codec().encodeStart(
-                    serverObj.registryAccess().createSerializationContext(JsonOps.INSTANCE),
-                    component.value()
-                ).getOrThrow();
-                data.put(type, element);
-            }
-            JsonObject all = new JsonObject();
-            data.forEach(all::add);
-            DEFAULT_COMPONENTS.add(itemID, all);
         }
 
         CreativeModeTabs.tryRebuildTabContents(InjectionEntrypoint.featureFlagSet, true, serverObj.registryAccess());
@@ -103,13 +67,8 @@ public class ItemDataExtractor {
                 CREATIVE_MODE_TABS.sort(itemID);
         }
 
-        WikiData.write(MAX_STACK_SIZE, "item_max_stack_size.txt");
-        WikiData.write(RARITY, "item_rarity.txt");
-        WikiData.write(CREATIVE_MODE_TABS, "item_creative_mode_tabs.txt");
-        WikiData.write(BURN_DURATION, "item_burn_duration.txt");
-        WikiData.write(MAX_DAMAGE, "item_max_damage.txt");
-        WikiData.write(FOOD_PROPERTIES, "item_food_properties.txt");
-        WikiData.write(ATTRIBUTE_MODIFIERS, "item_attribute_modifiers.txt");
-        WikiData.write(DEFAULT_COMPONENTS, "item_default_components.json");
+        WikiData.write(CREATIVE_MODE_TABS, "item/creative_mode_tabs.txt");
+        WikiData.write(BURN_DURATION, "item/burn_duration.txt");
+        WikiData.write(FOOD_PROPERTIES, "item/food_properties.txt");
     }
 }
