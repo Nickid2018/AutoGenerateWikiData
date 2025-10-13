@@ -11,8 +11,4 @@ public class RenderSystem {
     public static GpuDevice getDevice() {
         return SneakyUtil.sneakyNotNull();
     }
-
-    public static void setShaderLights(Vector3f vector3f, Vector3f vector3f2) {
-        throw new RuntimeException();
-    }
 }

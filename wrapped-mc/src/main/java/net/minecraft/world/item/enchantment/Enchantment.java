@@ -2,21 +2,8 @@ package net.minecraft.world.item.enchantment;
 
 import io.github.nickid2018.util.SneakyUtil;
 import net.minecraft.core.Holder;
-import net.minecraft.world.item.ItemStack;
 
 public record Enchantment() {
-
-    public boolean isPrimaryItem(ItemStack itemStack) {
-        return SneakyUtil.sneakyBool();
-    }
-
-    public boolean isSupportedItem(ItemStack itemStack) {
-        return SneakyUtil.sneakyBool();
-    }
-
-    public int getWeight() {
-        return SneakyUtil.sneakyInt();
-    }
 
     public int getMaxLevel() {
         return SneakyUtil.sneakyInt();

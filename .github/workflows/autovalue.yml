@@ -20,9 +20,6 @@ jobs:
           java-version: 21
           cache: gradle
 
-      - name: Install jq
-        run: sudo apt-get update & sudo apt-get install jq
-
       - name: Create wiki data
         env:
           MAKE_VERSION: ${{ github.event.inputs.version }}

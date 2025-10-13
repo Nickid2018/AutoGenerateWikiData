@@ -8,5 +8,5 @@ public interface Holder<T> {
 
     T value();
 
-    public Optional<ResourceKey<T>> unwrapKey();
+    Optional<ResourceKey<T>> unwrapKey();
 }

@@ -36,10 +36,6 @@ public class RemapSettings {
             ExtendAccessTransform.FIELD
         );
         remapProgram.addPostTransform(
-            "net.minecraft.world.level.biome.MobSpawnSettings",
-            ExtendAccessTransform.FIELD
-        );
-        remapProgram.addPostTransform(
             "net.minecraft.world.level.block.state.BlockBehaviour$Properties",
             ExtendAccessTransform.FIELD
         );

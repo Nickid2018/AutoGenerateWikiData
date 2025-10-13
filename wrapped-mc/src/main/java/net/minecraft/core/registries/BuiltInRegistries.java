@@ -3,7 +3,6 @@ package net.minecraft.core.registries;
 import io.github.nickid2018.util.SneakyUtil;
 import net.minecraft.core.DefaultedRegistry;
 import net.minecraft.core.Registry;
-import net.minecraft.core.component.DataComponentType;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -21,5 +20,4 @@ public class BuiltInRegistries {
     public static final Registry<Potion> POTION = SneakyUtil.sneakyNotNull();
     public static final DefaultedRegistry<Block> BLOCK = SneakyUtil.sneakyNotNull();
     public static final Registry<Attribute> ATTRIBUTE = SneakyUtil.sneakyNotNull();
-    public static final Registry<DataComponentType<?>> DATA_COMPONENT_TYPE = SneakyUtil.sneakyNotNull();
 }

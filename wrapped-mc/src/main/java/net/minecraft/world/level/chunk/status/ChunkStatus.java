@@ -5,5 +5,4 @@ import io.github.nickid2018.util.SneakyUtil;
 public class ChunkStatus {
 
     public static final ChunkStatus FEATURES = SneakyUtil.sneakyNotNull();
-    public static final ChunkStatus FULL = SneakyUtil.sneakyNotNull();
 }
