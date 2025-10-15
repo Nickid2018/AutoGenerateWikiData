@@ -32,7 +32,7 @@ jobs:
           cd ./run/runtime
           java -DbundlerMainClass=net.minecraft.data.Main -jar ../remapped/${{ github.event.inputs.version }}-server.jar --output=../data-gen --reports --server
           cd ../../vanilla-export
-          sh ./vanilla-export.sh
+          bash ./vanilla-export.sh
 
       - name: Upload wiki data
         uses: actions/upload-artifact@v4
