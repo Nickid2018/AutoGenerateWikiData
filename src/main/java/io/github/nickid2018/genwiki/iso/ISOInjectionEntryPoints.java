@@ -133,7 +133,7 @@ public class ISOInjectionEntryPoints {
                             if (sizes.length == 2) {
                                 int width = Integer.parseInt(sizes[0]);
                                 int height = Integer.parseInt(sizes[1]);
-                                long window = Minecraft.getInstance().getWindow().getWindow();
+                                long window = Minecraft.getInstance().getWindow().handle();
                                 GLFW.glfwRestoreWindow(window);
                                 GLFW.glfwSetWindowSize(window, width, height);
                             }
