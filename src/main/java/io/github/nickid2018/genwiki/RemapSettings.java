@@ -203,6 +203,27 @@ public class RemapSettings {
                 )
             );
             remapProgram.addPostTransform(
+                "net.minecraft.world.level.gamerules.GameRules",
+                new MethodTransform(
+                    "registerInteger",
+                    "(Ljava/lang/String;Lnet/minecraft/world/level/gamerules/GameRuleCategory;IIILnet/minecraft/world/flag/FeatureFlagSet;)Lnet/minecraft/world/level/gamerules/GameRule;",
+                    methodNode -> {
+                        InsnList list = new InsnList();
+                        list.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                        list.add(new VarInsnNode(Opcodes.ILOAD, 3));
+                        list.add(new VarInsnNode(Opcodes.ILOAD, 4));
+                        list.add(new MethodInsnNode(
+                            Opcodes.INVOKESTATIC,
+                            "io/github/nickid2018/genwiki/autovalue/GameRuleDataExtractor",
+                            "addGameRuleRange",
+                            "(Ljava/lang/String;II)V",
+                            false
+                        ));
+                        methodNode.instructions.insert(list);
+                    }
+                )
+            );
+            remapProgram.addPostTransform(
                 "net.minecraft.world.entity.ai.attributes.Attribute",
                 ExtendAccessTransform.FIELD
             );

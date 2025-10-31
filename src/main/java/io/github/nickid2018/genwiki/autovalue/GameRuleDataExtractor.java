@@ -1,5 +1,6 @@
 package io.github.nickid2018.genwiki.autovalue;
 
+import io.github.nickid2018.genwiki.autovalue.wikidata.DoubleNumberWikiData;
 import io.github.nickid2018.genwiki.autovalue.wikidata.StringWikiData;
 import io.github.nickid2018.genwiki.autovalue.wikidata.WikiData;
 import lombok.SneakyThrows;
@@ -13,6 +14,11 @@ public class GameRuleDataExtractor {
     public static final StringWikiData GAME_RULE_CATEGORY = new StringWikiData();
     public static final StringWikiData GAME_RULE_DEFAULT_VALUE = new StringWikiData();
     public static final StringWikiData GAME_RULE_TYPE = new StringWikiData();
+    public static final DoubleNumberWikiData GAME_RULE_RANGE = new DoubleNumberWikiData();
+
+    public static void addGameRuleRange(String name, int min, int max) {
+        GAME_RULE_RANGE.put(name, min, max);
+    }
 
     @SneakyThrows
     public static void extractGameRuleData(MinecraftServer serverObj) {
@@ -37,5 +43,6 @@ public class GameRuleDataExtractor {
         WikiData.write(GAME_RULE_TYPE, "gamerule/type.txt");
         WikiData.write(GAME_RULE_CATEGORY, "gamerule/category.txt");
         WikiData.write(GAME_RULE_DEFAULT_VALUE, "gamerule/default_value.txt");
+        WikiData.write(GAME_RULE_RANGE, "gamerule/range.txt");
     }
 }
