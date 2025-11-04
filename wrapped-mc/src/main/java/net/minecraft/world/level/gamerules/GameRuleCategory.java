@@ -1,6 +1,6 @@
 package net.minecraft.world.level.gamerules;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
-public record GameRuleCategory(ResourceLocation id) {
+public record GameRuleCategory(Identifier id) {
 }

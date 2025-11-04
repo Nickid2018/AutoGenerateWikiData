@@ -88,7 +88,7 @@ public class BlockDataExtractor {
         }
 
         for (ResourceKey<Block> key : blockKeySet) {
-            String blockID = key.location().getPath();
+            String blockID = key.identifier().getPath();
             Block block = blockRegistry.getValue(key);
             ImmutableList<BlockState> states = block.getStateDefinition().getPossibleStates();
             BlockBehaviour.Properties properties = block.properties();

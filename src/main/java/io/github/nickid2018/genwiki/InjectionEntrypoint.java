@@ -4,7 +4,7 @@ import io.github.nickid2018.genwiki.autovalue.*;
 import io.github.nickid2018.genwiki.statistic.ChunkStatisticsAnalyzer;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.flag.FeatureFlags;
@@ -32,7 +32,7 @@ public class InjectionEntrypoint {
         featureFlagSet = FeatureFlags.REGISTRY.fromNames(FeatureFlags.REGISTRY.names.keySet());
         return FeatureFlags.REGISTRY.names
             .keySet().stream()
-            .map(ResourceLocation::getPath)
+            .map(Identifier::getPath)
             .map(Object::toString)
             .collect(Collectors.joining(","));
     }

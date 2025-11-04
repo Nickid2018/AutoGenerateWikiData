@@ -39,7 +39,7 @@ public class RegistriesExporter {
                 Object2IntMap<String> idMap = new Object2IntArrayMap<>();
                 for (ResourceKey key : keys) {
                     int id = registry.getId(registry.getValue(key));
-                    idMap.put(key.location().getPath(), id);
+                    idMap.put(key.identifier().getPath(), id);
                     maxID = Math.max(maxID, id);
                 }
                 JsonArray array = new JsonArray();
@@ -80,14 +80,14 @@ public class RegistriesExporter {
         RegistryAccess.Frozen access = serverObj.registryAccess();
         Map<String, JsonObject> registryMap = new TreeMap<>();
         access.registries().forEach(registryEntry -> {
-            String name = registryEntry.key().location().getPath();
+            String name = registryEntry.key().identifier().getPath();
             Registry<?> registry = registryEntry.value();
             Map<String, JsonArray> tagMap = new TreeMap<>();
             registry.getTags().forEach(tag -> {
                 String tagName = tag.key().location().getPath();
                 List<String> list = new ArrayList<>();
                 tag.stream()
-                        .map(holder -> holder.unwrapKey().map(key -> key.location().getPath()))
+                        .map(holder -> holder.unwrapKey().map(key -> key.identifier().getPath()))
                         .filter(Optional::isPresent)
                         .map(Optional::get)
                         .forEach(list::add);

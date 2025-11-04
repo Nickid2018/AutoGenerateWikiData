@@ -2,7 +2,7 @@ package net.minecraft.resources;
 
 public class ResourceKey<T> {
 
-    public ResourceLocation location() {
+    public Identifier identifier() {
         throw new RuntimeException();
     }
 }

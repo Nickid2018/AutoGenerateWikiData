@@ -72,7 +72,7 @@ public class EntityDataExtractor {
         log.info("Found {} entity sync data fields", entitySyncDataNames.size());
 
         for (ResourceKey<EntityType<?>> key : BuiltInRegistries.ENTITY_TYPE.registryKeySet()) {
-            String entityID = key.location().getPath();
+            String entityID = key.identifier().getPath();
 
             EntityType<?> entity = BuiltInRegistries.ENTITY_TYPE.getValue(key);
             MOB_CATEGORY.put(entityID, entity.getCategory().name());
@@ -93,7 +93,7 @@ public class EntityDataExtractor {
         }
 
         for (ResourceKey<MobEffect> effectKey : BuiltInRegistries.MOB_EFFECT.registryKeySet()) {
-            String effectID = effectKey.location().getPath();
+            String effectID = effectKey.identifier().getPath();
             MobEffect effect = BuiltInRegistries.MOB_EFFECT.getValue(effectKey);
 
             EFFECT_CATEGORY.put(effectID, effect.getCategory().name());
@@ -112,7 +112,7 @@ public class EntityDataExtractor {
         }
 
         for (ResourceKey<Potion> potionEffectKey : BuiltInRegistries.POTION.registryKeySet()) {
-            String potionEffectID = potionEffectKey.location().getPath();
+            String potionEffectID = potionEffectKey.identifier().getPath();
             Potion potionEffect = BuiltInRegistries.POTION.getValue(potionEffectKey);
 
             POTION_EFFECT.put(
@@ -125,7 +125,7 @@ public class EntityDataExtractor {
                 int amplifier = effectInstance.getAmplifier();
                 POTION_EFFECT.addEffect(
                     potionEffectID,
-                    effect.unwrapKey().orElseThrow().location().getPath(),
+                    effect.unwrapKey().orElseThrow().identifier().getPath(),
                     amplifier,
                     effectInstance.getDuration()
                 );
@@ -133,7 +133,7 @@ public class EntityDataExtractor {
                     amplifier,
                     LanguageUtils.sneakyExceptionBiConsumer((attribute, attributeModifier) -> POTION_EFFECT.addAttributeModifier(
                         potionEffectID,
-                        attribute.unwrapKey().orElseThrow().location().getPath(),
+                        attribute.unwrapKey().orElseThrow().identifier().getPath(),
                         attributeModifier.amount(),
                         attributeModifier.operation().getSerializedName()
                     ))
@@ -142,7 +142,7 @@ public class EntityDataExtractor {
         }
 
         for (ResourceKey<Attribute> attributeKey : BuiltInRegistries.ATTRIBUTE.registryKeySet()) {
-            String attributeID = attributeKey.location().getPath();
+            String attributeID = attributeKey.identifier().getPath();
             Attribute attribute = BuiltInRegistries.ATTRIBUTE.getValue(attributeKey);
             ATTRIBUTE_SENTIMENT.put(attributeID, attribute.sentiment.name());
             ATTRIBUTE_DEFAULT_VALUE.put(attributeID, attribute.defaultValue);

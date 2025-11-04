@@ -32,7 +32,7 @@ public class ItemDataExtractor {
     public static void extractItemData(MinecraftServer serverObj) {
         Map<Item, String> itemKeyMap = new HashMap<>();
         for (ResourceKey<Item> itemKey : BuiltInRegistries.ITEM.registryKeySet()) {
-            String itemID = itemKey.location().getPath();
+            String itemID = itemKey.identifier().getPath();
             Item item = BuiltInRegistries.ITEM.getValue(itemKey);
             itemKeyMap.put(item, itemID);
 
@@ -49,7 +49,7 @@ public class ItemDataExtractor {
         CreativeModeTabs.tryRebuildTabContents(InjectionEntrypoint.featureFlagSet, true, serverObj.registryAccess());
 
         for (ResourceKey<CreativeModeTab> key : BuiltInRegistries.CREATIVE_MODE_TAB.registryKeySet()) {
-            String tabName = key.location().getPath().toUpperCase();
+            String tabName = key.identifier().getPath().toUpperCase();
             if (tabName.equals("SEARCH"))
                 continue;
             CreativeModeTab tab = BuiltInRegistries.CREATIVE_MODE_TAB.getValue(key);
@@ -60,7 +60,7 @@ public class ItemDataExtractor {
         }
 
         for (ResourceKey<Item> itemKey : BuiltInRegistries.ITEM.registryKeySet()) {
-            String itemID = itemKey.location().getPath();
+            String itemID = itemKey.identifier().getPath();
             if (!CREATIVE_MODE_TABS.hasKey(itemID))
                 CREATIVE_MODE_TABS.put(itemID, List.of());
             else

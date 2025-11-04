@@ -21,7 +21,7 @@ public class EnchantmentDataExtractor {
         Registry<Enchantment> enchantmentRegistry = server.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
         Set<ResourceKey<Enchantment>> enchantmentKeySet = enchantmentRegistry.registryKeySet();
         Map<String, Enchantment> enchantmentMap = enchantmentKeySet.stream().collect(Collectors.toMap(
-            enchantmentResourceKey -> enchantmentResourceKey.location().getPath(),
+            enchantmentResourceKey -> enchantmentResourceKey.identifier().getPath(),
             enchantmentRegistry::getValue
         ));
 

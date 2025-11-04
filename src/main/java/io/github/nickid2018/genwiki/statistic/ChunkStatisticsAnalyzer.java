@@ -15,7 +15,6 @@ import net.minecraft.server.ServerTickRateManager;
 import net.minecraft.server.level.ChunkResult;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -60,7 +59,7 @@ public class ChunkStatisticsAnalyzer {
             Iterator<ServerLevel> levelIterator = levels.iterator();
             while (levelIterator.hasNext()) {
                 ServerLevel level = levelIterator.next();
-                String dimensionID = level.dimension().location().getPath();
+                String dimensionID = level.dimension().identifier().getPath();
                 if (SETTINGS.getDimensions() != null && !SETTINGS.getDimensions().contains(dimensionID)) {
                     levelIterator.remove();
                     continue;
@@ -156,7 +155,7 @@ public class ChunkStatisticsAnalyzer {
         );
         DataCounter<Holder<Biome>> biomeCounter = new DataCounter<>(
             "biome",
-            b -> b.unwrapKey().orElseThrow().location().getPath()
+            b -> b.unwrapKey().orElseThrow().identifier().getPath()
         );
 
         int count = 0;

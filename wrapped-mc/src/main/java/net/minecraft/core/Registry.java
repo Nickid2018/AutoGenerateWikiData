@@ -1,7 +1,7 @@
 package net.minecraft.core;
 
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
@@ -14,7 +14,7 @@ public interface Registry<T> {
 
     T getValue(ResourceKey<T> var1);
 
-    ResourceLocation getKey(T var1);
+    Identifier getKey(T var1);
 
     Set<ResourceKey<T>> registryKeySet();
 
