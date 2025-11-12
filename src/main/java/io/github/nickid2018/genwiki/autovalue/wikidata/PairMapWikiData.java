@@ -12,10 +12,6 @@ public class PairMapWikiData<T1, T2> implements WikiData {
 
     private final Object2ObjectMap<String, List<Pair<T1, T2>>> data = new Object2ObjectAVLTreeMap<>();
 
-    public boolean hasKey(String id) {
-        return data.containsKey(id);
-    }
-
     public void put(String id) {
         data.put(id, new ArrayList<>());
     }

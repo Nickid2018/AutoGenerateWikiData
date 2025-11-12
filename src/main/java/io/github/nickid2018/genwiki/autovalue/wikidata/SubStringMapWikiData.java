@@ -10,10 +10,6 @@ public class SubStringMapWikiData implements WikiData {
 
     private final Object2ObjectMap<String, Map<String, String>> data = new Object2ObjectAVLTreeMap<>();
 
-    public boolean hasKey(String id) {
-        return data.containsKey(id);
-    }
-
     public void put(String id, Map<String, String> value) {
         data.put(id, value);
     }

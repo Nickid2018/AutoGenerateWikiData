@@ -73,7 +73,7 @@ public class DoubleNumberWikiData implements WikiData {
         String tab = "\t".repeat(indent);
         if (enableFallback)
             if (fallbackNil)
-                builder.append(tab).append("['__fallback'] = nil,\n\n");
+                builder.append(tab).append("['__fallback'] = {},\n\n");
             else
                 builder.append(tab).append("['__fallback'] = {")
                        .append(formatValue(fallback1)).append(", ").append(formatValue(fallback2)).append("},\n\n");
