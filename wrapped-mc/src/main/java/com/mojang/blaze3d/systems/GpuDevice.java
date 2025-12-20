@@ -9,5 +9,5 @@ public interface GpuDevice {
 
     CommandEncoder createCommandEncoder();
 
-    GpuBuffer createBuffer(@Nullable Supplier<String> var1, int var2, int var3);
+    GpuBuffer createBuffer(@Nullable Supplier<String> var1, int var2, long var3);
 }

@@ -36,10 +36,6 @@ public class RemapSettings {
             ExtendAccessTransform.FIELD
         );
         remapProgram.addPostTransform(
-            "net.minecraft.world.level.block.state.BlockBehaviour$Properties",
-            ExtendAccessTransform.FIELD
-        );
-        remapProgram.addPostTransform(
             "net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase",
             ExtendAccessTransform.FIELD
         );
@@ -116,6 +112,10 @@ public class RemapSettings {
     }
 
     public static void remapSettings(GenWikiMode mode, RemapProgram remapProgram) {
+        remapProgram.addPostTransform(
+            "net.minecraft.world.level.block.state.BlockBehaviour$Properties",
+            ExtendAccessTransform.FIELD
+        );
         if (mode == GenWikiMode.STATISTICS) {
             commonServerSettings(remapProgram);
             remapProgram.addPostTransform(
@@ -256,6 +256,30 @@ public class RemapSettings {
                             false
                         ));
                         methodNode.instructions.insert(list);
+                    }
+                )
+            );
+            remapProgram.addPostTransform(
+                "net.minecraft.client.renderer.ItemBlockRenderTypes",
+                new MethodTransform(
+                    "<clinit>",
+                    null,
+                    methodNode -> {
+                        InsnList list = new InsnList();
+                        list.add(new FieldInsnNode(
+                            Opcodes.GETSTATIC,
+                            "net/minecraft/client/renderer/ItemBlockRenderTypes",
+                            "TYPE_BY_BLOCK",
+                            "Ljava/util/Map;"
+                        ));
+                        list.add(new MethodInsnNode(
+                            Opcodes.INVOKESTATIC,
+                            "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
+                            "exportBlockRenderTypes",
+                            "(Ljava/util/Map;)V",
+                            false
+                        ));
+                        methodNode.instructions.insertBefore(methodNode.instructions.getLast(), list);
                     }
                 )
             );

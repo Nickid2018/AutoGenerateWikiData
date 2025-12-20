@@ -3,6 +3,7 @@ package net.minecraft.world.level.block.state;
 import io.github.nickid2018.util.SneakyUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
@@ -61,5 +62,6 @@ public class BlockBehaviour {
         public boolean replaceable;
         public StatePredicate isRedstoneConductor;
         public StatePredicate isSuffocating;
+        public ResourceKey<Block> id;
     }
 }

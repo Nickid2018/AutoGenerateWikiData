@@ -1,5 +1,9 @@
 package io.github.nickid2018.genwiki.iso;
 
+import com.google.common.io.Files;
+import com.google.gson.JsonObject;
+import com.google.gson.internal.Streams;
+import com.google.gson.stream.JsonWriter;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Lighting;
@@ -12,15 +16,18 @@ import lombok.extern.slf4j.Slf4j;
 import net.minecraft.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.world.level.block.Block;
 import org.apache.commons.io.IOUtils;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 @Slf4j
@@ -42,6 +49,26 @@ public class ISOInjectionEntryPoints {
     private static long glintTimer = -1;
     private static long nextCommandCanExecute = 0;
     private static Matrix4f orthoMatrix = new Matrix4f().ortho(-2, 2, -2, 2, -0.1f, 1000);
+
+    public static void exportBlockRenderTypes(Map<Block, ChunkSectionLayer> map) {
+        JsonObject object = new JsonObject();
+        Map<String, String> sortedMap = new TreeMap<>();
+        map.forEach((block, chunkSectionLayer) -> sortedMap.put(
+            block.properties().id.identifier().getPath(),
+            chunkSectionLayer.name().toLowerCase()
+        ));
+        sortedMap.forEach(object::addProperty);
+        StringWriter sw = new StringWriter();
+        JsonWriter jw = new JsonWriter(sw);
+        jw.setIndent("    ");
+        File output = new File("block_render_types.json");
+        try {
+            Streams.write(object, jw);
+            Files.write(sw.toString().getBytes(StandardCharsets.UTF_8), output);
+        } catch (IOException e) {
+            log.error("Error while writing block render types", e);
+        }
+    }
 
     public static void setupLevelDiffuseLighting(Vector3f vector3f, Vector3f vector3f2, Matrix4f matrix4f) {
         RenderSystem.assertOnRenderThread();
@@ -162,12 +189,12 @@ public class ISOInjectionEntryPoints {
                             GpuBuffer buffer = RenderSystem.getDevice().createBuffer(
                                 () -> "SSHOT",
                                 9,
-                                mainTarget.width * mainTarget.height * texture.getFormat().pixelSize()
+                                (long) mainTarget.width * mainTarget.height * texture.getFormat().pixelSize()
                             );
                             encoder.copyTextureToBuffer(
                                 mainTarget.getColorTexture(), buffer, 0, LanguageUtils.sneakyExceptionRunnable(
                                     () -> {
-                                        try (GpuBuffer.MappedView readView = encoder.mapBuffer(buffer, true ,false)) {
+                                        try (GpuBuffer.MappedView readView = encoder.mapBuffer(buffer, true, false)) {
                                             NativeImage image = new NativeImage(
                                                 mainTarget.width,
                                                 mainTarget.height,
