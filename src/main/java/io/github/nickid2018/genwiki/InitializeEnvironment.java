@@ -95,31 +95,42 @@ public class InitializeEnvironment {
             .orElseThrow(() -> new IOException("Cannot find jar download sha1!"));
         String mappingURL = JsonUtils
             .getStringInPath(manifest, mappingPath)
-            .orElseThrow(() -> new IOException("Cannot find jar mapping url!"));
+            .orElse(null);
         String mappingSHA1 = JsonUtils
             .getStringInPath(manifest, mappingSHA1Path)
-            .orElseThrow(() -> new IOException("Cannot find jar mapping sha1!"));
+            .orElse(null);
 
         Map<String, File> downloadsMap = new HashMap<>();
         Map<String, File> downloadedData = new HashMap<>();
         downloadedData.put("jar", jarFile);
-        downloadedData.put("mapping", mappingFile);
         downloadedData.put("manifest", jsonFile);
+        if (mappingURL != null)
+            downloadedData.put("mapping", mappingFile);
 
         if (!jarFile.isFile() || forceReDownload) {
             downloadsMap.put(jarDownload, jarFile);
         } else {
-            String hash = Hashing.sha1().hashBytes(IOUtils.toByteArray(new FileInputStream(jarFile))).toString().toLowerCase();
+            String hash = Hashing
+                .sha1()
+                .hashBytes(IOUtils.toByteArray(new FileInputStream(jarFile)))
+                .toString()
+                .toLowerCase();
             if (!hash.equals(jarSHA1))
                 downloadsMap.put(jarDownload, jarFile);
         }
 
-        if (!mappingFile.isFile() || forceReDownload) {
-            downloadsMap.put(mappingURL, mappingFile);
-        } else {
-            String hash = Hashing.sha1().hashBytes(IOUtils.toByteArray(new FileInputStream(mappingFile))).toString().toLowerCase();
-            if (!hash.equals(mappingSHA1))
+        if (mappingURL != null) {
+            if (!mappingFile.isFile() || forceReDownload) {
                 downloadsMap.put(mappingURL, mappingFile);
+            } else {
+                String hash = Hashing
+                    .sha1()
+                    .hashBytes(IOUtils.toByteArray(new FileInputStream(mappingFile)))
+                    .toString()
+                    .toLowerCase();
+                if (!hash.equals(mappingSHA1))
+                    downloadsMap.put(mappingURL, mappingFile);
+            }
         }
 
         if (isClient) {
@@ -129,14 +140,18 @@ public class InitializeEnvironment {
             String assetsIndex = JsonUtils
                 .getStringInPath(manifest, "assetIndex.url")
                 .orElseThrow(() -> new IOException("Cannot find assets index url!"));
-            String indexSHA1  = JsonUtils
+            String indexSHA1 = JsonUtils
                 .getStringInPath(manifest, "assetIndex.sha1")
                 .orElseThrow(() -> new IOException("Cannot find assets index sha1!"));
             File indexFile = new File(INDEXES_FOLDER, assetsID + ".json");
             if (!indexFile.isFile() || forceReDownload) {
                 downloadsMap.put(assetsIndex, indexFile);
             } else {
-                String hash = Hashing.sha1().hashBytes(IOUtils.toByteArray(new FileInputStream(indexFile))).toString().toLowerCase();
+                String hash = Hashing
+                    .sha1()
+                    .hashBytes(IOUtils.toByteArray(new FileInputStream(indexFile)))
+                    .toString()
+                    .toLowerCase();
                 if (!hash.equals(indexSHA1))
                     downloadsMap.put(assetsIndex, indexFile);
             }
@@ -150,7 +165,8 @@ public class InitializeEnvironment {
     }
 
     public static void downloadAssetsIndex(File index) throws IOException {
-        JsonObject indexObject = JsonParser.parseReader(new FileReader(index)).getAsJsonObject().getAsJsonObject("objects");
+        JsonObject indexObject = JsonParser.parseReader(new FileReader(index)).getAsJsonObject().getAsJsonObject(
+            "objects");
         Map<String, File> collectedFiles = new HashMap<>();
         for (Map.Entry<String, JsonElement> entry : indexObject.entrySet()) {
             String hash = entry.getValue().getAsJsonObject().getAsJsonPrimitive("hash").getAsString();
@@ -162,7 +178,11 @@ public class InitializeEnvironment {
             if (!file.isFile()) {
                 collectedFiles.put("https://resources.download.minecraft.net/" + path, file);
             } else {
-                String fileHash = Hashing.sha1().hashBytes(IOUtils.toByteArray(new FileInputStream(file))).toString().toLowerCase();
+                String fileHash = Hashing
+                    .sha1()
+                    .hashBytes(IOUtils.toByteArray(new FileInputStream(file)))
+                    .toString()
+                    .toLowerCase();
                 if (!fileHash.equals(hash))
                     collectedFiles.put("https://resources.download.minecraft.net/" + path, file);
             }
@@ -180,15 +200,31 @@ public class InitializeEnvironment {
         Map<String, File> collectedFiles = new HashMap<>();
         for (JsonElement entry : libraries) {
             JsonObject library = entry.getAsJsonObject();
-            String sha1 = JsonUtils.getStringInPath(library, "downloads.artifact.sha1").orElseThrow(() -> new IOException("Cannot find sha1!"));
-            String path = JsonUtils.getStringInPath(library, "downloads.artifact.path").orElseThrow(() -> new IOException("Cannot find path!"));
+            String sha1 = JsonUtils
+                .getStringInPath(library, "downloads.artifact.sha1")
+                .orElseThrow(() -> new IOException("Cannot find sha1!"));
+            String path = JsonUtils
+                .getStringInPath(library, "downloads.artifact.path")
+                .orElseThrow(() -> new IOException("Cannot find path!"));
             File file = new File(LIBRARIES_FOLDER, path);
             if (!file.isFile()) {
-                collectedFiles.put(JsonUtils.getStringInPath(library, "downloads.artifact.url").orElseThrow(() -> new IOException("Cannot find url!")), file);
+                collectedFiles.put(
+                    JsonUtils
+                        .getStringInPath(library, "downloads.artifact.url")
+                        .orElseThrow(() -> new IOException("Cannot find url!")), file
+                );
             } else {
-                String fileHash = Hashing.sha1().hashBytes(IOUtils.toByteArray(new FileInputStream(file))).toString().toLowerCase();
+                String fileHash = Hashing
+                    .sha1()
+                    .hashBytes(IOUtils.toByteArray(new FileInputStream(file)))
+                    .toString()
+                    .toLowerCase();
                 if (!fileHash.equals(sha1))
-                    collectedFiles.put(JsonUtils.getStringInPath(library, "downloads.artifact.url").orElseThrow(() -> new IOException("Cannot find url!")), file);
+                    collectedFiles.put(
+                        JsonUtils
+                            .getStringInPath(library, "downloads.artifact.url")
+                            .orElseThrow(() -> new IOException("Cannot find url!")), file
+                    );
             }
         }
 

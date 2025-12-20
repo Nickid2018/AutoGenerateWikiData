@@ -104,7 +104,7 @@ public class GenerateWikiData {
     }
 
     private static void doRemap(File input, File mapping, File output, GenWikiMode mode) throws Exception {
-        MojangMapping format = new MojangMapping(new FileInputStream(mapping));
+        MojangMapping format = mapping != null ? new MojangMapping(new FileInputStream(mapping)) : new MojangMapping();
         RemapProgram program = new RemapProgram(format, input, output);
         RemapSettings.remapSettings(mode, program);
         if (mode.isClient) {
@@ -177,6 +177,7 @@ public class GenerateWikiData {
         }
 
         ProcessBuilder builder = newProcess();
+        builder.command().add("--enable-native-access=ALL-UNNAMED");
         builder.command().add("-jar");
         builder.command().add(file);
         builder.command().add("nogui");
@@ -222,6 +223,7 @@ public class GenerateWikiData {
         builder.command().add("-Dfile.encoding=UTF-8");
         builder.command().add("-Dstdout.encoding=UTF-8");
         builder.command().add("-Dstderr.encoding=UTF-8");
+        builder.command().add("--enable-native-access=ALL-UNNAMED");
         builder.command().add("-cp");
         builder.command().add(String.join(File.pathSeparator, collectedLibraries));
         builder.command().add("net.minecraft.client.data.Main");
@@ -252,6 +254,7 @@ public class GenerateWikiData {
         builder.command().add("-Dminecraft.client.jar=" + file);
         builder.command().add("-Dminecraft.launcher.brand=GenWiki");
         builder.command().add("-Dminecraft.launcher.version=1.0");
+        builder.command().add("--enable-native-access=ALL-UNNAMED");
         builder.command().add("-cp");
         builder.command().add(String.join(File.pathSeparator, collectedLibraries));
         builder.command().add(JsonUtils.getStringOrElse(json, "mainClass", "net.minecraft.client.main.Main"));

@@ -14,6 +14,10 @@ public class MojangMapping {
 
     protected ASMRemapper remapper;
 
+    public MojangMapping() {
+        remapper = new ASMRemapper(remaps);
+    }
+
     public MojangMapping(InputStream stream) throws IOException {
         remapper = new ASMRemapper(remaps);
         byte[] bytes = stream.readAllBytes();

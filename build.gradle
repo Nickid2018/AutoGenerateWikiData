@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'java-library'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '9.3.0'
 }
 
 group = 'io.github.nickid2018'
@@ -16,27 +16,27 @@ repositories {
 }
 
 dependencies {
-    api 'org.ow2.asm:asm:9.6'
-    api 'org.ow2.asm:asm-tree:9.6'
-    api 'org.ow2.asm:asm-commons:9.6'
+    api 'org.ow2.asm:asm:9.9.1'
+    api 'org.ow2.asm:asm-tree:9.9.1'
+    api 'org.ow2.asm:asm-commons:9.9.1'
 
     api 'commons-io:commons-io:2.15.0'
     api 'com.google.code.gson:gson:2.10.1'
     api 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
 
-    api "org.apache.logging.log4j:log4j-api:2.19.0"
-    api "org.apache.logging.log4j:log4j-core:2.19.0"
-    api "org.apache.logging.log4j:log4j-slf4j-impl:2.19.0"
+    api "org.apache.logging.log4j:log4j-api:2.25.0"
+    api 'org.apache.logging.log4j:log4j-core:2.25.3'
+    api "org.apache.logging.log4j:log4j-slf4j-impl:2.25.0"
 
     api 'it.unimi.dsi:fastutil:8.5.12'
     api 'com.google.guava:guava:32.1.3-jre'
     api 'me.tongfei:progressbar:0.10.0'
     api 'net.sf.jopt-simple:jopt-simple:6.0-alpha-3'
 
-    compileOnly 'org.projectlombok:lombok:1.18.32'
-    annotationProcessor 'org.projectlombok:lombok:1.18.32'
-    testCompileOnly 'org.projectlombok:lombok:1.18.32'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.32'
+    compileOnly 'org.projectlombok:lombok:1.18.42'
+    annotationProcessor 'org.projectlombok:lombok:1.18.42'
+    testCompileOnly 'org.projectlombok:lombok:1.18.42'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.42'
 
     testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -93,10 +93,6 @@ shadowJar {
 
     dependencies {
         exclude(project(":wrapped-mc"))
-    }
-
-    manifest {
-        inheritFrom(project.tasks.jar.manifest)
     }
 }
 
