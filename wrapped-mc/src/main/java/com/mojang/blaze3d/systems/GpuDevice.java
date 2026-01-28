@@ -1,13 +1,18 @@
 package com.mojang.blaze3d.systems;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
+import io.github.nickid2018.util.SneakyUtil;
 
 import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
-public interface GpuDevice {
+public class GpuDevice {
 
-    CommandEncoder createCommandEncoder();
+    public CommandEncoder createCommandEncoder() {
+        return SneakyUtil.sneakyNotNull();
+    }
 
-    GpuBuffer createBuffer(@Nullable Supplier<String> var1, int var2, long var3);
+    public GpuBuffer createBuffer(@Nullable Supplier<String> label, int usage, long size) {
+        return SneakyUtil.sneakyNotNull();
+    }
 }

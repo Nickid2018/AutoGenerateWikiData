@@ -2,12 +2,17 @@ package com.mojang.blaze3d.systems;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.textures.GpuTexture;
+import io.github.nickid2018.util.SneakyUtil;
 
-public interface CommandEncoder {
+public class CommandEncoder {
 
-    void clearColorAndDepthTextures(GpuTexture var1, int var2, GpuTexture var3, double var4);
+    public void clearColorAndDepthTextures(GpuTexture colorTexture, int clearColor, GpuTexture depthTexture, double clearDepth) {
+    }
 
-    void copyTextureToBuffer(GpuTexture var1, GpuBuffer var2, long var3, Runnable var4, int var5);
+    public void copyTextureToBuffer(GpuTexture source, GpuBuffer destination, long offset, Runnable callback, int mipLevel) {
+    }
 
-    GpuBuffer.MappedView mapBuffer(GpuBuffer var1, boolean b, boolean b1);
+    public GpuBuffer.MappedView mapBuffer(GpuBuffer buffer, boolean read, boolean write) {
+        return SneakyUtil.sneakyNotNull();
+    }
 }
