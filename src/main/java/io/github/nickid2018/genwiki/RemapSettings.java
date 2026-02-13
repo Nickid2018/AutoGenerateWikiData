@@ -260,30 +260,6 @@ public class RemapSettings {
                 )
             );
             remapProgram.addPostTransform(
-                "net.minecraft.client.renderer.ItemBlockRenderTypes",
-                new MethodTransform(
-                    "<clinit>",
-                    null,
-                    methodNode -> {
-                        InsnList list = new InsnList();
-                        list.add(new FieldInsnNode(
-                            Opcodes.GETSTATIC,
-                            "net/minecraft/client/renderer/ItemBlockRenderTypes",
-                            "TYPE_BY_BLOCK",
-                            "Ljava/util/Map;"
-                        ));
-                        list.add(new MethodInsnNode(
-                            Opcodes.INVOKESTATIC,
-                            "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
-                            "exportBlockRenderTypes",
-                            "(Ljava/util/Map;)V",
-                            false
-                        ));
-                        methodNode.instructions.insertBefore(methodNode.instructions.getLast(), list);
-                    }
-                )
-            );
-            remapProgram.addPostTransform(
                 "net.minecraft.client.renderer.GameRenderer",
                 new AddMethodTransform(() -> {
                     MethodNode methodNode = new MethodNode(
@@ -328,7 +304,7 @@ public class RemapSettings {
                 )
             );
             remapProgram.addPostTransform(
-                "net.minecraft.client.renderer.RenderStateShard",
+                "net.minecraft.client.renderer.rendertype.TextureTransform",
                 new MethodTransform(
                     "setupGlintTexturing",
                     null,
@@ -431,31 +407,21 @@ public class RemapSettings {
                     methodNode -> {
                         methodNode.instructions.clear();
                         methodNode.tryCatchBlocks.clear();
-                        methodNode.instructions.add(new TypeInsnNode(Opcodes.NEW, "org/joml/Vector4f"));
+                        methodNode.instructions.add(new TypeInsnNode(Opcodes.NEW, "net/minecraft/client/renderer/fog/FogData"));
                         methodNode.instructions.add(new InsnNode(Opcodes.DUP));
-                        methodNode.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "org/joml/Vector4f", "<init>", "()V", false));
-                        methodNode.instructions.add(new InsnNode(Opcodes.ARETURN));
-                    }
-                )
-            );
-            remapProgram.addPostTransform(
-                "net.minecraft.client.renderer.fog.FogRenderer",
-                new MethodTransform(
-                    "computeFogColor",
-                    null,
-                    methodNode -> {
-                        methodNode.instructions.clear();
-                        methodNode.tryCatchBlocks.clear();
-                        methodNode.instructions.add(new TypeInsnNode(Opcodes.NEW, "org/joml/Vector4f"));
+                        methodNode.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "net/minecraft/client/renderer/fog/FogData", "<init>", "()V", false));
                         methodNode.instructions.add(new InsnNode(Opcodes.DUP));
-                        methodNode.instructions.add(new InsnNode(Opcodes.FCONST_0));
-                        methodNode.instructions.add(new MethodInsnNode(
-                            Opcodes.INVOKESPECIAL,
-                            "org/joml/Vector4f",
-                            "<init>",
-                            "(F)V",
-                            false
-                        ));
+                        methodNode.instructions.add(new LdcInsnNode(Float.MAX_VALUE));
+                        methodNode.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/client/renderer/fog/FogData", "environmentalStart", "F"));
+                        methodNode.instructions.add(new InsnNode(Opcodes.DUP));
+                        methodNode.instructions.add(new LdcInsnNode(Float.MAX_VALUE));
+                        methodNode.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/client/renderer/fog/FogData", "environmentalEnd", "F"));
+                        methodNode.instructions.add(new InsnNode(Opcodes.DUP));
+                        methodNode.instructions.add(new LdcInsnNode(Float.MAX_VALUE));
+                        methodNode.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/client/renderer/fog/FogData", "renderDistanceStart", "F"));
+                        methodNode.instructions.add(new InsnNode(Opcodes.DUP));
+                        methodNode.instructions.add(new LdcInsnNode(Float.MAX_VALUE));
+                        methodNode.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/client/renderer/fog/FogData", "renderDistanceEnd", "F"));
                         methodNode.instructions.add(new InsnNode(Opcodes.ARETURN));
                     }
                 )

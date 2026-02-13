@@ -1,4 +1,4 @@
-package net.minecraft;
+package net.minecraft.util;
 
 import io.github.nickid2018.util.SneakyUtil;
 
