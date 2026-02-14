@@ -1,4 +1,11 @@
+pluginManagement {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+    }
+}
+
 rootProject.name = 'AutoGenerateWikiData'
 
-include(':wrapped-mc')
-project(':wrapped-mc').projectDir = file('wrapped-mc')
+includeBuild './easy-mock'
+includeBuild './build-logic'

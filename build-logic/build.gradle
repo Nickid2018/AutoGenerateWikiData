@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'groovy-gradle-plugin'
+}
+
+gradlePlugin {
+    plugins {
+        create("generate-mock") {
+            id = "io.github.nickid2018.generate-mock"
+            implementationClass = "io.github.nickid2018.mock.GenerateMockPlugin"
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    api 'io.github.nickid2018:easy-mock:1.0'
+}

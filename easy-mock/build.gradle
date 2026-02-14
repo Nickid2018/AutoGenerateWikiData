@@ -1,0 +1,19 @@
+plugins {
+    id 'java'
+    id 'java-library'
+}
+
+group = 'io.github.nickid2018'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api 'org.ow2.asm:asm:9.9.1'
+    api 'org.ow2.asm:asm-tree:9.9.1'
+    api 'org.ow2.asm:asm-commons:9.9.1'
+
+    api 'commons-io:commons-io:2.15.0'
+}

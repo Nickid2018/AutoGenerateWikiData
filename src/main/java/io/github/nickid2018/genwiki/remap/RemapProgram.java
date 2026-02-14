@@ -1,6 +1,7 @@
 package io.github.nickid2018.genwiki.remap;
 
 import com.google.common.hash.Hashing;
+import io.github.nickid2018.easymock.EasyMockGenerator;
 import io.github.nickid2018.genwiki.util.ClassUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,8 @@ public class RemapProgram {
 
     private final Map<String, List<PostTransform>> postTransforms = new HashMap<>();
     private final Set<InjectEntries> injectEntries = new HashSet<>();
+    private final Map<String, byte[]> remappedData = new HashMap<>();
+    private final Map<String, ClassNode> remappedNode = new HashMap<>();
     @Getter
     private final MojangMapping mapping;
     @Getter
@@ -61,14 +64,14 @@ public class RemapProgram {
     public void extractServer() throws IOException {
         try (ZipFile file = new ZipFile(inputFile)) {
             String versionData = IOUtils.toString(
-                file.getInputStream(file.getEntry(META_INF_VERSIONS)),
-                StandardCharsets.UTF_8
+                    file.getInputStream(file.getEntry(META_INF_VERSIONS)),
+                    StandardCharsets.UTF_8
             );
 
             extractData = versionData.split("\t", 3);
             IOUtils.copy(
-                file.getInputStream(file.getEntry("META-INF/versions/" + extractData[2])),
-                new FileOutputStream(sourceJarFile)
+                    file.getInputStream(file.getEntry("META-INF/versions/" + extractData[2])),
+                    new FileOutputStream(sourceJarFile)
             );
 
             String serverHash = Hashing.sha256().hashBytes(Files.readAllBytes(sourceJarFile.toPath())).toString();
@@ -114,14 +117,13 @@ public class RemapProgram {
     }
 
     public void remapClasses() throws IOException {
-        Map<String, byte[]> remappedData = new HashMap<>();
         try (ZipFile server = new ZipFile(sourceJarFile)) {
             List<? extends ZipEntry> entries = server
-                .stream()
-                .filter(e -> !e.isDirectory() && !e.getName().equals("META-INF/MANIFEST.MF") && !e
-                    .getName()
-                    .contains("MOJANGCS"))
-                .toList();
+                    .stream()
+                    .filter(e -> !e.isDirectory() && !e.getName().equals("META-INF/MANIFEST.MF") && !e
+                            .getName()
+                            .contains("MOJANGCS"))
+                    .toList();
             for (ZipEntry entry : entries) {
                 String nowFile = entry.getName();
                 byte[] bytes = IOUtils.toByteArray(server.getInputStream(entry));
@@ -138,19 +140,19 @@ public class RemapProgram {
                 ClassWriter writer = new ClassWriter(0);
                 reader.accept(new ClassRemapper(writer, mapping.remapper), 0);
 
+                ClassNode node = new ClassNode(Opcodes.ASM9);
+                ClassReader transformed = new ClassReader(writer.toByteArray());
+                transformed.accept(node, 0);
                 if (postTransforms.containsKey(classNameRemapped)) {
-                    ClassNode node = new ClassNode(Opcodes.ASM9);
-                    ClassReader transformed = new ClassReader(writer.toByteArray());
-                    transformed.accept(node, 0);
                     postTransforms
-                        .remove(classNameRemapped)
-                        .stream()
-                        .filter(transform -> !transform.transform(node))
-                        .forEach(transform -> log.warn(
-                            "Post transform failed for class {} with transform {}",
-                            classNameRemapped,
-                            transform
-                        ));
+                            .remove(classNameRemapped)
+                            .stream()
+                            .filter(transform -> !transform.transform(node))
+                            .forEach(transform -> log.warn(
+                                    "Post transform failed for class {} with transform {}",
+                                    classNameRemapped,
+                                    transform
+                            ));
                     for (MethodNode methods : node.methods) {
                         if (methods.localVariables != null)
                             methods.localVariables.clear();
@@ -160,17 +162,18 @@ public class RemapProgram {
                 }
 
                 remappedData.put(ClassUtils.toInternalName(classNameRemapped) + ".class", writer.toByteArray());
+                remappedNode.put(ClassUtils.toInternalName(classNameRemapped) + ".class", node);
             }
 
             postTransforms.forEach((clazz, transforms) -> log.warn(
-                "Post transform failed for class {} with transform {} (Class Not Found)",
-                clazz,
-                transforms
+                    "Post transform failed for class {} with transform {} (Class Not Found)",
+                    clazz,
+                    transforms
             ));
 
             remappedData.put(
-                "META-INF/MANIFEST.MF",
-                "Manifest-Version: 1.0\r\nMain-Class: net.minecraft.server.Main\r\nMulti-Release: true\r\n".getBytes()
+                    "META-INF/MANIFEST.MF",
+                    "Manifest-Version: 1.0\r\nMain-Class: net.minecraft.server.Main\r\nMulti-Release: true\r\n".getBytes()
             );
         }
 
@@ -195,10 +198,46 @@ public class RemapProgram {
         }
     }
 
+    public void validate(String apiDesc, boolean isClient) {
+        Map<String, ClassNode> requires = EasyMockGenerator.generate(apiDesc);
+        for (Map.Entry<String, ClassNode> entry : requires.entrySet()) {
+            if (entry.getKey().startsWith("com/mojang")) continue;
+            if (!isClient && entry.getKey().startsWith("net/minecraft/client")) continue;
+            ClassNode reference = entry.getValue();
+            ClassNode present = remappedNode.get(entry.getKey());
+            if (present != null) {
+                for (MethodNode ref : reference.methods) {
+                    MethodNode found = present.methods.stream()
+                            .filter(method -> ref.name.equals(method.name) && ref.desc.equals(method.desc))
+                            .findFirst()
+                            .orElse(null);
+                    if (found == null) {
+                        log.error("Validate Error: Method {}{} not found in class {}", ref.name, ref.desc, ClassUtils.toBinaryName(reference.name));
+                    } else if ((found.signature != null) ^ (ref.signature != null) || (found.signature != null && !found.signature.equals(ref.signature))) {
+                        log.warn("Validate Warn: Method {}{} in class {} has different signature.", ref.name, ref.desc, ClassUtils.toBinaryName(reference.name));
+                    }
+                }
+
+                for (FieldNode ref : reference.fields) {
+                    FieldNode found = present.fields.stream().filter(field -> ref.name.equals(field.name)).findFirst().orElse(null);
+                    if (found == null) {
+                        log.error("Validate Error: Field {} not found in class {}", ref.name, ClassUtils.toBinaryName(reference.name));
+                    } else if (!found.desc.equals(ref.desc)) {
+                        log.error("Validate Error: Field {} in class {} has different descriptor: expect {}, got {}.", ref.name, ClassUtils.toBinaryName(reference.name), ref.desc, found.desc);
+                    } else if ((found.signature != null) ^ (ref.signature != null) || (found.signature != null && !found.signature.equals(ref.signature))) {
+                        log.warn("Validate Warn: Field {} in class {} has different signature.", ref.name, ClassUtils.toBinaryName(reference.name));
+                    }
+                }
+            } else {
+                log.error("Validate Error: Class {} not found in current version.", ClassUtils.toBinaryName(reference.name));
+            }
+        }
+    }
+
     public void rePackServer() throws IOException {
         try (
-            ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputFile));
-            ZipFile input = new ZipFile(inputFile)
+                ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputFile));
+                ZipFile input = new ZipFile(inputFile)
         ) {
             byte[] remappedData = Files.readAllBytes(remappedFile.toPath());
             String hash = Hashing.sha256().hashBytes(remappedData).toString();

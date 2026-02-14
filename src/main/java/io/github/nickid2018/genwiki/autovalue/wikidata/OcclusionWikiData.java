@@ -3,7 +3,6 @@ package io.github.nickid2018.genwiki.autovalue.wikidata;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.world.phys.AABB;
 
 import java.util.List;
 import java.util.Map;

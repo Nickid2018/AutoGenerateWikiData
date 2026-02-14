@@ -1,6 +1,5 @@
 package io.github.nickid2018.genwiki.remap;
 
-import io.github.nickid2018.genwiki.util.ClassUtils;
 import lombok.SneakyThrows;
 
 import java.util.Map;

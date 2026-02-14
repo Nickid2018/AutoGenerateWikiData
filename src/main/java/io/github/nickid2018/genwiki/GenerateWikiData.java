@@ -5,13 +5,12 @@ import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonWriter;
 import io.github.nickid2018.genwiki.remap.MojangMapping;
 import io.github.nickid2018.genwiki.remap.RemapProgram;
+import io.github.nickid2018.genwiki.util.ClassUtils;
 import io.github.nickid2018.genwiki.util.ConfigUtils;
 import io.github.nickid2018.genwiki.util.JsonUtils;
 import io.github.nickid2018.genwiki.util.LanguageUtils;
-import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
-import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import joptsimple.*;
@@ -22,6 +21,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -36,14 +36,14 @@ public class GenerateWikiData {
         OptionParser parser = new OptionParser();
         NonOptionArgumentSpec<String> versionSpec = parser.nonOptions("Minecraft version");
         ArgumentAcceptingOptionSpec<GenWikiMode> modeSpec = parser
-            .accepts("mode", "Running mode")
-            .withOptionalArg()
-            .ofType(GenWikiMode.class)
-            .defaultsTo(GenWikiMode.AUTOVALUE);
+                .accepts("mode", "Running mode")
+                .withOptionalArg()
+                .ofType(GenWikiMode.class)
+                .defaultsTo(GenWikiMode.AUTOVALUE);
         OptionSpecBuilder doNotRun = parser.accepts("not-run", "Do not run server");
         OptionSpecBuilder doForceReDownload = parser.accepts(
-            "force-redownload",
-            "Force re-download server jar and mapping"
+                "force-redownload",
+                "Force re-download server jar and mapping"
         );
         AbstractOptionSpec<Void> helpSpec = parser.accepts("help", "Show help").forHelp();
 
@@ -75,8 +75,8 @@ public class GenerateWikiData {
         Map<String, File> files = InitializeEnvironment.downloadBaseFiles(mode.isClient, version, forceReDownload);
 
         File remappedFile = new File(
-            InitializeEnvironment.REMAPPED_FOLDER,
-            version + (mode.isClient ? "-client" : "-server") + ".jar"
+                InitializeEnvironment.REMAPPED_FOLDER,
+                version + (mode.isClient ? "-client" : "-server") + ".jar"
         );
         try {
             log.info("Remapping jar...");
@@ -115,6 +115,7 @@ public class GenerateWikiData {
             program.extractServer();
         program.fillRemapFormat();
         program.remapClasses();
+        program.validate(ClassUtils.readJarContent("remap/api.txt"), mode.isClient);
         if (!mode.isClient)
             program.rePackServer();
         log.info("Remapped jar to {}", output.getAbsolutePath());
@@ -147,10 +148,10 @@ public class GenerateWikiData {
         log.info("Launch server with command: '{}'", String.join(" ", processBuilder.command()));
 
         Process process = processBuilder
-            .directory(InitializeEnvironment.RUNTIME_FOLDER)
-            .redirectError(ProcessBuilder.Redirect.INHERIT)
-            .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-            .start();
+                .directory(InitializeEnvironment.RUNTIME_FOLDER)
+                .redirectError(ProcessBuilder.Redirect.INHERIT)
+                .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                .start();
 
         Thread deathHook = new Thread(() -> {
             if (process.isAlive())
@@ -238,8 +239,8 @@ public class GenerateWikiData {
         Set<String> collectedLibraries = prepareLibraries(file, manifest);
 
         IOUtils.copy(
-            Objects.requireNonNull(GenerateWikiData.class.getResourceAsStream("/options.txt")),
-            new FileOutputStream(new File(InitializeEnvironment.RUNTIME_FOLDER, "options.txt"))
+                Objects.requireNonNull(GenerateWikiData.class.getResourceAsStream("/options.txt")),
+                new FileOutputStream(new File(InitializeEnvironment.RUNTIME_FOLDER, "options.txt"))
         );
 
         String runtime = InitializeEnvironment.RUNTIME_FOLDER.getAbsolutePath();
@@ -301,84 +302,84 @@ public class GenerateWikiData {
         for (int i = 0; i < async; i++) {
             int finalI = i;
             Thread worker = new Thread(LanguageUtils.sneakyExceptionRunnable(
-                () -> {
-                    File subDir = new File(InitializeEnvironment.RUNTIME_FOLDER, "sub-" + finalI);
-                    File outputLogFile = new File(InitializeEnvironment.RUNTIME_FOLDER, "sub-" + finalI + "output");
-                    File outputErrorFile = new File(InitializeEnvironment.RUNTIME_FOLDER, "sub-" + finalI + "error");
-                    FileUtils.deleteDirectory(subDir);
-
-                    ProcessBuilder builder = newProcess()
-                        .directory(subDir)
-                        .redirectError(outputErrorFile)
-                        .redirectOutput(outputLogFile);
-                    builder.environment().put("CHUNK_TOTAL", String.valueOf(chunksSub));
-                    builder.command().add("-jar");
-                    builder.command().add(file);
-                    builder.command().add("nogui");
-
-                    log.info(
-                        "Launch sub process with config: '{}' (ENV: {}, CWD: {})",
-                        String.join(" ", builder.command()),
-                        builder.environment(),
-                        builder.directory()
-                    );
-
-                    while (lastWorlds.decrementAndGet() >= 0) {
-                        subDir.mkdirs();
-                        try (FileWriter w = new FileWriter(new File(subDir, "eula.txt"))) {
-                            w.write("eula=true");
-                        }
-                        try (FileWriter w = new FileWriter(new File(subDir, "server.properties"))) {
-                            w.write("""
-                                    max-tick-time=-1
-                                    sync-chunk-writes=false
-                                    pause-when-empty-seconds=1000000000
-                                    server-port=%d
-                                    """.formatted(finalI + 25565));
-                        }
-
-                        Process process = builder.start();
-
-                        Thread deathHook = new Thread(() -> {
-                            if (process.isAlive())
-                                process.destroy();
-                        });
-
-                        Runtime.getRuntime().addShutdownHook(deathHook);
-                        process.waitFor();
-                        Runtime.getRuntime().removeShutdownHook(deathHook);
-
-                        int exit = process.exitValue();
-                        boolean hasCrashReport = new File(subDir, "crash-reports").isDirectory();
-                        if (exit == 0 && !hasCrashReport) {
-                            File subOutput = new File(
-                                InitializeEnvironment.OUTPUT_FOLDER,
-                                "sub-" + completedWorlds.incrementAndGet()
-                            );
-                            File[] files = subDir.listFiles(f -> f.getName().endsWith("_count.json"));
-                            if (files == null)
-                                files = new File[0];
-                            for (File output : files)
-                                FileUtils.moveFileToDirectory(output, subOutput, true);
-                            completedWorldQueue.offer(subOutput);
-                        } else if (exit != 0) {
-                            log.warn("Async SubProcess #{} returns a non-zero exit value {}", finalI, exit);
-                            lastWorlds.incrementAndGet();
-                        } else {
-                            log.warn("Async SubProcess #{} crashed!", finalI);
-                            lastWorlds.incrementAndGet();
-                            for (File crashFile : Objects.requireNonNull(new File(
-                                subDir,
-                                "crash-reports"
-                            ).listFiles())) {
-                                FileUtils.moveFileToDirectory(crashFile, InitializeEnvironment.OUTPUT_FOLDER, true);
-                            }
-                        }
-
+                    () -> {
+                        File subDir = new File(InitializeEnvironment.RUNTIME_FOLDER, "sub-" + finalI);
+                        File outputLogFile = new File(InitializeEnvironment.RUNTIME_FOLDER, "sub-" + finalI + "output");
+                        File outputErrorFile = new File(InitializeEnvironment.RUNTIME_FOLDER, "sub-" + finalI + "error");
                         FileUtils.deleteDirectory(subDir);
-                    }
-                },
-                t -> log.error("Async SubProcess #{} Error", finalI, t)
+
+                        ProcessBuilder builder = newProcess()
+                                .directory(subDir)
+                                .redirectError(outputErrorFile)
+                                .redirectOutput(outputLogFile);
+                        builder.environment().put("CHUNK_TOTAL", String.valueOf(chunksSub));
+                        builder.command().add("-jar");
+                        builder.command().add(file);
+                        builder.command().add("nogui");
+
+                        log.info(
+                                "Launch sub process with config: '{}' (ENV: {}, CWD: {})",
+                                String.join(" ", builder.command()),
+                                builder.environment(),
+                                builder.directory()
+                        );
+
+                        while (lastWorlds.decrementAndGet() >= 0) {
+                            subDir.mkdirs();
+                            try (FileWriter w = new FileWriter(new File(subDir, "eula.txt"))) {
+                                w.write("eula=true");
+                            }
+                            try (FileWriter w = new FileWriter(new File(subDir, "server.properties"))) {
+                                w.write("""
+                                        max-tick-time=-1
+                                        sync-chunk-writes=false
+                                        pause-when-empty-seconds=1000000000
+                                        server-port=%d
+                                        """.formatted(finalI + 25565));
+                            }
+
+                            Process process = builder.start();
+
+                            Thread deathHook = new Thread(() -> {
+                                if (process.isAlive())
+                                    process.destroy();
+                            });
+
+                            Runtime.getRuntime().addShutdownHook(deathHook);
+                            process.waitFor();
+                            Runtime.getRuntime().removeShutdownHook(deathHook);
+
+                            int exit = process.exitValue();
+                            boolean hasCrashReport = new File(subDir, "crash-reports").isDirectory();
+                            if (exit == 0 && !hasCrashReport) {
+                                File subOutput = new File(
+                                        InitializeEnvironment.OUTPUT_FOLDER,
+                                        "sub-" + completedWorlds.incrementAndGet()
+                                );
+                                File[] files = subDir.listFiles(f -> f.getName().endsWith("_count.json"));
+                                if (files == null)
+                                    files = new File[0];
+                                for (File output : files)
+                                    FileUtils.moveFileToDirectory(output, subOutput, true);
+                                completedWorldQueue.offer(subOutput);
+                            } else if (exit != 0) {
+                                log.warn("Async SubProcess #{} returns a non-zero exit value {}", finalI, exit);
+                                lastWorlds.incrementAndGet();
+                            } else {
+                                log.warn("Async SubProcess #{} crashed!", finalI);
+                                lastWorlds.incrementAndGet();
+                                for (File crashFile : Objects.requireNonNull(new File(
+                                        subDir,
+                                        "crash-reports"
+                                ).listFiles())) {
+                                    FileUtils.moveFileToDirectory(crashFile, InitializeEnvironment.OUTPUT_FOLDER, true);
+                                }
+                            }
+
+                            FileUtils.deleteDirectory(subDir);
+                        }
+                    },
+                    t -> log.error("Async SubProcess #{} Error", finalI, t)
             ));
             worker.setName("SubProcess #" + i);
             worker.setDaemon(true);
@@ -388,13 +389,13 @@ public class GenerateWikiData {
 
         Set<File> processedData = new HashSet<>();
         try (
-            ProgressBar taskBar = ProgressBar
-                .builder()
-                .continuousUpdate()
-                .setTaskName("Sub Task")
-                .setInitialMax(worlds)
-                .showSpeed(new DecimalFormat("#.##"))
-                .build()
+                ProgressBar taskBar = ProgressBar
+                        .builder()
+                        .continuousUpdate()
+                        .setTaskName("Sub Task")
+                        .setInitialMax(worlds)
+                        .showSpeed(new DecimalFormat("#.##"))
+                        .build()
         ) {
             while (true) {
                 boolean needUpdate = !completedWorldQueue.isEmpty();
@@ -443,32 +444,32 @@ public class GenerateWikiData {
     private static void doFileCollect(String name, Set<File> collectedFileLists) {
         try {
             Set<JsonObject> data = collectedFileLists
-                .stream()
-                .map(dir -> new File(dir, name))
-                .filter(File::exists)
-                .map(LanguageUtils.exceptionOrElse(
-                    file -> JsonParser.parseReader(new FileReader(file)),
-                    (file, e) -> {
-                        log.warn("Cannot read {}", file, e);
-                        return null;
-                    }
-                ))
-                .filter(Objects::nonNull)
-                .map(JsonElement::getAsJsonObject)
-                .collect(Collectors.toSet());
+                    .stream()
+                    .map(dir -> new File(dir, name))
+                    .filter(File::exists)
+                    .map(LanguageUtils.exceptionOrElse(
+                            file -> JsonParser.parseReader(new FileReader(file)),
+                            (file, e) -> {
+                                log.warn("Cannot read {}", file, e);
+                                return null;
+                            }
+                    ))
+                    .filter(Objects::nonNull)
+                    .map(JsonElement::getAsJsonObject)
+                    .collect(Collectors.toSet());
             JsonArray metadata = new JsonArray();
             String dataName = name.replaceAll(".+_(.+)_count.json", "$1");
             long totalChunkCount = data.stream().map(o -> o.get("chunkCount")).mapToLong(JsonElement::getAsLong).sum();
             Set<Long> minHeightSet = data
-                .stream()
-                .map(o -> o.get("minHeight"))
-                .map(JsonElement::getAsLong)
-                .collect(Collectors.toSet());
+                    .stream()
+                    .map(o -> o.get("minHeight"))
+                    .map(JsonElement::getAsLong)
+                    .collect(Collectors.toSet());
             Set<Long> maxHeightSet = data
-                .stream()
-                .map(o -> o.get("maxHeight"))
-                .map(JsonElement::getAsLong)
-                .collect(Collectors.toSet());
+                    .stream()
+                    .map(o -> o.get("maxHeight"))
+                    .map(JsonElement::getAsLong)
+                    .collect(Collectors.toSet());
             if (minHeightSet.size() != 1 || maxHeightSet.size() != 1) {
                 log.error("Height data mismatches!");
                 return;
@@ -477,23 +478,23 @@ public class GenerateWikiData {
             long maxHeight = maxHeightSet.stream().findFirst().orElse(0L);
             Object2ObjectMap<String, LongList> counter = new Object2ObjectOpenHashMap<>();
             data.stream()
-                .map(o -> o.getAsJsonObject(dataName))
-                .map(JsonObject::entrySet)
-                .forEach(entries -> entries.forEach(entry -> {
-                    LongList list = counter.computeIfAbsent(entry.getKey(), s -> new LongArrayList());
-                    JsonArray array = entry.getValue().getAsJsonArray();
-                    if (list.isEmpty()) {
-                        array.forEach(e -> list.add(e.getAsLong()));
-                    } else {
-                        if (list.size() != array.size()) {
-                            log.warn("Length mismatch!");
+                    .map(o -> o.getAsJsonObject(dataName))
+                    .map(JsonObject::entrySet)
+                    .forEach(entries -> entries.forEach(entry -> {
+                        LongList list = counter.computeIfAbsent(entry.getKey(), s -> new LongArrayList());
+                        JsonArray array = entry.getValue().getAsJsonArray();
+                        if (list.isEmpty()) {
+                            array.forEach(e -> list.add(e.getAsLong()));
                         } else {
-                            for (int i = 0; i < list.size(); i++) {
-                                list.set(i, array.get(i).getAsLong() + list.getLong(i));
+                            if (list.size() != array.size()) {
+                                log.warn("Length mismatch!");
+                            } else {
+                                for (int i = 0; i < list.size(); i++) {
+                                    list.set(i, array.get(i).getAsLong() + list.getLong(i));
+                                }
                             }
                         }
-                    }
-                }));
+                    }));
             data.forEach(o -> {
                 o.remove(dataName);
                 o.remove("minHeight");
@@ -505,36 +506,36 @@ public class GenerateWikiData {
             jw.setIndent("  ");
             Streams.write(metadata, jw);
             String metadataJson = Arrays
-                .stream(sw.toString().split("\n"))
-                .skip(1)
-                .map(s -> "  " + s)
-                .collect(Collectors.joining("\n"));
+                    .stream(sw.toString().split("\n"))
+                    .skip(1)
+                    .map(s -> "  " + s)
+                    .collect(Collectors.joining("\n"));
             String countsJson = counter
-                .entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(entry -> "    \"%s\": [%s]"
-                    .formatted(
-                        entry.getKey(),
-                        entry
-                            .getValue()
-                            .longStream()
-                            .mapToObj(Long::toString)
-                            .collect(Collectors.joining(", "))
-                    )
-                ).collect(Collectors.joining(",\n"));
+                    .entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .map(entry -> "    \"%s\": [%s]"
+                            .formatted(
+                                    entry.getKey(),
+                                    entry
+                                            .getValue()
+                                            .longStream()
+                                            .mapToObj(Long::toString)
+                                            .collect(Collectors.joining(", "))
+                            )
+                    ).collect(Collectors.joining(",\n"));
             String output = """
-                            {
-                              "chunkCount": %d,
-                              "minHeight": %d,
-                              "maxHeight": %d,
-                              "metadata": [
-                            %s,
-                              "%s": {
-                            %s
-                              }
-                            }
-                            """.formatted(totalChunkCount, minHeight, maxHeight, metadataJson, dataName, countsJson);
+                    {
+                      "chunkCount": %d,
+                      "minHeight": %d,
+                      "maxHeight": %d,
+                      "metadata": [
+                    %s,
+                      "%s": {
+                    %s
+                      }
+                    }
+                    """.formatted(totalChunkCount, minHeight, maxHeight, metadataJson, dataName, countsJson);
             try (FileWriter writer = new FileWriter(new File(InitializeEnvironment.OUTPUT_FOLDER, name))) {
                 writer.write(output);
             }

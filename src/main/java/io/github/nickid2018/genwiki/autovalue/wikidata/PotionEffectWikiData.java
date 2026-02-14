@@ -17,7 +17,7 @@ public class PotionEffectWikiData implements WikiData {
 	}
 
 	public void addAttributeModifier(String potionEffect, String attribute, double amount, String operation) {
-		data.get(potionEffect).attributeModifiers.add(new AttributeModifiersWikiData.AttributeModifier(attribute, amount, operation));
+		data.get(potionEffect).attributeModifiers.add(new AttributeModifierData(attribute, amount, operation));
 	}
 
 	@Override
@@ -42,7 +42,7 @@ public class PotionEffectWikiData implements WikiData {
 			}
 			if (!potion.attributeModifiers.isEmpty()) {
 				builder.append(tab).append("\t['attributes'] = {\n");
-				builder.append(AttributeModifiersWikiData.printAttributeModifiers(indent + 2, potion.attributeModifiers));
+				builder.append(AttributeModifierData.printAttributeModifiers(indent + 2, potion.attributeModifiers));
 				builder.append(tab).append("\t},\n");
 			}
 			builder.append(tab).append("},\n");
@@ -52,5 +52,5 @@ public class PotionEffectWikiData implements WikiData {
 
 
 	private record EffectInstance(String id, int amplifier, int duration) {}
-	private record PotionEffect(String name, List<EffectInstance> effects, List<AttributeModifiersWikiData.AttributeModifier> attributeModifiers) {}
+	private record PotionEffect(String name, List<EffectInstance> effects, List<AttributeModifierData> attributeModifiers) {}
 }

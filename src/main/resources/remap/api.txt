@@ -1,0 +1,417 @@
+@package com.mojang.blaze3d.buffers
+    @abstract GpuBuffer impl java.lang.AutoCloseable
+        @innerclass MappedView interface static
+    @interface GpuBuffer$MappedView impl java.lang.AutoCloseable
+        @outerclass interface static
+        @virtual data() java.nio.ByteBuffer
+        @method close() V
+
+@package com.mojang.blaze3d.pipeline
+    @abstract RenderTarget
+        @field width I
+        @field height I
+        @method getColorTexture() com.mojang.blaze3d.textures.GpuTexture
+        @method getDepthTexture() com.mojang.blaze3d.textures.GpuTexture
+
+@package com.mojang.blaze3d.platform
+    @class Lighting
+        @innerclass Entry enum static
+        @method setupFor(-.Lighting$Entry) V
+    @enum Lighting$Entry
+        @outerclass enum static
+        @econst LEVEL
+        @econst ITEMS_FLAT
+        @econst ITEMS_3D
+        @econst ENTITY_IN_UI
+        @econst PLAYER_SKIN
+    @class NativeImage
+        @method <init>(I,I,Z) V
+        @method writeToFile(java.nio.file.Path) V throws java.io.IOException
+        @method setPixelABGR(I,I,I) V
+    @class Window
+        @method handle() J
+
+@package com.mojang.blaze3d.systems
+    @class CommandEncoder
+        @method clearColorAndDepthTextures(com.mojang.blaze3d.textures.GpuTexture,I,com.mojang.blaze3d.textures.GpuTexture,D) V
+        @method copyTextureToBuffer(com.mojang.blaze3d.textures.GpuTexture,com.mojang.blaze3d.buffers.GpuBuffer,J,java.lang.Runnable,I) V
+        @method mapBuffer(com.mojang.blaze3d.buffers.GpuBuffer,Z,Z) com.mojang.blaze3d.buffers.GpuBuffer$MappedView
+    @class GpuDevice
+        @method createCommandEncoder() -.CommandEncoder
+        @method createBuffer(java.util.function.Supplier,I,J) com.mojang.blaze3d.buffers.GpuBuffer
+    @class RenderSystem
+        @function assertOnRenderThread() V
+        @function getDevice() -.GpuDevice
+
+@package com.mojang.blaze3d.textures
+    @class GpuTexture
+        @method getFormat() -.TextureFormat
+    @enum TextureFormat
+        @method pixelSize() I
+
+@package net.minecraft.client.multiplayer
+    @class ClientPacketListener
+        @method sendCommand(java.lang.String) V
+
+@package net.minecraft.client.player
+    @class LocalPlayer
+        @field connection net.minecraft.client.multiplayer.ClientPacketListener
+
+@package net.minecraft.client.renderer
+    @class GameRenderer
+        @method renderLevel(net.minecraft.client.DeltaTracker) V
+        @method getLighting() com.mojang.blaze3d.platform.Lighting
+
+@package net.minecraft.client.renderer.chunk
+    @enum ChunkSectionLayer
+
+@package net.minecraft.client
+    @interface DeltaTracker
+        @const ONE -.DeltaTracker
+    @class Minecraft
+        @field player -.player.LocalPlayer
+        @final gameRenderer -.renderer.GameRenderer
+        @function getInstance() -.Minecraft
+        @method getWindow() com.mojang.blaze3d.platform.Window
+        @method getMainRenderTarget() com.mojang.blaze3d.pipeline.RenderTarget
+
+@package net.minecraft.core.component
+    @interface DataComponentGetter
+        @virtual get(-.DataComponentType) java.lang.Object <T:Ljava/lang/Object;>(Lnet/minecraft/core/component/DataComponentType<+TT;>;)TT;
+    @interface DataComponentMap impl java.lang.Iterable,-.DataComponentGetter Ljava/lang/Object;Ljava/lang/Iterable<Lnet/minecraft/core/component/TypedDataComponent<*>;>;Lnet/minecraft/core/component/DataComponentGetter;
+    @class DataComponents
+        @const FOOD -.DataComponentType Lnet/minecraft/core/component/DataComponentType<Lnet/minecraft/world/food/FoodProperties;>;
+    @interface DataComponentType <T:Ljava/lang/Object;>Ljava/lang/Object;
+    @record TypedDataComponent <T:Ljava/lang/Object;>Ljava/lang/Record;
+        @component type -.DataComponentType Lnet/minecraft/core/component/DataComponentType<TT;>;
+        @component value java.lang.Object TT;
+
+@package net.minecraft.core.registries
+    @class BuiltInRegistries
+        @const ITEM net.minecraft.core.DefaultedRegistry Lnet/minecraft/core/DefaultedRegistry<Lnet/minecraft/world/item/Item;>;
+        @const CREATIVE_MODE_TAB net.minecraft.core.Registry Lnet/minecraft/core/Registry<Lnet/minecraft/world/item/CreativeModeTab;>;
+        @const ENTITY_TYPE net.minecraft.core.DefaultedRegistry Lnet/minecraft/core/DefaultedRegistry<Lnet/minecraft/world/entity/EntityType<*>;>;
+        @const MOB_EFFECT net.minecraft.core.Registry Lnet/minecraft/core/Registry<Lnet/minecraft/world/effect/MobEffect;>;
+        @const POTION net.minecraft.core.Registry Lnet/minecraft/core/Registry<Lnet/minecraft/world/item/alchemy/Potion;>;
+        @const BLOCK net.minecraft.core.DefaultedRegistry Lnet/minecraft/core/DefaultedRegistry<Lnet/minecraft/world/level/block/Block;>;
+        @const ATTRIBUTE net.minecraft.core.Registry Lnet/minecraft/core/Registry<Lnet/minecraft/world/entity/ai/attributes/Attribute;>;
+    @class Registries
+        @const ENCHANTMENT net.minecraft.resources.ResourceKey Lnet/minecraft/resources/ResourceKey<Lnet/minecraft/core/Registry<Lnet/minecraft/world/item/enchantment/Enchantment;>;>;
+
+@package net.minecraft.core
+    @class BlockPos
+        @const ZERO -.BlockPos
+        @method <init>(I,I,I) V
+    @interface DefaultedRegistry impl -.Registry <T:Ljava/lang/Object;>Ljava/lang/Object;Lnet/minecraft/core/Registry<TT;>;
+    @enum Direction
+        @econst DOWN
+        @econst UP
+        @econst NORTH
+        @econst SOUTH
+        @econst WEST
+        @econst EAST
+        @function values() [-.Direction
+    @interface Holder <T:Ljava/lang/Object;>Ljava/lang/Object;
+        @virtual value() java.lang.Object ()TT;
+        @virtual unwrapKey() java.util.Optional ()Ljava/util/Optional<Lnet/minecraft/resources/ResourceKey<TT;>;>;
+    @interface HolderLookup
+        @innerclass Provider interface
+    @interface HolderLookup$Provider
+        @outerclass interface
+    @interface HolderSet <T:Ljava/lang/Object;>Ljava/lang/Object;
+        @virtual stream() java.util.stream.Stream ()Ljava/util/stream/Stream<Lnet/minecraft/core/Holder<TT;>;>;
+        @innerclass ListBacked abstract static
+        @innerclass Named static
+    @abstract HolderSet$ListBacked impl -.HolderSet <T:Ljava/lang/Object;>Ljava/lang/Object;Lnet/minecraft/core/HolderSet<TT;>;
+        @outerclass abstract static
+        @method stream() java.util.stream.Stream ()Ljava/util/stream/Stream<Lnet/minecraft/core/Holder<TT;>;>;
+    @class HolderSet$Named extends HolderSet$ListBacked <T:Ljava/lang/Object;>Lnet/minecraft/core/HolderSet$ListBacked<TT;>;
+        @outerclass static
+        @method key() net.minecraft.tags.TagKey ()Lnet/minecraft/tags/TagKey<TT;>;
+    @class IdMapper <T:Ljava/lang/Object;>Ljava/lang/Object;
+        @method iterator() java.util.Iterator ()Ljava/util/Iterator<TT;>;
+    @interface Registry <T:Ljava/lang/Object;>Ljava/lang/Object;
+        @virtual getId(java.lang.Object) I (TT;)I
+        @virtual getValue(net.minecraft.resources.ResourceKey) java.lang.Object (Lnet/minecraft/resources/ResourceKey<TT;>;)TT;
+        @virtual getKey(java.lang.Object) net.minecraft.resources.Identifier (TT;)Lnet/minecraft/resources/Identifier;
+        @virtual registryKeySet() java.util.Set ()Ljava/util/Set<Lnet/minecraft/resources/ResourceKey<TT;>;>;
+        @virtual wrapAsHolder(java.lang.Object) -.Holder (TT;)Lnet/minecraft/core/Holder<TT;>;
+        @virtual getTags() java.util.stream.Stream ()Ljava/util/stream/Stream<Lnet/minecraft/core/HolderSet$Named<TT;>;>;
+    @interface RegistryAccess impl -.HolderLookup$Provider
+        @innerclass Frozen interface static
+        @innerclass RegistryEntry record static
+        @visitinner -.HolderLookup$Provider interface static
+        @method lookupOrThrow(net.minecraft.resources.ResourceKey) -.Registry <E:Ljava/lang/Object;>(Lnet/minecraft/resources/ResourceKey<+Lnet/minecraft/core/Registry<+TE;>;>;)Lnet/minecraft/core/Registry<TE;>;
+        @virtual registries() java.util.stream.Stream ()Ljava/util/stream/Stream<Lnet/minecraft/core/RegistryAccess$RegistryEntry<*>;>;
+    @interface RegistryAccess$Frozen impl -.RegistryAccess
+        @outerclass interface static
+    @record RegistryAccess$RegistryEntry <T:Ljava/lang/Object;>Ljava/lang/Record;
+        @outerclass record static
+        @component key net.minecraft.resources.ResourceKey Lnet/minecraft/resources/ResourceKey<+Lnet/minecraft/core/Registry<TT;>;>;
+        @component value -.Registry Lnet/minecraft/core/Registry<TT;>;
+    @interface TypedInstance <T:Ljava/lang/Object;>Ljava/lang/Object;
+        @method is(net.minecraft.tags.TagKey) Z (Lnet/minecraft/tags/TagKey<TT;>;)Z
+
+@package net.minecraft.network.syncher
+    @record EntityDataAccessor <T:Ljava/lang/Object;>Ljava/lang/Record;
+    @class SynchedEntityData
+        @field itemsById [-.SynchedEntityData$DataItem [Lnet/minecraft/network/syncher/SynchedEntityData$DataItem<*>;
+        @innerclass DataItem static
+    @class SynchedEntityData$DataItem <T:Ljava/lang/Object;>Ljava/lang/Object;
+        @outerclass static
+        @final accessor -.EntityDataAccessor Lnet/minecraft/network/syncher/EntityDataAccessor<TT;>;
+
+@package net.minecraft.resources
+    @class Identifier
+        @method getPath() java.lang.String
+    @class ResourceKey <T:Ljava/lang/Object;>Ljava/lang/Object;
+        @method identifier() -.Identifier
+
+@package net.minecraft.server.level
+    @interface ChunkResult <T:Ljava/lang/Object;>Ljava/lang/Object;
+        @virtual orElse(java.lang.Object) java.lang.Object (TT;)TT;
+    @class ServerChunkCache
+        @virtual getChunkFuture(I,I,net.minecraft.world.level.chunk.status.ChunkStatus,Z) java.util.concurrent.CompletableFuture (IILnet/minecraft/world/level/chunk/status/ChunkStatus;Z)Ljava/util/concurrent/CompletableFuture<Lnet/minecraft/server/level/ChunkResult<Lnet/minecraft/world/level/chunk/ChunkAccess;>;>;
+    @class ServerLevel extends net.minecraft.world.level.Level
+        @field noSave Z
+        @method getSeed() J
+        @method getChunkSource() -.ServerChunkCache
+        @method fuelValues() net.minecraft.world.level.block.entity.FuelValues
+
+@package net.minecraft.server
+    @abstract MinecraftServer
+        @method getGameRules() net.minecraft.world.level.gamerules.GameRules
+        @method overworld() -.level.ServerLevel
+        @method getAllLevels() java.lang.Iterable ()Ljava/lang/Iterable<Lnet/minecraft/server/level/ServerLevel;>;
+        @method registryAccess() net.minecraft.core.RegistryAccess$Frozen
+        @method tickRateManager() -.ServerTickRateManager
+    @class ServerTickRateManager
+        @method setFrozen(Z) V
+        @method setTickRate(F) V
+
+@package net.minecraft.tags
+    @class BlockTags
+        @const WOOL -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const MINEABLE_WITH_AXE -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const MINEABLE_WITH_HOE -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const MINEABLE_WITH_PICKAXE -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const MINEABLE_WITH_SHOVEL -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const SWORD_EFFICIENT -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const SWORD_INSTANTLY_MINES -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const NEEDS_DIAMOND_TOOL -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const NEEDS_IRON_TOOL -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const NEEDS_STONE_TOOL -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const LEAVES -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+    @record TagKey <T:Ljava/lang/Object;>Ljava/lang/Record;
+        @component registry net.minecraft.resources.ResourceKey Lnet/minecraft/resources/ResourceKey<+Lnet/minecraft/core/Registry<TT;>;>;
+        @component location net.minecraft.resources.Identifier
+
+@package net.minecraft.util
+    @interface StringRepresentable
+        @virtual getSerializedName() java.lang.String
+    @class Util
+        @function getMillis() J
+
+@package net.minecraft.world.effect
+    @class MobEffect
+        @method getCategory() -.MobEffectCategory
+        @method getColor() I
+        @method isInstantenous() Z
+        @method createModifiers(I,java.util.function.BiConsumer) V (ILjava/util/function/BiConsumer<Lnet/minecraft/core/Holder<Lnet/minecraft/world/entity/ai/attributes/Attribute;>;Lnet/minecraft/world/entity/ai/attributes/AttributeModifier;>;)V
+    @enum MobEffectCategory
+    @class MobEffectInstance impl java.lang.Comparable Ljava/lang/Object;Ljava/lang/Comparable<Lnet/minecraft/world/effect/MobEffectInstance;>;
+        @method <init>(net.minecraft.core.Holder) V (Lnet/minecraft/core/Holder<Lnet/minecraft/world/effect/MobEffect;>;)V
+        @method getEffect() net.minecraft.core.Holder ()Lnet/minecraft/core/Holder<Lnet/minecraft/world/effect/MobEffect;>;
+        @method getDuration() I
+        @method getAmplifier() I
+
+@package net.minecraft.world.entity.ai.attributes
+    @class Attribute
+        @final defaultValue D
+        @field sentiment -.Attribute$Sentiment
+        @innerclass Sentiment enum static
+    @enum Attribute$Sentiment
+        @outerclass enum static
+        @econst POSITIVE
+        @econst NEUTRAL
+        @econst NEGATIVE
+    @record AttributeModifier
+        @component amount D
+        @component operation -.AttributeModifier$Operation
+        @innerclass Operation enum static
+    @enum AttributeModifier$Operation impl net.minecraft.util.StringRepresentable
+        @outerclass enum static
+        @method getSerializedName() java.lang.String
+    @class RangedAttribute extends -.Attribute
+        @method getMinValue() D
+        @method getMaxValue() D
+
+@package net.minecraft.world.entity
+    @abstract Entity
+        @method getEntityData() net.minecraft.network.syncher.SynchedEntityData
+    @enum EntitySpawnReason
+        @econst COMMAND
+    @class EntityType <T:Lnet/minecraft/world/entity/Entity;>Ljava/lang/Object;
+        @method getCategory() -.MobCategory
+        @method spawn(net.minecraft.server.level.ServerLevel,net.minecraft.core.BlockPos,-.EntitySpawnReason) -.Entity (Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/EntitySpawnReason;)TT;
+    @abstract LivingEntity extends -.Entity
+        @method addEffect(net.minecraft.world.effect.MobEffectInstance) Z
+    @enum MobCategory impl net.minecraft.util.StringRepresentable
+        @method getSerializedName() java.lang.String
+
+@package net.minecraft.world.flag
+    @class FeatureFlag
+    @class FeatureFlagRegistry
+        @final names java.util.Map Ljava/util/Map<Lnet/minecraft/resources/Identifier;Lnet/minecraft/world/flag/FeatureFlag;>;
+        @method fromNames(java.lang.Iterable) -.FeatureFlagSet (Ljava/lang/Iterable<Lnet/minecraft/resources/Identifier;>;)Lnet/minecraft/world/flag/FeatureFlagSet;
+    @class FeatureFlags
+        @const REGISTRY -.FeatureFlagRegistry
+    @class FeatureFlagSet
+
+@package net.minecraft.world.food
+    @record FoodProperties
+        @component nutrition I
+        @component saturation F
+
+@package net.minecraft.world.item.alchemy
+    @class Potion
+        @method name() java.lang.String
+        @method getEffects() java.util.List ()Ljava/util/List<Lnet/minecraft/world/effect/MobEffectInstance;>;
+
+@package net.minecraft.world.item.enchantment
+    @record Enchantment
+        @method getMaxLevel() I
+        @method getMinCost(I) I
+        @method getMaxCost(I) I
+
+@package net.minecraft.world.item
+    @class CreativeModeTab
+        @method getDisplayItems() java.util.Collection ()Ljava/util/Collection<Lnet/minecraft/world/item/ItemStack;>;
+    @class CreativeModeTabs
+        @function tryRebuildTabContents(net.minecraft.world.flag.FeatureFlagSet,Z,net.minecraft.core.HolderLookup$Provider) Z
+    @class Item impl net.minecraft.world.level.ItemLike
+        @method getDefaultInstance() -.ItemStack
+    @class ItemStack
+        @method <init>(net.minecraft.world.level.ItemLike) V
+        @method getItem() -.Item
+        @method getComponents() net.minecraft.core.component.DataComponentMap
+
+@package net.minecraft.world.level.biome
+    @class Biome
+
+@package net.minecraft.world.level.block.entity
+    @class FuelValues
+        @final values it.unimi.dsi.fastutil.objects.Object2IntSortedMap Lit/unimi/dsi/fastutil/objects/Object2IntSortedMap<Lnet/minecraft/world/item/Item;>;
+
+@package net.minecraft.world.level.block.state.properties
+    @class BlockStateProperties
+    @enum NoteBlockInstrument
+    @abstract Property <T::Ljava/lang/Comparable<TT;>;>Ljava/lang/Object;
+        @virtual getPossibleValues() java.util.List ()Ljava/util/List<TT;>;
+        @method getName() java.lang.String
+        @virtual getName(java.lang.Comparable) java.lang.String (TT;)Ljava/lang/String;
+
+@package net.minecraft.world.level.block.state
+    @class BlockBehaviour
+        @method properties() -.BlockBehaviour$Properties
+        @innerclass BlockStateBase abstract static
+        @innerclass StatePredicate interface static
+        @innerclass Properties static
+    @abstract BlockBehaviour$BlockStateBase extends -.StateHolder impl net.minecraft.core.TypedInstance Lnet/minecraft/world/level/block/state/StateHolder<Lnet/minecraft/world/level/block/Block;Lnet/minecraft/world/level/block/state/BlockState;>;Lnet/minecraft/core/TypedInstance<Lnet/minecraft/world/level/block/Block;>;
+        @outerclass abstract static
+        @field legacySolid Z
+        @final mapColor net.minecraft.world.level.material.MapColor
+        @method getBlock() net.minecraft.world.level.block.Block
+        @method isFaceSturdy(net.minecraft.world.level.BlockGetter,net.minecraft.core.BlockPos,net.minecraft.core.Direction,net.minecraft.world.level.block.SupportType) Z
+        @method getFaceOcclusionShape(net.minecraft.core.Direction) net.minecraft.world.phys.shapes.VoxelShape
+        @method canOcclude() Z
+        @method blocksMotion() Z
+    @interface BlockBehaviour$StatePredicate
+        @outerclass interface static
+        @virtual test(-.BlockState,net.minecraft.world.level.BlockGetter,net.minecraft.core.BlockPos) Z
+    @class BlockBehaviour$Properties
+        @outerclass static
+        @visitinner -.BlockBehaviour$StatePredicate interface static
+        @field explosionResistance F
+        @field destroyTime F
+        @field requiresCorrectToolForDrops Z
+        @field ignitedByLava Z
+        @field pushReaction net.minecraft.world.level.material.PushReaction
+        @field instrument -.properties.NoteBlockInstrument
+        @field replaceable Z
+        @field isRedstoneConductor -.BlockBehaviour$StatePredicate
+        @field isSuffocating -.BlockBehaviour$StatePredicate
+        @field id net.minecraft.resources.ResourceKey Lnet/minecraft/resources/ResourceKey<Lnet/minecraft/world/level/block/Block;>;
+    @class BlockState extends -.BlockBehaviour$BlockStateBase
+        @visitinner -.BlockBehaviour$BlockStateBase abstract static
+    @class StateDefinition <O:Ljava/lang/Object;S:Ljava/lang/Object;>Ljava/lang/Object;
+        @method getPossibleStates() com.google.common.collect.ImmutableList ()Lcom/google/common/collect/ImmutableList<TS;>;
+    @abstract StateHolder <O:Ljava/lang/Object;S:Ljava/lang/Object;>Ljava/lang/Object;
+        @method getValues() java.util.Map ()Ljava/util/Map<Lnet/minecraft/world/level/block/state/properties/Property<*>;Ljava/lang/Comparable<*>;>;
+
+@package net.minecraft.world.level.block
+    @class Block extends -.state.BlockBehaviour impl net.minecraft.world.level.ItemLike
+        @const BLOCK_STATE_REGISTRY net.minecraft.core.IdMapper Lnet/minecraft/core/IdMapper<Lnet/minecraft/world/level/block/state/BlockState;>;
+        @method getStateDefinition() -.state.StateDefinition ()Lnet/minecraft/world/level/block/state/StateDefinition<Lnet/minecraft/world/level/block/Block;Lnet/minecraft/world/level/block/state/BlockState;>;
+        @method defaultBlockState() -.state.BlockState
+    @class Blocks
+        @const FIRE -.Block
+    @interface EntityBlock
+    @class FireBlock extends -.Block
+        @method getBurnOdds(-.state.BlockState) I
+        @method getIgniteOdds(-.state.BlockState) I
+    @enum SupportType
+        @econst FULL
+        @econst CENTER
+        @econst RIGID
+
+@package net.minecraft.world.level.chunk.status
+    @class ChunkStatus
+        @const FEATURES -.ChunkStatus
+
+@package net.minecraft.world.level.chunk
+    @abstract ChunkAccess impl net.minecraft.world.level.BlockGetter
+        @method getNoiseBiome(I,I,I) net.minecraft.core.Holder (III)Lnet/minecraft/core/Holder<Lnet/minecraft/world/level/biome/Biome;>;
+
+@package net.minecraft.world.level.gamerules
+    @class GameRule <T:Ljava/lang/Object;>Ljava/lang/Object;
+        @method defaultValue() java.lang.Object ()TT;
+        @method category() -.GameRuleCategory
+    @record GameRuleCategory
+        @component id net.minecraft.resources.Identifier
+    @class GameRules
+        @method visitGameRuleTypes(-.GameRuleTypeVisitor) V
+    @interface GameRuleTypeVisitor
+        @method visitBoolean(-.GameRule) V (Lnet/minecraft/world/level/gamerules/GameRule<Ljava/lang/Boolean;>;)V
+        @method visitInteger(-.GameRule) V (Lnet/minecraft/world/level/gamerules/GameRule<Ljava/lang/Integer;>;)V
+
+@package net.minecraft.world.level.material
+    @class MapColor
+        @field id I
+    @enum PushReaction
+
+@package net.minecraft.world.level
+    @interface BlockGetter
+        @virtual getBlockState(net.minecraft.core.BlockPos) -.block.state.BlockState
+    @interface ItemLike
+    @abstract Level impl -.LevelReader
+        @method dimension() net.minecraft.resources.ResourceKey ()Lnet/minecraft/resources/ResourceKey<Lnet/minecraft/world/level/Level;>;
+        @method getBlockState(net.minecraft.core.BlockPos) net.minecraft.world.level.block.state.BlockState
+        @virtual fuelValues() -.block.entity.FuelValues
+    @interface LevelReader impl -.BlockGetter
+        @method getMinY() I
+        @method getHeight() I
+
+@package net.minecraft.world.phys.shapes
+    @abstract VoxelShape
+        @method toAabbs() java.util.List ()Ljava/util/List<Lnet/minecraft/world/phys/AABB;>;
+        @method isEmpty() Z
+
+@package net.minecraft.world.phys
+    @class AABB
+        @final minX D
+        @final minY D
+        @final minZ D
+        @final maxX D
+        @final maxY D
+        @final maxZ D

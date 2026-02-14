@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'java-library'
     id 'com.gradleup.shadow' version '9.3.0'
+    id 'io.github.nickid2018.generate-mock'
 }
 
 group = 'io.github.nickid2018'
@@ -9,6 +10,7 @@ version = '1.0'
 
 repositories {
     mavenCentral()
+    mavenLocal()
     maven {
         name = "minecraft"
         url = "https://libraries.minecraft.net/"
@@ -30,8 +32,9 @@ dependencies {
 
     api 'it.unimi.dsi:fastutil:8.5.12'
     api 'com.google.guava:guava:32.1.3-jre'
-    api 'me.tongfei:progressbar:0.10.0'
     api 'net.sf.jopt-simple:jopt-simple:6.0-alpha-3'
+    api 'me.tongfei:progressbar:0.10.0'
+    api 'io.github.nickid2018:easy-mock:1.0'
 
     compileOnly 'org.projectlombok:lombok:1.18.42'
     annotationProcessor 'org.projectlombok:lombok:1.18.42'
@@ -41,45 +44,14 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
-    compileOnly(project(':wrapped-mc'))
-    compileOnly('org.lwjgl:lwjgl:3.3.3')
-    compileOnly('org.lwjgl:lwjgl-glfw:3.3.3')
-    compileOnly('org.lwjgl:lwjgl-opengl:3.3.3')
-    compileOnly('org.lwjgl:lwjgl-stb:3.3.3')
-    compileOnly('com.mojang:brigadier:1.3.10')
-    compileOnly('com.mojang:datafixerupper:8.0.16')
-}
-
-subprojects {
-    apply {
-        plugin 'java'
-        plugin 'java-library'
-    }
-
-    repositories {
-        mavenCentral()
-        maven {
-            name = "minecraft"
-            url = "https://libraries.minecraft.net/"
-        }
-    }
-
-    dependencies {
-        api 'commons-io:commons-io:2.15.0'
-        api 'com.google.code.gson:gson:2.10.1'
-        api 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
-
-        api "org.apache.logging.log4j:log4j-api:2.19.0"
-        api "org.apache.logging.log4j:log4j-core:2.19.0"
-        api "org.apache.logging.log4j:log4j-slf4j-impl:2.19.0"
-
-        api 'it.unimi.dsi:fastutil:8.5.12'
-        api 'com.google.guava:guava:32.1.3-jre'
-        api 'net.sf.jopt-simple:jopt-simple:6.0-alpha-3'
-        api 'com.mojang:brigadier:1.3.10'
-        api 'com.mojang:datafixerupper:8.0.16'
-        api 'org.joml:joml:1.10.5'
-    }
+    compileOnly mocker.mock('./src/main/resources/remap/api.txt')
+    compileOnly 'org.lwjgl:lwjgl:3.3.3'
+    compileOnly 'org.lwjgl:lwjgl-glfw:3.3.3'
+    compileOnly 'org.lwjgl:lwjgl-opengl:3.3.3'
+    compileOnly 'org.lwjgl:lwjgl-stb:3.3.3'
+    compileOnly 'com.mojang:brigadier:1.3.10'
+    compileOnly 'com.mojang:datafixerupper:8.0.16'
+    compileOnly 'org.joml:joml:1.10.5'
 }
 
 jar {
@@ -90,104 +62,33 @@ jar {
 
 shadowJar {
     archiveFileName.set("GenWiki.jar")
+}
 
-    dependencies {
-        exclude(project(":wrapped-mc"))
+void addRunTask(name, mode, dry = false) {
+    tasks.register(name, JavaExec) {
+        if (!file("run").isDirectory())
+            mkdir("run")
+        if (file("run/remapped").isDirectory())
+            delete(fileTree("run/remapped"))
+        workingDir = file("run")
+        if (environment["MAKE_VERSION"] == null)
+            environment["MAKE_VERSION"] = ""
+        classpath = layout.buildDirectory.files("libs/GenWiki.jar")
+        mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
+        if (dry) {
+            args(environment["MAKE_VERSION"], "--mode", mode, "--not-run")
+        } else {
+            args(environment["MAKE_VERSION"], "--mode", mode)
+        }
+        standardInput = System.in
+    }.configure {
+        dependsOn(shadowJar)
     }
 }
 
-test {
-    useJUnitPlatform()
-}
-
-tasks.register("run", JavaExec) {
-    if (!file("run").isDirectory())
-        mkdir("run")
-    if (file("run/remapped").isDirectory())
-        delete(fileTree("run/remapped"))
-    workingDir = file("run")
-    if (environment["MAKE_VERSION"] == null)
-        environment["MAKE_VERSION"] = ""
-    classpath = layout.buildDirectory.files("libs/GenWiki.jar")
-    mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
-    args(environment["MAKE_VERSION"])
-    standardInput = System.in
-}.configure {
-    dependsOn(shadowJar)
-}
-
-tasks.register("runStatistics", JavaExec) {
-    if (!file("run").isDirectory())
-        mkdir("run")
-    if (file("run/remapped").isDirectory())
-        delete(fileTree("run/remapped"))
-    workingDir = file("run")
-    if (environment["MAKE_VERSION"] == null)
-        environment["MAKE_VERSION"] = ""
-    classpath = layout.buildDirectory.files("libs/GenWiki.jar")
-    mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
-    args(environment["MAKE_VERSION"], "--mode", "STATISTICS")
-    standardInput = System.in
-}.configure {
-    dependsOn(shadowJar)
-}
-
-tasks.register("runStatisticsNotRun", JavaExec) {
-    if (!file("run").isDirectory())
-        mkdir("run")
-    if (file("run/remapped").isDirectory())
-        delete(fileTree("run/remapped"))
-    workingDir = file("run")
-    if (environment["MAKE_VERSION"] == null)
-        environment["MAKE_VERSION"] = ""
-    classpath = layout.buildDirectory.files("libs/GenWiki.jar")
-    mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
-    args(environment["MAKE_VERSION"], "--mode", "STATISTICS", "--not-run")
-}.configure {
-    dependsOn(shadowJar)
-}
-
-tasks.register("runDataGenerator", JavaExec) {
-    if (!file("run").isDirectory())
-        mkdir("run")
-    if (file("run/remapped").isDirectory())
-        delete(fileTree("run/remapped"))
-    workingDir = file("run")
-    if (environment["MAKE_VERSION"] == null)
-        environment["MAKE_VERSION"] = ""
-    classpath = layout.buildDirectory.files("libs/GenWiki.jar")
-    mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
-    args(environment["MAKE_VERSION"], "--mode", "CLIENT_DATA")
-}.configure {
-    dependsOn(shadowJar)
-}
-
-tasks.register("runISO", JavaExec) {
-    if (!file("run").isDirectory())
-        mkdir("run")
-    if (file("run/remapped").isDirectory())
-        delete(fileTree("run/remapped"))
-    workingDir = file("run")
-    if (environment["MAKE_VERSION"] == null)
-        environment["MAKE_VERSION"] = ""
-    classpath = layout.buildDirectory.files("libs/GenWiki.jar")
-    mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
-    args(environment["MAKE_VERSION"], "--mode", "ISO")
-}.configure {
-    dependsOn(shadowJar)
-}
-
-tasks.register("runISONotRun", JavaExec) {
-    if (!file("run").isDirectory())
-        mkdir("run")
-    if (file("run/remapped").isDirectory())
-        delete(fileTree("run/remapped"))
-    workingDir = file("run")
-    if (environment["MAKE_VERSION"] == null)
-        environment["MAKE_VERSION"] = ""
-    classpath = layout.buildDirectory.files("libs/GenWiki.jar")
-    mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
-    args(environment["MAKE_VERSION"], "--mode", "ISO", "--not-run")
-}.configure {
-    dependsOn(shadowJar)
-}
+addRunTask("run", "AUTOVALUE")
+addRunTask("runStatistics", "STATISTICS")
+addRunTask("runStatisticsNotRun", "STATISTICS", true)
+addRunTask("runDataGenerator", "CLIENT_DATA")
+addRunTask("runISO", "ISO")
+addRunTask("runISONotRun", "ISO", true)
