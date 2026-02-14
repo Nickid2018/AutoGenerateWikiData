@@ -178,6 +178,9 @@
         @method getChunkSource() -.ServerChunkCache
         @method fuelValues() net.minecraft.world.level.block.entity.FuelValues
 
+@package net.minecraft.server.packs.resources
+    @interface ResourceManager
+
 @package net.minecraft.server
     @abstract MinecraftServer
         @method getGameRules() net.minecraft.world.level.gamerules.GameRules
@@ -185,6 +188,7 @@
         @method getAllLevels() java.lang.Iterable ()Ljava/lang/Iterable<Lnet/minecraft/server/level/ServerLevel;>;
         @method registryAccess() net.minecraft.core.RegistryAccess$Frozen
         @method tickRateManager() -.ServerTickRateManager
+        @method getResourceManager() -.packs.resources.ResourceManager
     @class ServerTickRateManager
         @method setFrozen(Z) V
         @method setTickRate(F) V
@@ -202,9 +206,22 @@
         @const NEEDS_IRON_TOOL -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
         @const NEEDS_STONE_TOOL -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
         @const LEAVES -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+    @class TagEntry
     @record TagKey <T:Ljava/lang/Object;>Ljava/lang/Record;
         @component registry net.minecraft.resources.ResourceKey Lnet/minecraft/resources/ResourceKey<+Lnet/minecraft/core/Registry<TT;>;>;
         @component location net.minecraft.resources.Identifier
+    @class TagLoader <T:Ljava/lang/Object;>Ljava/lang/Object;
+        @method <init>(-.TagLoader$ElementLookup,java.lang.String) V (Lnet/minecraft/tags/TagLoader$ElementLookup<TT;>;Ljava/lang/String;)V
+        @method load(net.minecraft.server.packs.resources.ResourceManager) java.util.Map (Lnet/minecraft/server/packs/resources/ResourceManager;)Ljava/util/Map<Lnet/minecraft/resources/Identifier;Ljava/util/List<Lnet/minecraft/tags/TagLoader$EntryWithSource;>;>;
+        @innerclass ElementLookup interface static
+        @innerclass EntryWithSource record static
+    @interface TagLoader$ElementLookup <T:Ljava/lang/Object;>Ljava/lang/Object;
+        @outerclass interface static
+        @function fromFrozenRegistry(net.minecraft.core.Registry) -.TagLoader$ElementLookup <T:Ljava/lang/Object;>(Lnet/minecraft/core/Registry<TT;>;)Lnet/minecraft/tags/TagLoader$ElementLookup<+Lnet/minecraft/core/Holder<TT;>;>;
+    @record TagLoader$EntryWithSource
+        @outerclass record static
+        @component entry -.TagEntry
+        @component source java.lang.String
 
 @package net.minecraft.util
     @interface StringRepresentable

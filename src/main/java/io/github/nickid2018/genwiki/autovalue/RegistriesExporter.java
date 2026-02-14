@@ -13,8 +13,10 @@ import net.minecraft.core.IdMapper;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.tags.TagLoader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -76,13 +78,18 @@ public class RegistriesExporter {
     }
 
     @SneakyThrows
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static void exportServerRegistries(MinecraftServer serverObj) {
         RegistryAccess.Frozen access = serverObj.registryAccess();
         Map<String, JsonObject> registryMap = new TreeMap<>();
+        Map<String, JsonObject> registryWithTagMap = new TreeMap<>();
         access.registries().forEach(registryEntry -> {
             String name = registryEntry.key().identifier().getPath();
             Registry<?> registry = registryEntry.value();
             Map<String, JsonArray> tagMap = new TreeMap<>();
+            Map<String, JsonArray> tagWithTagMap = new TreeMap<>();
+            TagLoader<?> loader = new TagLoader<>(TagLoader.ElementLookup.fromFrozenRegistry(registry), "tags/" + registryEntry.key().identifier().getPath());
+            Map<Identifier, List<TagLoader.EntryWithSource>> map = loader.load(serverObj.getResourceManager());
             registry.getTags().forEach(tag -> {
                 String tagName = tag.key().location().getPath();
                 List<String> list = new ArrayList<>();
@@ -95,17 +102,40 @@ public class RegistriesExporter {
                 JsonArray array = new JsonArray();
                 list.forEach(array::add);
                 tagMap.put(tagName, array);
+
+                JsonArray arrayWithTag = new JsonArray();
+                array.forEach(arrayWithTag::add);
+                tagWithTagMap.put(tagName, arrayWithTag);
+                List<TagLoader.EntryWithSource> source = map.getOrDefault(tag.key().location(), List.of());
+                source.forEach(entry -> {
+                    String entryVal = entry.entry().toString();
+                    if (entryVal.startsWith("#")) arrayWithTag.add(entryVal.replace("minecraft:", ""));
+                });
             });
             JsonObject tags = new JsonObject();
             tagMap.forEach(tags::add);
             registryMap.put(name, tags);
+            JsonObject tagWithTags = new JsonObject();
+            tagWithTagMap.forEach(tagWithTags::add);
+            registryWithTagMap.put(name, tagWithTags);
         });
+
         JsonObject registries = new JsonObject();
         registryMap.forEach(registries::add);
-        File blockStateFile = new File(InjectionEntrypoint.OUTPUT_FOLDER, "tags.json");
-        if (!blockStateFile.getParentFile().isDirectory())
-            blockStateFile.getParentFile().mkdirs();
-        JsonWriter writer = new JsonWriter(new FileWriter(blockStateFile));
+        File tagsFile = new File(InjectionEntrypoint.OUTPUT_FOLDER, "tags.json");
+        if (!tagsFile.getParentFile().isDirectory())
+            tagsFile.getParentFile().mkdirs();
+        JsonWriter writer = new JsonWriter(new FileWriter(tagsFile));
+        writer.setIndent("    ");
+        Streams.write(registries, writer);
+
+        registries = new JsonObject();
+        registryWithTagMap.forEach(registries::add);
+        writer.close();
+        File tagsWithTagFile = new File(InjectionEntrypoint.OUTPUT_FOLDER, "tags_with_tag.json");
+        if (!tagsWithTagFile.getParentFile().isDirectory())
+            tagsWithTagFile.getParentFile().mkdirs();
+        writer = new JsonWriter(new FileWriter(tagsWithTagFile));
         writer.setIndent("    ");
         Streams.write(registries, writer);
         writer.close();
