@@ -34,6 +34,7 @@ public class RemapProgram {
     public static final String META_INF_VERSIONS = "META-INF/versions.list";
     public static final File TEMP_ZIP_SERVER = new File("temp-server.jar");
     public static final File TEMP_REMAPPED_SERVER = new File("temp-server-remapped.jar");
+    public static final boolean DEBUG_TRANSFORM_CLASS = System.getenv("DEBUG_TRANSFORM_CLASS") != null;
 
     private final Map<String, List<PostTransform>> postTransforms = new HashMap<>();
     private final Set<InjectEntries> injectEntries = new HashSet<>();
@@ -159,6 +160,15 @@ public class RemapProgram {
                     }
                     writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
                     node.accept(writer);
+
+                    if (DEBUG_TRANSFORM_CLASS) {
+                        File path = new File(outputFile.getParentFile(), "transform/" + ClassUtils.toInternalName(classNameRemapped) + ".class");
+                        if (!path.getParentFile().isDirectory())
+                            path.getParentFile().mkdirs();
+                        try (FileOutputStream fos = new FileOutputStream(path)) {
+                            IOUtils.write(writer.toByteArray(), fos);
+                        }
+                    }
                 }
 
                 remappedData.put(ClassUtils.toInternalName(classNameRemapped) + ".class", writer.toByteArray());

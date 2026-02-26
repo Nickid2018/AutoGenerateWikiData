@@ -13,6 +13,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import io.github.nickid2018.genwiki.util.LanguageUtils;
 import lombok.extern.slf4j.Slf4j;
+import net.minecraft.client.Camera;
 import net.minecraft.util.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -75,10 +76,12 @@ public class ISOInjectionEntryPoints {
         Minecraft.getInstance().gameRenderer.getLighting().setupFor(Lighting.Entry.LEVEL);
     }
 
-    public static Matrix4f getProjectionMatrixInjection(Matrix4f source) {
-        if (ortho)
-            return orthoMatrix;
-        return source;
+    public static void overrideProjection(Camera source) {
+        if (ortho) {
+            source.projection.isMatrixDirty = false;
+            source.projection.matrixVersion++;
+            source.projection.matrix.set(orthoMatrix);
+        }
     }
 
     public static long glintTimeInjection() {

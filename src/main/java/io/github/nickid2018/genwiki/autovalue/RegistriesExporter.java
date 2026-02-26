@@ -78,7 +78,6 @@ public class RegistriesExporter {
     }
 
     @SneakyThrows
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public static void exportServerRegistries(MinecraftServer serverObj) {
         RegistryAccess.Frozen access = serverObj.registryAccess();
         Map<String, JsonObject> registryMap = new TreeMap<>();

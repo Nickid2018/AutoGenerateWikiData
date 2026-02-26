@@ -61,11 +61,17 @@
     @class GameRenderer
         @method renderLevel(net.minecraft.client.DeltaTracker) V
         @method getLighting() com.mojang.blaze3d.platform.Lighting
+    @class Projection
+        @field isMatrixDirty Z
+        @final matrix org.joml.Matrix4f
+        @field matrixVersion J
 
 @package net.minecraft.client.renderer.chunk
     @enum ChunkSectionLayer
 
 @package net.minecraft.client
+    @class Camera
+        @field projection -.renderer.Projection
     @interface DeltaTracker
         @const ONE -.DeltaTracker
     @class Minecraft

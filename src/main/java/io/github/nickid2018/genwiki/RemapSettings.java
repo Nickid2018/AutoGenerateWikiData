@@ -7,6 +7,8 @@ import org.jline.terminal.TerminalBuilder;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
+import java.util.stream.StreamSupport;
+
 public class RemapSettings {
     public static final String INJECT_POINT_CLASS = "net.minecraft.server.MinecraftServer";
     public static final String INJECT_METHOD = "tickChildren";
@@ -260,47 +262,40 @@ public class RemapSettings {
                 )
             );
             remapProgram.addPostTransform(
-                "net.minecraft.client.renderer.GameRenderer",
-                new AddMethodTransform(() -> {
-                    MethodNode methodNode = new MethodNode(
-                        Opcodes.ACC_PUBLIC,
-                        "getProjectionMatrixWithInjection",
-                        "(F)Lorg/joml/Matrix4f;",
-                        null,
-                        null
-                    );
-                    methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                    methodNode.instructions.add(new VarInsnNode(Opcodes.FLOAD, 1));
-                    methodNode.instructions.add(new MethodInsnNode(
-                        Opcodes.INVOKEVIRTUAL,
-                        "net/minecraft/client/renderer/GameRenderer",
-                        "getProjectionMatrix",
-                        "(F)Lorg/joml/Matrix4f;",
-                        false
-                    ));
-                    methodNode.instructions.add(new MethodInsnNode(
-                        Opcodes.INVOKESTATIC,
-                        "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
-                        "getProjectionMatrixInjection",
-                        "(Lorg/joml/Matrix4f;)Lorg/joml/Matrix4f;",
-                        false
-                    ));
-                    methodNode.instructions.add(new InsnNode(Opcodes.ARETURN));
-                    return methodNode;
-                })
+                "net.minecraft.client.Camera",
+                new RenameMethodTransform("update", "(Lnet/minecraft/client/DeltaTracker;)V", "updateSource")
             );
             remapProgram.addPostTransform(
-                "net.minecraft.client.renderer.GameRenderer",
-                new MethodTransform(
-                    "renderLevel",
-                    null,
-                    methodNode -> Streams
-                        .stream(methodNode.instructions.iterator())
-                        .filter(insnNode -> insnNode instanceof MethodInsnNode)
-                        .map(insnNode -> (MethodInsnNode) insnNode)
-                        .filter(insnNode -> insnNode.name.equals("getProjectionMatrix"))
-                        .findFirst()
-                        .ifPresent(insnNode -> insnNode.name = "getProjectionMatrixWithInjection")
+                "net.minecraft.client.Camera",
+                new AddMethodTransform(
+                    () -> {
+                        MethodNode methodNode = new MethodNode(
+                            Opcodes.ACC_PUBLIC,
+                            "update",
+                            "(Lnet/minecraft/client/DeltaTracker;)V",
+                            null,
+                            null
+                        );
+                        methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                        methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                        methodNode.instructions.add(new MethodInsnNode(
+                            Opcodes.INVOKEVIRTUAL,
+                            "net/minecraft/client/Camera",
+                            "updateSource",
+                            "(Lnet/minecraft/client/DeltaTracker;)V",
+                            false
+                        ));
+                        methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                        methodNode.instructions.add(new MethodInsnNode(
+                            Opcodes.INVOKESTATIC,
+                            "io/github/nickid2018/genwiki/iso/ISOInjectionEntryPoints",
+                            "overrideProjection",
+                            "(Lnet/minecraft/client/Camera;)V",
+                            false
+                        ));
+                        methodNode.instructions.add(new InsnNode(Opcodes.RETURN));
+                        return methodNode;
+                    }
                 )
             );
             remapProgram.addPostTransform(
@@ -467,6 +462,8 @@ public class RemapSettings {
                     }
                 )
             );
+            remapProgram.addPostTransform("net.minecraft.client.Camera", ExtendAccessTransform.FIELD);
+            remapProgram.addPostTransform("net.minecraft.client.renderer.Projection", ExtendAccessTransform.FIELD);
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.iso"));
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.util"));
             remapProgram.addInjectEntries(new SingleFile(
