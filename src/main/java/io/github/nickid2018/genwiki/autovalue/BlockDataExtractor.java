@@ -140,7 +140,7 @@ public class BlockDataExtractor {
                     occlusionMap.put(directionName, aabbArray);
                 }
 
-                OCCLUSION_SHAPE_VALUES.put(blockID + stateName, state.canOcclude(), occlusionMap);
+                OCCLUSION_SHAPE_VALUES.put(blockID + stateName, state.canOcclude(), state.getLightEmission(), state.getLightDampening(), occlusionMap);
                 LIQUID_COMPUTATION_VALUES.put(blockID + stateName, state.legacySolid, faceSturdySet);
             }
 

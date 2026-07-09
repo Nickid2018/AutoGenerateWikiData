@@ -28,8 +28,8 @@ SPECIALS = {
     'chest': ['entity/chest/normal', 'entity/chest/normal_left', 'entity/chest/normal_right'],
     'trapped_chest': ['entity/chest/trapped', 'entity/chest/trapped_left', 'entity/chest/trapped_right'],
     'decorated_pot': ['entity/decorated_pot/decorated_pot_base', 'entity/decorated_pot/decorated_pot_side'],
-    'enchanting_table': ['entity/enchanting_table_book'],
-    'lectern': ['entity/enchanting_table_book'],
+    'enchanting_table': ['entity/enchantment/enchanting_table_book'],
+    'lectern': ['entity/enchantment/enchanting_table_book'],
     'shulker_box': ['entity/shulker/shulker'],
     'white_shulker_box': ['entity/shulker/shulker_white'],
     'orange_shulker_box': ['entity/shulker/shulker_orange'],
@@ -79,68 +79,8 @@ SPECIALS = {
     'green_wall_banner': ['entity/banner/base'],
     'red_wall_banner': ['entity/banner/base'],
     'black_wall_banner': ['entity/banner/base'],
-    'white_bed': ['entity/bed/white'],
-    'orange_bed': ['entity/bed/orange'],
-    'magenta_bed': ['entity/bed/magenta'],
-    'light_blue_bed': ['entity/bed/light_blue'],
-    'yellow_bed': ['entity/bed/yellow'],
-    'lime_bed': ['entity/bed/lime'],
-    'pink_bed': ['entity/bed/pink'],
-    'gray_bed': ['entity/bed/gray'],
-    'light_gray_bed': ['entity/bed/light_gray'],
-    'cyan_bed': ['entity/bed/cyan'],
-    'purple_bed': ['entity/bed/purple'],
-    'blue_bed': ['entity/bed/blue'],
-    'brown_bed': ['entity/bed/brown'],
-    'green_bed': ['entity/bed/green'],
-    'red_bed': ['entity/bed/red'],
-    'black_bed': ['entity/bed/black'],
-    'oak_sign': ['entity/signs/oak'],
-    'spruce_sign': ['entity/signs/spruce'],
-    'birch_sign': ['entity/signs/birch'],
-    'jungle_sign': ['entity/signs/jungle'],
-    'acacia_sign': ['entity/signs/acacia'],
-    'dark_oak_sign': ['entity/signs/dark_oak'],
-    'mangrove_sign': ['entity/signs/mangrove'],
-    'cherry_sign': ['entity/signs/cherry'],
-    'bamboo_sign': ['entity/signs/bamboo'],
-    'crimson_sign': ['entity/signs/crimson'],
-    'warped_sign': ['entity/signs/warped'],
-    'oak_wall_sign': ['entity/signs/oak'],
-    'spruce_wall_sign': ['entity/signs/spruce'],
-    'birch_wall_sign': ['entity/signs/birch'],
-    'jungle_wall_sign': ['entity/signs/jungle'],
-    'acacia_wall_sign': ['entity/signs/acacia'],
-    'dark_oak_wall_sign': ['entity/signs/dark_oak'],
-    'mangrove_wall_sign': ['entity/signs/mangrove'],
-    'cherry_wall_sign': ['entity/signs/cherry'],
-    'bamboo_wall_sign': ['entity/signs/bamboo'],
-    'crimson_wall_sign': ['entity/signs/crimson'],
-    'warped_wall_sign': ['entity/signs/warped'],
-    'oak_hanging_sign': ['entity/signs/hanging/oak'],
-    'spruce_hanging_sign': ['entity/signs/hanging/spruce'],
-    'birch_hanging_sign': ['entity/signs/hanging/birch'],
-    'jungle_hanging_sign': ['entity/signs/hanging/jungle'],
-    'acacia_hanging_sign': ['entity/signs/hanging/acacia'],
-    'dark_oak_hanging_sign': ['entity/signs/hanging/dark_oak'],
-    'mangrove_hanging_sign': ['entity/signs/hanging/mangrove'],
-    'cherry_hanging_sign': ['entity/signs/hanging/cherry'],
-    'bamboo_hanging_sign': ['entity/signs/hanging/bamboo'],
-    'crimson_hanging_sign': ['entity/signs/hanging/crimson'],
-    'warped_hanging_sign': ['entity/signs/hanging/warped'],
-    'oak_wall_hanging_sign': ['entity/signs/hanging/oak'],
-    'spruce_wall_hanging_sign': ['entity/signs/hanging/spruce'],
-    'birch_wall_hanging_sign': ['entity/signs/hanging/birch'],
-    'jungle_wall_hanging_sign': ['entity/signs/hanging/jungle'],
-    'acacia_wall_hanging_sign': ['entity/signs/hanging/acacia'],
-    'dark_oak_wall_hanging_sign': ['entity/signs/hanging/dark_oak'],
-    'mangrove_wall_hanging_sign': ['entity/signs/hanging/mangrove'],
-    'cherry_wall_hanging_sign': ['entity/signs/hanging/cherry'],
-    'bamboo_wall_hanging_sign': ['entity/signs/hanging/bamboo'],
-    'crimson_wall_hanging_sign': ['entity/signs/hanging/crimson'],
-    'warped_wall_hanging_sign': ['entity/signs/hanging/warped'],
-    'end_portal': ['environment/end_sky', 'entity/end_portal'],
-    'end_gateway': ['environment/end_sky', 'entity/end_portal'],
+    'end_portal': ['environment/end_sky', 'entity/end_portal/end_portal'],
+    'end_gateway': ['environment/end_sky', 'entity/end_portal/end_portal'],
     'skeleton_skull': ['entity/skeleton/skeleton'],
     'wither_skeleton_skull': ['entity/skeleton/wither_skeleton'],
     'zombie_head': ['entity/zombie/zombie'],
@@ -170,7 +110,7 @@ class Stitcher:
         self.storage: list[Stitcher.Region] = [Stitcher.Region(0, 0, 64, 64)]
 
     def add_texture(self, name: str, image: Image, zip_file: ZipFile):
-        meta_file = f'assets/minecraft/textures/{name.replace('minecraft:', '')}.png.mcmeta'
+        meta_file = f'assets/minecraft/textures/{name.replace("minecraft:", "")}.png.mcmeta'
         if meta_file in zip_file.namelist():
             meta_info = json.loads(zip_file.read(meta_file))
             if 'animation' in meta_info:
@@ -348,8 +288,19 @@ class Stitcher:
             if sub is not None: return sub
         return None
 
+def load_model_texture(data, textures: dict, need_textures: set) -> str:
+    if isinstance(data, str):
+        return load_model_texture_inner(data, textures, need_textures)
+    else:
+        texture = load_model_texture_inner(data['sprite'], textures, need_textures)
+        force_translucent = data['force_translucent']
+        if force_translucent and not texture.endswith("^translucent"):
+            texture = texture + "^translucent"
+        elif not force_translucent and texture.endswith("^translucent"):
+            texture = texture[:-12]
+        return texture
 
-def load_model_texture(name: str, textures: dict, need_textures: set) -> str:
+def load_model_texture_inner(name, textures: dict, need_textures: set) -> str:
     if name.startswith('#'):
         if name[1:] in textures and textures[name[1:]] != name:
             return load_model_texture(textures[name[1:]], textures, need_textures)
@@ -381,7 +332,6 @@ def load_model(name: str, jar: ZipFile, need_textures: set, resolved_models: dic
     if 'parent' in model_data: model_data.pop('parent')
     if 'display' in model_data: model_data.pop('display')
     if 'gui_light' in model_data: model_data.pop('gui_light')
-    if 'ambientocclusion' in model_data: model_data.pop('ambientocclusion')
     for texture in model_data['textures']:
         model_data['textures'][texture] = load_model_texture(
             model_data['textures'][texture], model_data['textures'], need_textures
@@ -398,7 +348,7 @@ def main_procedure(input_jar: str, output: str):
     with ZipFile(input_jar, 'r') as jar:
         blockstates = {}
         for file in jar.namelist():
-            if file.startswith('assets/minecraft/blockstates/'):
+            if file.startswith('assets/minecraft/blockstates/') and file != 'assets/minecraft/blockstates/':
                 blockstates[file] = jar.read(file)
 
         need_models = set()
@@ -420,17 +370,23 @@ def main_procedure(input_jar: str, output: str):
                         collected_models.add(model['model'])
             need_models.update(collected_models)
 
-        need_textures = set()
+        raw_need_textures = set()
         resolved_models = {}
         for model in tqdm.tqdm(need_models, desc='Collecting Models'):
-            resolved_models[model] = load_model(model, jar, need_textures, resolved_models)
+            resolved_models[model] = load_model(model, jar, raw_need_textures, resolved_models)
 
         for special in SPECIALS:
             for texture in SPECIALS[special]:
-                need_textures.add(f'minecraft:{texture}')
+                raw_need_textures.add(f'minecraft:{texture}')
 
         non_stitch_textures = {}
+        need_textures = set()
         need_textures.add('minecraft:missingno')
+        for texture_name in raw_need_textures:
+            if texture_name.endswith('^translucent'):
+                need_textures.add(texture_name[:-12])
+            else:
+                need_textures.add(texture_name)
         for texture in tqdm.tqdm(need_textures, desc='Collecting Textures'):
             if texture == 'minecraft:missingno':
                 missingno = Image.new('RGBA', (16, 16), 0xFF000000)
@@ -491,7 +447,11 @@ def main_procedure(input_jar: str, output: str):
             resolved_model = resolved_models[model]
             model_inline_textures = {}
             for k in resolved_model['textures']:
-                model_inline_textures[k] = texture_index[resolved_model['textures'][k]]
+                texture_name = resolved_model['textures'][k]
+                if texture_name.endswith('^translucent'):
+                    model_inline_textures[k] = f'{texture_index[texture_name[:-12]]}^translucent'
+                else:
+                    model_inline_textures[k] = str(texture_index[texture_name])
             resolved_model.pop('textures')
             if 'elements' in resolved_model:
                 elements = resolved_model['elements']

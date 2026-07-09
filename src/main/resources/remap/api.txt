@@ -366,6 +366,8 @@
         @method isFaceSturdy(net.minecraft.world.level.BlockGetter,net.minecraft.core.BlockPos,net.minecraft.core.Direction,net.minecraft.world.level.block.SupportType) Z
         @method getFaceOcclusionShape(net.minecraft.core.Direction) net.minecraft.world.phys.shapes.VoxelShape
         @method canOcclude() Z
+        @method getLightDampening() I
+        @method getLightEmission() I
     @interface BlockBehaviour$StatePredicate
         @outerclass interface static
         @virtual test(-.BlockState,net.minecraft.world.level.BlockGetter,net.minecraft.core.BlockPos) Z

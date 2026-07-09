@@ -12,9 +12,11 @@ public class OcclusionWikiData extends JsonWikiData {
 
     private final Map<String, JsonObject> data = new TreeMap<>();
 
-    public void put(String key, boolean canOcclude, Map<String, List<double[]>> faces) {
+    public void put(String key, boolean canOcclude, int lightEmission, int lightDampening, Map<String, List<double[]>> faces) {
         JsonObject obj = new JsonObject();
         obj.addProperty("can_occlude", canOcclude);
+        if (lightEmission > 0) obj.addProperty("emission", lightEmission);
+        if (lightDampening > 0) obj.addProperty("dampening", lightDampening);
         for (Map.Entry<String, List<double[]>> entry : faces.entrySet()) {
             JsonArray array = new JsonArray();
             for (double[] doubles : entry.getValue()) {
