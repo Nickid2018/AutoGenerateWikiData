@@ -372,6 +372,7 @@
         @method isCollisionShapeFullBlock(net.minecraft.world.level.BlockGetter,net.minecraft.core.BlockPos) Z
         @method getShadeBrightness(net.minecraft.world.level.BlockGetter,net.minecraft.core.BlockPos) F
         @method isViewBlocking(net.minecraft.world.level.BlockGetter,net.minecraft.core.BlockPos) Z
+        @method isSolidRender() Z
     @interface BlockBehaviour$StatePredicate
         @outerclass interface static
         @virtual test(-.BlockState,net.minecraft.world.level.BlockGetter,net.minecraft.core.BlockPos) Z

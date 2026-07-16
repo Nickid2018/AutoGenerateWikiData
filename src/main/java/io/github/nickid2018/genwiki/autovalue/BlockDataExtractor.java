@@ -143,6 +143,7 @@ public class BlockDataExtractor {
                     state.isCollisionShapeFullBlock(serverOverworld, BlockPos.ZERO),
                     state.getShadeBrightness(serverOverworld, BlockPos.ZERO),
                     state.isViewBlocking(serverOverworld, BlockPos.ZERO),
+                    state.isSolidRender(),
                     occlusionMap
                 );
                 LIQUID_COMPUTATION_VALUES.put(blockID + stateName, state.legacySolid, faceSturdySet);
