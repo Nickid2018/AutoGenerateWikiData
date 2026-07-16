@@ -127,20 +127,24 @@ public class BlockDataExtractor {
                     if (faceShape.isEmpty())
                         continue;
                     List<double[]> aabbArray = faceShape.toAabbs().stream().map(aabb -> switch (direction) {
-                        case DOWN:
-                        case UP:
-                            yield new double[]{aabb.minX, aabb.minZ, aabb.maxX, aabb.maxZ};
-                        case NORTH:
-                        case SOUTH:
-                            yield new double[]{aabb.minX, aabb.minY, aabb.maxX, aabb.maxY};
-                        case WEST:
-                        case EAST:
-                            yield new double[]{aabb.minZ, aabb.minY, aabb.maxZ, aabb.maxY};
+                        case DOWN, UP -> new double[]{aabb.minX, aabb.minZ, aabb.maxX, aabb.maxZ};
+                        case NORTH, SOUTH -> new double[]{aabb.minX, aabb.minY, aabb.maxX, aabb.maxY};
+                        case WEST, EAST -> new double[]{aabb.minZ, aabb.minY, aabb.maxZ, aabb.maxY};
                     }).toList();
                     occlusionMap.put(directionName, aabbArray);
                 }
 
-                OCCLUSION_SHAPE_VALUES.put(blockID + stateName, state.canOcclude(), state.getLightEmission(), state.getLightDampening(), occlusionMap);
+                OCCLUSION_SHAPE_VALUES.put(
+                    blockID + stateName,
+                    state.canOcclude(),
+                    state.getLightEmission(),
+                    state.getLightDampening(),
+                    state.useShapeForLightOcclusion(),
+                    state.isCollisionShapeFullBlock(serverOverworld, BlockPos.ZERO),
+                    state.getShadeBrightness(serverOverworld, BlockPos.ZERO),
+                    state.isViewBlocking(serverOverworld, BlockPos.ZERO),
+                    occlusionMap
+                );
                 LIQUID_COMPUTATION_VALUES.put(blockID + stateName, state.legacySolid, faceSturdySet);
             }
 
