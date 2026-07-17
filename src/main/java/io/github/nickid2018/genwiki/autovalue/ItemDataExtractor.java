@@ -3,6 +3,7 @@ package io.github.nickid2018.genwiki.autovalue;
 import io.github.nickid2018.genwiki.autovalue.wikidata.*;
 import io.github.nickid2018.genwiki.InjectionEntrypoint;
 import lombok.SneakyThrows;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.food.FoodProperties;
@@ -12,6 +13,10 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CookingFuel;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
+import net.minecraft.world.level.block.entity.FurnaceBlockEntity;
 
 import java.util.*;
 
@@ -25,12 +30,21 @@ public class ItemDataExtractor {
     @SneakyThrows
     public static void extractItemData(MinecraftServer serverObj) {
         Map<Item, String> itemKeyMap = new HashMap<>();
+        AbstractFurnaceBlockEntity furnace = new FurnaceBlockEntity(BlockPos.ZERO, Blocks.FURNACE.defaultBlockState());
         for (ResourceKey<Item> itemKey : BuiltInRegistries.ITEM.registryKeySet()) {
             String itemID = itemKey.identifier().getPath();
             Item item = BuiltInRegistries.ITEM.getValue(itemKey);
             itemKeyMap.put(item, itemID);
 
-            BURN_DURATION.put(itemID, serverObj.overworld().fuelValues().values.getOrDefault(item, 0));
+            BURN_DURATION.put(itemID,
+                furnace.getProvidedInteger(
+                    serverObj.overworld(),
+                    item.getDefaultInstance(),
+                    DataComponents.COOKING_FUEL,
+                    CookingFuel::burnTime,
+                    0
+                )
+            );
 
             ItemStack itemStack = item.getDefaultInstance();
             FoodProperties foodProperties = itemStack.getComponents().get(DataComponents.FOOD);

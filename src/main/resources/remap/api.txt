@@ -87,6 +87,7 @@
         @virtual get(-.DataComponentType) java.lang.Object <T:Ljava/lang/Object;>(Lnet/minecraft/core/component/DataComponentType<+TT;>;)TT;
     @interface DataComponentMap impl java.lang.Iterable,-.DataComponentGetter Ljava/lang/Object;Ljava/lang/Iterable<Lnet/minecraft/core/component/TypedDataComponent<*>;>;Lnet/minecraft/core/component/DataComponentGetter;
     @class DataComponents
+        @const COOKING_FUEL -.DataComponentType Lnet/minecraft/core/component/DataComponentType<Lnet/minecraft/world/item/component/CookingFuel;>;
         @const FOOD -.DataComponentType Lnet/minecraft/core/component/DataComponentType<Lnet/minecraft/world/food/FoodProperties;>;
     @interface DataComponentType <T:Ljava/lang/Object;>Ljava/lang/Object;
     @record TypedDataComponent <T:Ljava/lang/Object;>Ljava/lang/Record;
@@ -188,7 +189,6 @@
         @field noSave Z
         @method getSeed() J
         @method getChunkSource() -.ServerChunkCache
-        @method fuelValues() net.minecraft.world.level.block.entity.FuelValues
 
 @package net.minecraft.server.packs.resources
     @interface ResourceManager
@@ -325,6 +325,10 @@
         @method getItem() -.Item
         @method getComponents() net.minecraft.core.component.DataComponentMap
 
+@package net.minecraft.world.item.component
+    @record CookingFuel
+        @component burnTime net.minecraft.resources.ResourceKey Lnet/minecraft/resources/ResourceKey<Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;>;
+
 @package net.minecraft.world.level
     @record ChunkPos
         @component x I
@@ -336,8 +340,10 @@
     @class Biome
 
 @package net.minecraft.world.level.block.entity
-    @class FuelValues
-        @final values it.unimi.dsi.fastutil.objects.Object2IntSortedMap Lit/unimi/dsi/fastutil/objects/Object2IntSortedMap<Lnet/minecraft/world/item/Item;>;
+    @abstract AbstractFurnaceBlockEntity
+        @method getProvidedInteger(net.minecraft.server.level.ServerLevel,net.minecraft.world.item.ItemStack,net.minecraft.core.component.DataComponentType,java.util.function.Function,I) I <T:Ljava/lang/Object;>(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/component/DataComponentType<TT;>;Ljava/util/function/Function<TT;Lnet/minecraft/resources/ResourceKey<Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;>;>;I)I
+    @class FurnaceBlockEntity extends -.AbstractFurnaceBlockEntity
+        @method <init>(net.minecraft.core.BlockPos,net.minecraft.world.level.block.state.BlockState) V
 
 @package net.minecraft.world.level.block.state.properties
     @class BlockStateProperties
@@ -404,6 +410,7 @@
         @method defaultBlockState() -.state.BlockState
     @class Blocks
         @const FIRE -.Block
+        @const FURNACE -.Block
     @interface EntityBlock
     @class FireBlock extends -.Block
         @method getBurnOdds(-.state.BlockState) I
@@ -439,6 +446,9 @@
         @field id I
     @enum PushReaction
 
+@package net.minecraft.world.level.storage.loot.providers.number
+    @interface NumberProvider
+
 @package net.minecraft.world.level
     @interface BlockGetter
         @virtual getBlockState(net.minecraft.core.BlockPos) -.block.state.BlockState
@@ -446,7 +456,6 @@
     @abstract Level impl -.LevelReader
         @method dimension() net.minecraft.resources.ResourceKey ()Lnet/minecraft/resources/ResourceKey<Lnet/minecraft/world/level/Level;>;
         @method getBlockState(net.minecraft.core.BlockPos) net.minecraft.world.level.block.state.BlockState
-        @virtual fuelValues() -.block.entity.FuelValues
     @interface LevelReader impl -.BlockGetter
         @method getMinY() I
         @method getHeight() I

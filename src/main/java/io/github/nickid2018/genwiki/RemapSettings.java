@@ -238,8 +238,8 @@ public class RemapSettings {
                 ExtendAccessTransform.FIELD
             );
             remapProgram.addPostTransform(
-                "net.minecraft.world.level.block.entity.FuelValues",
-                ExtendAccessTransform.FIELD
+                "net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity",
+                ExtendAccessTransform.METHOD
             );
             remapProgram.addInjectEntries(new IncludeJarPackages("io.github.nickid2018.genwiki.autovalue"));
         } else {
