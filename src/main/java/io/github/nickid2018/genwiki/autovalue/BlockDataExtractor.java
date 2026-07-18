@@ -208,12 +208,12 @@ public class BlockDataExtractor {
 
     public static String computePushReaction(Block block, BlockBehaviour.Properties properties, float destroyTime, String blockID) {
         if (OVERRIDE_BLOCK_PUSH_REACTION.contains(blockID))
-            return "BLOCK";
+            return "IMMOVEABLE";
         if (destroyTime == -1.0f)
-            return "BLOCK";
+            return "IMMOVEABLE";
         String pushReaction = properties.pushReaction.name();
-        if (block instanceof EntityBlock && pushReaction.equals("NORMAL"))
-            return "BLOCK";
+        if (block.defaultBlockState().hasBlockEntity() && pushReaction.equals("PUSH_PULL"))
+            return "IMMOVEABLE";
         return pushReaction;
     }
 
