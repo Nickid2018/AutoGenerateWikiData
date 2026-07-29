@@ -241,6 +241,9 @@
     @class Util
         @function getMillis() J
 
+@package net.minecraft.util.context
+    @class ContextKeySet
+
 @package net.minecraft.world.effect
     @class MobEffect
         @method getCategory() -.MobEffectCategory
@@ -327,7 +330,7 @@
 
 @package net.minecraft.world.item.component
     @record CookingFuel
-        @component burnTime net.minecraft.resources.ResourceKey Lnet/minecraft/resources/ResourceKey<Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;>;
+        @component burnTime net.minecraft.world.level.storage.loot.providers.number.ResolvableNumber
 
 @package net.minecraft.world.level
     @record ChunkPos
@@ -338,12 +341,6 @@
 
 @package net.minecraft.world.level.biome
     @class Biome
-
-@package net.minecraft.world.level.block.entity
-    @abstract AbstractFurnaceBlockEntity
-        @method getProvidedInteger(net.minecraft.server.level.ServerLevel,net.minecraft.world.item.ItemStack,net.minecraft.core.component.DataComponentType,java.util.function.Function,I) I <T:Ljava/lang/Object;>(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/component/DataComponentType<TT;>;Ljava/util/function/Function<TT;Lnet/minecraft/resources/ResourceKey<Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;>;>;I)I
-    @class FurnaceBlockEntity extends -.AbstractFurnaceBlockEntity
-        @method <init>(net.minecraft.core.BlockPos,net.minecraft.world.level.block.state.BlockState) V
 
 @package net.minecraft.world.level.block.state.properties
     @class BlockStateProperties
@@ -447,8 +444,28 @@
         @field id I
     @enum PushReaction
 
+@package net.minecraft.world.level.storage.loot
+    @class LootContext
+        @innerclass Builder static
+    @class LootContext$Builder
+        @outerclass static
+        @method <init>(-.LootParams) V
+        @method create(java.util.Optional) -.LootContext (Ljava/util/Optional<Lnet/minecraft/resources/Identifier;>;)Lnet/minecraft/world/level/storage/loot/LootContext;
+    @class LootParams
+        @innerclass Builder static
+    @class LootParams$Builder
+        @outerclass static
+        @method <init>(net.minecraft.server.level.ServerLevel) V
+        @method create(net.minecraft.util.context.ContextKeySet) -.LootParams
+
+@package net.minecraft.world.level.storage.loot.parameters
+    @class LootContextParamSets
+        @const EMPTY net.minecraft.util.context.ContextKeySet
+
 @package net.minecraft.world.level.storage.loot.providers.number
     @interface NumberProvider
+    @interface ResolvableNumber
+        @function getIntFromItem(net.minecraft.world.item.ItemStack,net.minecraft.core.component.DataComponentType,java.util.function.Function,net.minecraft.world.level.storage.loot.LootContext,I) I <T:Ljava/lang/Object;>(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/component/DataComponentType<TT;>;Ljava/util/function/Function<TT;Lnet/minecraft/world/level/storage/loot/providers/number/ResolvableNumber;>;Lnet/minecraft/world/level/storage/loot/LootContext;I)I
 
 @package net.minecraft.world.level
     @interface BlockGetter

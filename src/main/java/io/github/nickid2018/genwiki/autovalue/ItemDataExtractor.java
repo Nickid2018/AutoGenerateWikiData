@@ -6,6 +6,7 @@ import lombok.SneakyThrows;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.util.context.ContextKeySet;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -15,8 +16,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CookingFuel;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
-import net.minecraft.world.level.block.entity.FurnaceBlockEntity;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.providers.number.ResolvableNumber;
 
 import java.util.*;
 
@@ -24,24 +27,23 @@ public class ItemDataExtractor {
     private static final StringListWikiData CREATIVE_MODE_TABS = new StringListWikiData();
     private static final NumberWikiData BURN_DURATION = new NumberWikiData().setFallback(0);
     private static final DoubleNumberWikiData FOOD_PROPERTIES = new DoubleNumberWikiData()
-        .setFallback(0, 0)
-        .setFallbackNil(true);
+            .setFallback(0, 0)
+            .setFallbackNil(true);
 
     @SneakyThrows
     public static void extractItemData(MinecraftServer serverObj) {
         Map<Item, String> itemKeyMap = new HashMap<>();
-        AbstractFurnaceBlockEntity furnace = new FurnaceBlockEntity(BlockPos.ZERO, Blocks.FURNACE.defaultBlockState());
         for (ResourceKey<Item> itemKey : BuiltInRegistries.ITEM.registryKeySet()) {
             String itemID = itemKey.identifier().getPath();
             Item item = BuiltInRegistries.ITEM.getValue(itemKey);
             itemKeyMap.put(item, itemID);
 
             BURN_DURATION.put(itemID,
-                furnace.getProvidedInteger(
-                    serverObj.overworld(),
+                ResolvableNumber.getIntFromItem(
                     item.getDefaultInstance(),
                     DataComponents.COOKING_FUEL,
                     CookingFuel::burnTime,
+                    new LootContext.Builder(new LootParams.Builder(serverObj.overworld()).create(LootContextParamSets.EMPTY)).create(Optional.empty()),
                     0
                 )
             );
