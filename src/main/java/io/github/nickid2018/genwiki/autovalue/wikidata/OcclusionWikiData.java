@@ -16,7 +16,7 @@ public class OcclusionWikiData extends JsonWikiData {
         String key,
         boolean canOcclude, int lightEmission,
         int lightDampening, boolean useShapeForLightOcclusion,
-        boolean collisionFull, float shadeBrightness, boolean isVewBlocking, boolean isSolidRender,
+        boolean collisionFull, float shadeBrightness, boolean isSolidRender,
         Map<String, List<double[]>> faces
     ) {
         JsonObject obj = new JsonObject();
@@ -27,7 +27,6 @@ public class OcclusionWikiData extends JsonWikiData {
         if (collisionFull) obj.addProperty("collision_full", true);
         if ((collisionFull && shadeBrightness != 0.2) || (!collisionFull && shadeBrightness != 1))
             obj.addProperty("shade_brightness", shadeBrightness);
-        if (isVewBlocking) obj.addProperty("view_blocking", true);
         if (isSolidRender) obj.addProperty("solid_render", true);
         for (Map.Entry<String, List<double[]>> entry : faces.entrySet()) {
             JsonArray array = new JsonArray();

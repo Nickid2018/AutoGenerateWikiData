@@ -374,7 +374,6 @@
         @method useShapeForLightOcclusion() Z
         @method isCollisionShapeFullBlock(net.minecraft.world.level.BlockGetter,net.minecraft.core.BlockPos) Z
         @method getShadeBrightness(net.minecraft.world.level.BlockGetter,net.minecraft.core.BlockPos) F
-        @method isViewBlocking(net.minecraft.world.level.BlockGetter,net.minecraft.core.BlockPos) Z
         @method isSolidRender() Z
         @method hasBlockEntity() Z
     @interface BlockBehaviour$StatePredicate

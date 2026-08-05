@@ -142,7 +142,6 @@ public class BlockDataExtractor {
                     state.useShapeForLightOcclusion(),
                     state.isCollisionShapeFullBlock(serverOverworld, BlockPos.ZERO),
                     state.getShadeBrightness(serverOverworld, BlockPos.ZERO),
-                    state.isViewBlocking(serverOverworld, BlockPos.ZERO),
                     state.isSolidRender(),
                     occlusionMap
                 );
