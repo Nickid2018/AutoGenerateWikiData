@@ -330,7 +330,7 @@
 
 @package net.minecraft.world.item.component
     @record CookingFuel
-        @component burnTime net.minecraft.world.level.storage.loot.providers.number.ResolvableNumber
+        @component burnTime net.minecraft.world.level.storage.loot.providers.number.ints.ResolvableInt
 
 @package net.minecraft.world.level
     @record ChunkPos
@@ -461,10 +461,9 @@
     @class LootContextParamSets
         @const EMPTY net.minecraft.util.context.ContextKeySet
 
-@package net.minecraft.world.level.storage.loot.providers.number
-    @interface NumberProvider
-    @interface ResolvableNumber
-        @function getIntFromItem(net.minecraft.world.item.ItemStack,net.minecraft.core.component.DataComponentType,java.util.function.Function,net.minecraft.world.level.storage.loot.LootContext,I) I <T:Ljava/lang/Object;>(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/component/DataComponentType<TT;>;Ljava/util/function/Function<TT;Lnet/minecraft/world/level/storage/loot/providers/number/ResolvableNumber;>;Lnet/minecraft/world/level/storage/loot/LootContext;I)I
+@package net.minecraft.world.level.storage.loot.providers.number.ints
+    @interface ResolvableInt
+        @function getFromItem(net.minecraft.world.item.ItemStack,net.minecraft.core.component.DataComponentType,java.util.function.Function,net.minecraft.world.level.storage.loot.LootContext,I) I <T:Ljava/lang/Object;>(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/component/DataComponentType<TT;>;Ljava/util/function/Function<TT;Lnet/minecraft/world/level/storage/loot/providers/number/ints/ResolvableInt;>;Lnet/minecraft/world/level/storage/loot/LootContext;I)I
 
 @package net.minecraft.world.level
     @interface BlockGetter
