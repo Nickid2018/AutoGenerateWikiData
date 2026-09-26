@@ -8,7 +8,8 @@ public enum GenWikiMode {
     AUTOVALUE(false),
     STATISTICS(false),
     ISO(true),
-    CLIENT_DATA(true);
+    CLIENT_DATA(true),
+    MERGE_STATISTICS(false);
 
     public final boolean isClient;
 }

@@ -92,3 +92,22 @@ addRunTask("runStatisticsNotRun", "STATISTICS", true)
 addRunTask("runDataGenerator", "CLIENT_DATA")
 addRunTask("runISO", "ISO")
 addRunTask("runISONotRun", "ISO", true)
+
+tasks.register("runMergeStatistics", JavaExec) {
+    if (!file("run").isDirectory())
+        mkdir("run")
+    if (file("run/remapped").isDirectory())
+        delete(fileTree("run/remapped"))
+    workingDir = file("run")
+    if (environment["DIR"] == null)
+        environment["DIR"] = "."
+    if (environment["MERGE_DEPTH"] == null)
+        environment["MERGE_DEPTH"] = "2"
+    classpath = layout.buildDirectory.files("libs/GenWiki.jar")
+    mainClass = "io.github.nickid2018.genwiki.GenerateWikiData"
+    jvmArgs("-Xmx16G")
+    args(environment["DIR"], "--mode", "MERGE_STATISTICS", "--merge-depth", environment["MERGE_DEPTH"])
+    standardInput = System.in
+}.configure {
+    dependsOn(shadowJar)
+}

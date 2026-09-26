@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.jspecify.annotations.NonNull;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -36,7 +37,7 @@ public class GenerateWikiData {
     @SneakyThrows
     public static void main(String[] args) {
         OptionParser parser = new OptionParser();
-        NonOptionArgumentSpec<String> versionSpec = parser.nonOptions("Minecraft version");
+        NonOptionArgumentSpec<String> positionalArg = parser.nonOptions("Minecraft version or directory path");
         ArgumentAcceptingOptionSpec<GenWikiMode> modeSpec = parser
             .accepts("mode", "Running mode")
             .withOptionalArg()
@@ -47,6 +48,10 @@ public class GenerateWikiData {
             "force-redownload",
             "Force re-download server jar and mapping"
         );
+        ArgumentAcceptingOptionSpec<Integer> mergeStatisticsDepthSpec = parser.accepts(
+            "merge-depth",
+            "Depth of merge statistics"
+        ).withOptionalArg().ofType(Integer.class).defaultsTo(1);
         AbstractOptionSpec<Void> helpSpec = parser.accepts("help", "Show help").forHelp();
 
         OptionSet options;
@@ -66,19 +71,37 @@ public class GenerateWikiData {
         boolean notRun = options.has(doNotRun);
         boolean forceReDownload = options.has(doForceReDownload);
         GenWikiMode mode = modeSpec.value(options);
-        String version = versionSpec.value(options);
+        String positional = positionalArg.value(options);
+        int mergeDepth = mergeStatisticsDepthSpec.value(options);
 
         log.info("Running mode: {}", mode);
-        log.info("Generate Wiki Data, Minecraft Version: {}", version);
         if (notRun)
             log.info("Do not run jar, file will be generated in {}", InitializeEnvironment.REMAPPED_FOLDER);
 
+        if (mode == GenWikiMode.MERGE_STATISTICS) {
+            log.info("Merging statistics...");
+            if (InitializeEnvironment.OUTPUT_FOLDER.isDirectory())
+                FileUtils.deleteDirectory(InitializeEnvironment.OUTPUT_FOLDER);
+            InitializeEnvironment.OUTPUT_FOLDER.mkdirs();
+            Set<File> collectedFileLists = createCollectedFileLists(positional, mergeDepth);
+            File baseDir = collectedFileLists.stream().findFirst().orElse(null);
+            if (baseDir == null)
+                return;
+            String[] names = baseDir.list((dir, name) -> name.endsWith("_count.json"));
+            if (names == null)
+                return;
+            for (String name : names)
+                doFileCollect(name, collectedFileLists);
+            return;
+        }
+
+        log.info("Generate Wiki Data, Minecraft Version: {}", positional);
         InitializeEnvironment.createDirectories(mode.isClient);
-        Map<String, File> files = InitializeEnvironment.downloadBaseFiles(mode.isClient, version, forceReDownload);
+        Map<String, File> files = InitializeEnvironment.downloadBaseFiles(mode.isClient, positional, forceReDownload);
 
         File remappedFile = new File(
             InitializeEnvironment.REMAPPED_FOLDER,
-            version + (mode.isClient ? "-client" : "-server") + ".jar"
+            positional + (mode.isClient ? "-client" : "-server") + ".jar"
         );
         try {
             log.info("Remapping jar...");
@@ -93,9 +116,9 @@ public class GenerateWikiData {
                 InitializeEnvironment.downloadLibraries(files.get("manifest"));
                 if (mode == GenWikiMode.ISO) {
                     InitializeEnvironment.downloadAssetsIndex(files.get("index"));
-                    runWikiGeneratorClient(remappedFile.getAbsolutePath(), version, files.get("manifest"));
+                    runWikiGeneratorClient(remappedFile.getAbsolutePath(), positional, files.get("manifest"));
                 } else {
-                    runDataGeneratorClient(remappedFile.getAbsolutePath(), version, files.get("manifest"));
+                    runDataGeneratorClient(remappedFile.getAbsolutePath(), positional, files.get("manifest"));
                 }
             } else if (mode == GenWikiMode.STATISTICS) {
                 doStatistics(remappedFile.getAbsolutePath());
@@ -103,6 +126,21 @@ public class GenerateWikiData {
                 runWikiGeneratorServer(remappedFile.getAbsolutePath());
             }
         }
+    }
+
+    private static @NonNull Set<File> createCollectedFileLists(String base, int mergeDepth) {
+        Set<File> collectedFileLists = new HashSet<>();
+        collectedFileLists.add(new File(base));
+        for (int i = 0; i < mergeDepth; i++) {
+            Set<File> nowCollectedFileLists = new HashSet<>();
+            collectedFileLists.forEach(dir -> {
+                File[] subDirs = dir.listFiles(File::isDirectory);
+                if (subDirs != null)
+                    nowCollectedFileLists.addAll(Arrays.asList(subDirs));
+            });
+            collectedFileLists = nowCollectedFileLists;
+        }
+        return collectedFileLists;
     }
 
     private static void doRemap(File input, File mapping, File output, GenWikiMode mode) throws Exception {
