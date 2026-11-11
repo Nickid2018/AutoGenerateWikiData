@@ -4,6 +4,7 @@ import io.github.nickid2018.genwiki.autovalue.wikidata.DoubleNumberWikiData;
 import io.github.nickid2018.genwiki.autovalue.wikidata.StringWikiData;
 import io.github.nickid2018.genwiki.autovalue.wikidata.WikiData;
 import lombok.SneakyThrows;
+import net.minecraft.advancements.predicates.MinMaxBounds;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.gamerules.GameRule;
 import net.minecraft.world.level.gamerules.GameRuleTypeVisitor;
@@ -16,8 +17,8 @@ public class GameRuleDataExtractor {
     public static final StringWikiData GAME_RULE_TYPE = new StringWikiData();
     public static final DoubleNumberWikiData GAME_RULE_RANGE = new DoubleNumberWikiData();
 
-    public static void addGameRuleRange(String name, int min, int max) {
-        GAME_RULE_RANGE.put(name, min, max);
+    public static void addGameRuleRange(String name, MinMaxBounds.Bounds<Integer> bounds) {
+        GAME_RULE_RANGE.put(name, bounds.min().orElse(Integer.MIN_VALUE), bounds.max().orElse(Integer.MAX_VALUE));
     }
 
     @SneakyThrows

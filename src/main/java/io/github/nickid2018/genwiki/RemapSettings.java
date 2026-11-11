@@ -208,17 +208,16 @@ public class RemapSettings {
                 "net.minecraft.world.level.gamerules.GameRules",
                 new MethodTransform(
                     "registerInteger",
-                    "(Ljava/lang/String;Lnet/minecraft/world/level/gamerules/GameRuleCategory;IIILnet/minecraft/world/flag/FeatureFlagSet;)Lnet/minecraft/world/level/gamerules/GameRule;",
+                    "(Ljava/lang/String;Lnet/minecraft/world/level/gamerules/GameRuleCategory;ILnet/minecraft/advancements/predicates/MinMaxBounds$Bounds;Lnet/minecraft/world/flag/FeatureFlagSet;)Lnet/minecraft/world/level/gamerules/GameRule;",
                     methodNode -> {
                         InsnList list = new InsnList();
                         list.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                        list.add(new VarInsnNode(Opcodes.ILOAD, 3));
-                        list.add(new VarInsnNode(Opcodes.ILOAD, 4));
+                        list.add(new VarInsnNode(Opcodes.ALOAD, 3));
                         list.add(new MethodInsnNode(
                             Opcodes.INVOKESTATIC,
                             "io/github/nickid2018/genwiki/autovalue/GameRuleDataExtractor",
                             "addGameRuleRange",
-                            "(Ljava/lang/String;II)V",
+                            "(Ljava/lang/String;Lnet/minecraft/advancements/predicates/MinMaxBounds$Bounds;)V",
                             false
                         ));
                         methodNode.instructions.insert(list);

@@ -49,6 +49,14 @@
     @enum TextureFormat
         @method pixelSize() I
 
+@package net.minecraft.advancements.predicates
+    @interface MinMaxBounds <T:Ljava/lang/Comparable<TT;>;>Ljava/lang/Object;
+        @innerclass Bounds record static
+    @record MinMaxBounds$Bounds <T:Ljava/lang/Comparable<TT;>;>Ljava/lang/Record;
+        @outerclass record static
+        @component min java.util.Optional Ljava/util/Optional<TT;>;
+        @component max java.util.Optional Ljava/util/Optional<TT;>;
+
 @package net.minecraft.client.multiplayer
     @class ClientPacketListener
         @method sendCommand(java.lang.String) V
