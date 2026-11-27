@@ -189,35 +189,24 @@ public class ChunkStatisticsAnalyzer {
                         chunk.getPos().getMinBlockX() + blockPos.getX(),
                         chunk.getPos().getMinBlockZ() + blockPos.getZ()
                     );
+                    Holder<Biome> holder = chunk.getBiome(blockPos.getX(), y, blockPos.getZ());
+                    biomeCounter.increase(
+                        holder,
+                        y,
+                        chunk.getPos().getMinBlockX() + blockPos.getX(),
+                        chunk.getPos().getMinBlockZ() + blockPos.getZ()
+                    );
                 }
             }
-
-            for (int y = minBuildHeight / 4; y < maxBuildHeight / 4; y++)
-                for (int x = 0; x < 4; x++)
-                    for (int z = 0; z < 4; z++) {
-                        Holder<Biome> holder = chunk.getNoiseBiome(x, y, z);
-                        biomeCounter.increase(
-                            holder, y,
-                            (chunk.getPos().getMinBlockX() >> 2) + x,
-                            (chunk.getPos().getMinBlockZ() >> 2) + z
-                        );
-                    }
 
             count++;
             if (count % SETTINGS.getSaveInterval() == 0) {
                 blockCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight, maxBuildHeight, count);
-                biomeCounter.write(
-                    worldSeed,
-                    dimensionID,
-                    chunkPosProvider,
-                    minBuildHeight / 4,
-                    maxBuildHeight / 4,
-                    count
-                );
+                biomeCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight, maxBuildHeight, count);
             }
         }
 
         blockCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight, maxBuildHeight, count);
-        biomeCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight / 4, maxBuildHeight / 4, count);
+        biomeCounter.write(worldSeed, dimensionID, chunkPosProvider, minBuildHeight, maxBuildHeight, count);
     }
 }

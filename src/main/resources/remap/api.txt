@@ -432,7 +432,7 @@
 
 @package net.minecraft.world.level.chunk
     @abstract ChunkAccess impl net.minecraft.world.level.BlockGetter
-        @method getNoiseBiome(I,I,I) net.minecraft.core.Holder (III)Lnet/minecraft/core/Holder<Lnet/minecraft/world/level/biome/Biome;>;
+        @method getBiome(I,I,I) net.minecraft.core.Holder (III)Lnet/minecraft/core/Holder<Lnet/minecraft/world/level/biome/Biome;>;
         @method getPos() net.minecraft.world.level.ChunkPos
 
 @package net.minecraft.world.level.gamerules

@@ -139,7 +139,7 @@ public class RemapSettings {
                 )
             );
             remapProgram.addPostTransform(
-                "net.minecraft.world.level.chunk.storage.ChunkSerializer",
+                "net.minecraft.world.level.chunk.storage.SerializableChunkData",
                 new MethodTransform(
                     "write",
                     null,
