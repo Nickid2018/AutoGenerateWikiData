@@ -215,7 +215,6 @@
 
 @package net.minecraft.tags
     @class BlockTags
-        @const WOOL -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
         @const MINEABLE_WITH_AXE -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
         @const MINEABLE_WITH_HOE -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
         @const MINEABLE_WITH_PICKAXE -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
@@ -225,7 +224,9 @@
         @const NEEDS_DIAMOND_TOOL -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
         @const NEEDS_IRON_TOOL -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
         @const NEEDS_STONE_TOOL -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
-        @const LEAVES -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const SHEARS_EXTREME_BREAKING_SPEED -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const SHEARS_MAJOR_BREAKING_SPEED -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
+        @const SHEARS_MINOR_BREAKING_SPEED -.TagKey Lnet/minecraft/tags/TagKey<Lnet/minecraft/world/level/block/Block;>;
     @class TagEntry
     @record TagKey <T:Ljava/lang/Object;>Ljava/lang/Record;
         @component registry net.minecraft.resources.ResourceKey Lnet/minecraft/resources/ResourceKey<+Lnet/minecraft/core/Registry<TT;>;>;
