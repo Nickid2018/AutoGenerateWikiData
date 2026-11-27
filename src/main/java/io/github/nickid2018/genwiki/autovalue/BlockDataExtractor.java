@@ -296,12 +296,6 @@ public class BlockDataExtractor {
         }
     }
 
-    private static final Set<String> SHEARS_MINEABLES = Set.of(
-        "cobweb",
-        "vine",
-        "glow_lichen"
-    );
-
     @SneakyThrows
     private static List<String> resolveBreakingTools(String blockID, BlockBehaviour.Properties properties, BlockState defaultBlockState) {
         String tierPrefix;
@@ -335,9 +329,10 @@ public class BlockDataExtractor {
         if (tierPrefix != null)
             tools.replaceAll(s -> tierPrefix + " " + s);
 
-        if (defaultBlockState.is(BlockTags.LEAVES) ||
-            defaultBlockState.is(BlockTags.WOOL) ||
-            SHEARS_MINEABLES.contains(blockID))
+        if (defaultBlockState.is(BlockTags.SHEARS_EXTREME_BREAKING_SPEED) ||
+            defaultBlockState.is(BlockTags.SHEARS_MAJOR_BREAKING_SPEED) ||
+            defaultBlockState.is(BlockTags.SHEARS_MINOR_BREAKING_SPEED) ||
+            blockID.equals("cobweb"))
             tools.add(properties.requiresCorrectToolForDrops ? "shears required" : "shears");
 
         if (properties.requiresCorrectToolForDrops && tools.isEmpty())
